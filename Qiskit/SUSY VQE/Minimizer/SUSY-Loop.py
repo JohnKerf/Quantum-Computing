@@ -98,8 +98,8 @@ def calculate_Hamiltonian(cut_off, potential):
 
 
 #potential = 'QHO'
-potential = 'AHO'
-#potential = 'DW'
+#potential = 'AHO'
+potential = 'DW'
 
 cut_offs_list = [2,4,8,16,32]
 
