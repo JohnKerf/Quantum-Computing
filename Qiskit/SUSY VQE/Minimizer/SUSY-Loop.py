@@ -66,7 +66,11 @@ def calculate_Hamiltonian(cut_off, potential):
 
     elif potential == 'AHO':
         W_prime = q + q3  # W'(q) = q + q^3
-        W_double_prime = np.eye(cut_off) + 3 * q2  # W''(q) = 1 + 3q^2
+        W_double_prime = I_b + 3 * q2  # W''(q) = 1 + 3q^2
+
+    elif potential == 'DW':
+        W_prime = q + q2 + I_b  # W'(q) = q + q^2 + 1
+        W_double_prime = I_b + 2 * q  # W''(q) = 1 + 2q
 
     else:
         print("Not a valid potential")
@@ -94,8 +98,8 @@ def calculate_Hamiltonian(cut_off, potential):
 
 
 #potential = 'QHO'
-potential = 'AHO'
-#potential = 'DW'
+#potential = 'AHO'
+potential = 'DW'
 
 cut_offs_list = [2,4,8,16]#,32]
 
