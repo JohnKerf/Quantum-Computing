@@ -160,6 +160,10 @@ for cut_off in cut_offs_list:
         energies.append(res.fun)
         x_values.append(res.x)
 
+        closest_e = min(enumerate(energies), key=lambda x: abs(x[1] - 0))[0]
+        closest_x = x_values[closest_e]
+        x0 = closest_x
+
     #Save run
     run = {
         'potential': 'QHO',
