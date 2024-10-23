@@ -101,7 +101,7 @@ def calculate_Hamiltonian(cut_off, potential):
 potential = 'AHO'
 #potential = 'DW'
 
-cut_offs_list = [2,4,8]#,16,32]
+cut_offs_list = [2,4,8,16,32]
 
 starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 #Create directory for files
