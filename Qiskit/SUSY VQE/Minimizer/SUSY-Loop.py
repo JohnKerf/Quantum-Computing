@@ -50,8 +50,8 @@ def calculate_Hamiltonian(cut_off, potential):
     p = create_matrix(cut_off, 'p')  # p matrix
 
     # Calculate q^2 and q^3 for potential terms
-    q2 = np.dot(q, q)
-    q3 = np.dot(q2, q)
+    q2 = np.matmul(q, q)
+    q3 = np.matmul(q2, q)
 
     #fermionic identity
     I_f = np.eye(2)
@@ -62,7 +62,7 @@ def calculate_Hamiltonian(cut_off, potential):
     # Superpotential derivatives
     if potential == 'QHO':
         W_prime = q  # W'(q) = q
-        W_double_prime = I_b
+        W_double_prime = I_b #W''(q) = 1
 
     elif potential == 'AHO':
         W_prime = q + q3  # W'(q) = q + q^3
@@ -77,7 +77,7 @@ def calculate_Hamiltonian(cut_off, potential):
         raise
 
     # Kinetic term: p^2
-    p2 = np.dot(p, p)
+    p2 = np.matmul(p, p)
 
     # Commutator term [b^†, b] = -Z
     Z = np.array([[1, 0], [0, -1]])  # Pauli Z matrix for fermion number
@@ -88,20 +88,20 @@ def calculate_Hamiltonian(cut_off, potential):
     kinetic_term = np.kron(I_f, p2)
 
     # Potential term (W' contribution)
-    potential_term = np.kron(I_f, np.dot(W_prime, W_prime))
+    potential_term = np.kron(I_f, np.matmul(W_prime, W_prime))
 
     # Construct the full Hamiltonian
     H_SQM = 0.5 * (kinetic_term + potential_term + commutator_term)
-    H_SQM[np.abs(H_SQM) < 10e-10] = 0
+    H_SQM[np.abs(H_SQM) < 10e-12] = 0
     
     return H_SQM
 
 
 #potential = 'QHO'
-#potential = 'AHO'
-potential = 'DW'
+potential = 'AHO'
+#potential = 'DW'
 
-cut_offs_list = [2,4,8,16]#,32]
+cut_offs_list = [2,4,8]#,16,32]
 
 starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 #Create directory for files
