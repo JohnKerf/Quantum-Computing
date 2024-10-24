@@ -101,7 +101,7 @@ def calculate_Hamiltonian(cut_off, potential):
 potential = 'AHO'
 #potential = 'DW'
 
-cut_offs_list = [2,4,8]#,16,32]
+cut_offs_list = [2,4,8,16,32]
 
 starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 #Create directory for files
@@ -160,22 +160,33 @@ for cut_off in cut_offs_list:
     #define initial guess
     num_params = ansatz.num_parameters
     #x0 = 2 * np.pi * np.random.random(num_params)
-    x0 = 0.025 * np.pi * np.random.random(num_params)
+    x0 = 2 * np.pi * np.random.random(num_params)
     #x0 = np.zeros(num_params)
     #x0 = np.random.uniform(-0.1, 0.1, size=num_params)
 
-    x0_str = '0.025 * np.pi * np.random.random(num_params)'
+    x0_str = '0.25 * np.pi * np.random.random(num_params)'
 
     # VQE
+
+    vqe_start = datetime.now()
+
     num_vqe_runs = 100
     max_iterations = 10000
+    tolerance = 10e-8
+
+
     energies = []
     x_values = []
+    success = []
+    run_times = []
+    num_iters = []
 
     backend=aer_sim
     estimator = Estimator(mode=backend)
 
     for i in range(num_vqe_runs):
+
+        run_start = datetime.now()
 
         if i % 10 == 0:
             print(f"Run: {i}")
@@ -185,14 +196,23 @@ for cut_off in cut_offs_list:
             x0,
             method= "COBYLA",
             args= (ansatz_isa, hamiltonian_isa, estimator),
-            options= {'maxiter':max_iterations}
+            options= {'maxiter':max_iterations, 'tol':tolerance}
         )
         energies.append(res.fun)
         x_values.append(res.x)
+        success.append(res.success)
+        num_iters.append(res.nfev)
 
-        closest_e = min(enumerate(energies), key=lambda x: abs(x[1] - min_eigenvalue))[0]
-        closest_x = x_values[closest_e]
-        x0 = closest_x
+        run_end = datetime.now()
+        run_time = run_end - run_start
+        run_times.append(run_time)
+        
+        #closest_e = min(enumerate(energies), key=lambda x: abs(x[1] - min_eigenvalue))[0]
+        #closest_x = x_values[closest_e]
+        #x0 = closest_x
+
+    vqe_end = datetime.now()
+    vqe_time = vqe_end - vqe_start
 
     #Save run
     run = {
@@ -205,10 +225,15 @@ for cut_off in cut_offs_list:
         'backend': 'aer_simulator',
         'min_function': {'name': 'minimizer',
                         'method': "COBYLA",
-                        'maxiter':max_iterations
+                        'maxiter':max_iterations,
+                        'tolerance': tolerance
                         },
         'results': energies,
-        'x_values': [x.tolist() for x in x_values]
+        'x_values': [x.tolist() for x in x_values],
+        'num_iters': num_iters,
+        'success': np.array(success, dtype=bool).tolist(),
+        'run_times': [str(x) for x in run_times],
+        'total_run_time': str(vqe_time)
     }
 
     # Save the variable to a JSON file
