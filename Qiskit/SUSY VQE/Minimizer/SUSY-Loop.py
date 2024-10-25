@@ -101,7 +101,7 @@ def calculate_Hamiltonian(cut_off, potential):
 potential = 'AHO'
 #potential = 'DW'
 
-cut_offs_list = [2,4,8,16,32]
+cut_offs_list = [32]#2,4,8,16,
 
 starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 #Create directory for files
@@ -160,7 +160,7 @@ for cut_off in cut_offs_list:
     #define initial guess
     num_params = ansatz.num_parameters
     #x0 = 2 * np.pi * np.random.random(num_params)
-    x0 = 2 * np.pi * np.random.random(num_params)
+    x0 = 0.025 * np.pi * np.random.random(num_params)
     #x0 = np.zeros(num_params)
     #x0 = np.random.uniform(-0.1, 0.1, size=num_params)
 
