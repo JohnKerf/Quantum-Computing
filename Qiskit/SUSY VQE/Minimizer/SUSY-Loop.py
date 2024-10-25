@@ -101,7 +101,7 @@ def calculate_Hamiltonian(cut_off, potential):
 potential = 'AHO'
 #potential = 'DW'
 
-cut_offs_list = [32]#2,4,8,16,
+cut_offs_list = [8]#,16,32
 
 starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 #Create directory for files
@@ -120,7 +120,8 @@ for cut_off in cut_offs_list:
 
     #create qiskit Hamiltonian Pauli string
     hamiltonian = SparsePauliOp.from_operator(H)
-    ansatz = RealAmplitudes(num_qubits=hamiltonian.num_qubits, reps=1)
+    num_qubits = hamiltonian.num_qubits
+    ansatz = RealAmplitudes(num_qubits=num_qubits, reps=1, entanglement=[0,num_qubits-1], flatten=True)#'circular' # entanglement=[num_qubits-2,num_qubits-1] entanglement=[0,num_qubits-1]
     ansatz_isa = pm.run(ansatz)
     hamiltonian_isa = hamiltonian.apply_layout(layout=ansatz_isa.layout)
 
@@ -159,10 +160,9 @@ for cut_off in cut_offs_list:
     
     #define initial guess
     num_params = ansatz.num_parameters
-    #x0 = 2 * np.pi * np.random.random(num_params)
-    x0 = 0.025 * np.pi * np.random.random(num_params)
-    #x0 = np.zeros(num_params)
-    #x0 = np.random.uniform(-0.1, 0.1, size=num_params)
+    #x0 = 0.025 * np.pi * np.random.random(num_params)
+    #x0 = np.random.uniform(-0.5, 0.5, size=num_params) # good for c4
+    x0 = np.random.uniform(-1.0, 1.0, size=num_params)
 
     x0_str = '0.25 * np.pi * np.random.random(num_params)'
 
@@ -172,7 +172,7 @@ for cut_off in cut_offs_list:
 
     num_vqe_runs = 100
     max_iterations = 10000
-    tolerance = 10e-8
+    tolerance = 1e-10
 
 
     energies = []
@@ -185,6 +185,8 @@ for cut_off in cut_offs_list:
     estimator = Estimator(mode=backend)
 
     for i in range(num_vqe_runs):
+
+        x0 = np.random.uniform(-0.5, 0.5, size=num_params)
 
         run_start = datetime.now()
 

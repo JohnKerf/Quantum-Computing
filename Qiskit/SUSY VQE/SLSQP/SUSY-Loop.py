@@ -159,10 +159,10 @@ for cut_off in cut_offs_list:
     
     #define bounds
     num_params = ansatz.num_parameters
-    bounds = [(-2*np.pi, 2*np.pi) for _ in range(num_params)]
-    x0 = 0.025 * np.pi * np.random.random(num_params)
+    bounds = [(-np.pi, np.pi) for _ in range(num_params)]
+    x0 = 2 * np.pi * np.random.random(num_params)
 
-    x0_str = '0.025 * np.pi * np.random.random(num_params)'
+    x0_str = '2 * np.pi * np.random.random(num_params)'
     bounds_str = '[(-np.pi, np.pi) for _ in range(num_params)]'
 
     # VQE
