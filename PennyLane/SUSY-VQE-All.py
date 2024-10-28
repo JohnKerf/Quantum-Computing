@@ -88,10 +88,14 @@ def calculate_Hamiltonian(cut_off, potential):
 
 
 #potential = 'QHO'
-#potential = 'AHO'
-potential = 'DW'
+potential = 'AHO'
+#potential = 'DW'
 
-cut_offs_list = [2,4,8,16]
+cut_offs_list = [2,4,8,16,32]
+#step_size_list = [0.01, 0.1, 0.25, 0.5]
+#scale_list = [3.0, 4.0]
+
+#for scale in scale_list:
 
 starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 #Create directory for files
@@ -132,7 +136,7 @@ for cut_off in cut_offs_list:
         
 
     #Optimizer
-    stepsize = 0.25
+    stepsize = 0.5
     optimizer = AdamOptimizer(stepsize=stepsize)
 
     # VQE
@@ -157,10 +161,11 @@ for cut_off in cut_offs_list:
         converged = False
         prev_energy = None
 
-        scale = 0.25
-        if cut_off > 4: 
-            scale = 0.5
+        #scale = 0.25
+        #if cut_off > 4: 
+        #    scale = 0.5
 
+        scale = 3.0
         params = scale*np.pi*pnp.random.randn(num_qubits, requires_grad=True)
 
         for i in range(max_iterations):
@@ -196,10 +201,10 @@ for cut_off in cut_offs_list:
         'ansatz': 'ry_cnot_ansatz',
         'num_VQE': num_vqe_runs,
         'Optimizer': {'name': 'AdamOptimizer',
-                      'stepsize':stepsize,
-                      'maxiter':max_iterations,
-                      'tolerance': tolerance
-                      },
+                    'stepsize':stepsize,
+                    'maxiter':max_iterations,
+                    'tolerance': tolerance
+                    },
         'results': energies,
         'params': [x.tolist() for x in param_values],
         'num_iters': num_iters,
