@@ -1,7 +1,7 @@
 # PennyLane imports
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.optimize import AdamOptimizer
+from pennylane.optimize import MomentumOptimizer
 
 # General imports
 import os
@@ -137,7 +137,8 @@ for cut_off in cut_offs_list:
 
     #Optimizer
     stepsize = 0.5
-    optimizer = AdamOptimizer(stepsize=stepsize)
+    momentum = 0.5
+    optimizer = MomentumOptimizer(stepsize=stepsize, momentum=momentum)
 
     # VQE
     vqe_start = datetime.now()
