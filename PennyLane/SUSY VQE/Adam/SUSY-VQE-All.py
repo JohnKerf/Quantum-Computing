@@ -88,11 +88,11 @@ def calculate_Hamiltonian(cut_off, potential):
 
 
 #potential = 'QHO'
-potential = 'AHO'
-#potential = 'DW'
+#potential = 'AHO'
+potential = 'DW'
 
-#cut_offs_list = [2,4,8,16,32]
-cut_offs_list = [32]
+cut_offs_list = [2,4,8,16,32]
+#cut_offs_list = [32]
 #step_size_list = [0.01, 0.1, 0.25, 0.5]
 #scale_list = [3.0, 4.0]
 
@@ -127,18 +127,19 @@ for cut_off in cut_offs_list:
 
 
     # Device
-    #dev = qml.device('default.qubit', wires=num_qubits)
-    dev = qml.device('lightning.qubit', wires=num_qubits)
+    dev = qml.device('default.qubit', wires=num_qubits)
+    #dev = qml.device('lightning.qubit', wires=num_qubits)
 
     # Define the cost function
     @qml.qnode(dev)
     def cost_function(params):
-        ry_cnot_ansatz(params)
+        #ry_cnot_ansatz(params)
+        qml.StronglyEntanglingLayers(weights=params, wires=range(num_qubits), imprimitive=qml.CZ)
         return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
         
 
     #Optimizer
-    stepsize = 10.0#0.5
+    stepsize = 0.5
     optimizer = AdamOptimizer(stepsize=stepsize)
     #optimizer = AdagradOptimizer(stepsize=stepsize)
     #optimizer = RMSPropOptimizer(stepsize=stepsize, decay=0.9)
@@ -147,7 +148,7 @@ for cut_off in cut_offs_list:
     vqe_start = datetime.now()
 
     num_vqe_runs = 100
-    max_iterations = 2500
+    max_iterations = 5000
     tolerance = 1e-8
 
     energies = []
@@ -165,8 +166,10 @@ for cut_off in cut_offs_list:
         converged = False
         prev_energy = None
 
-        scale = 12.0#3.0
-        params = scale*np.pi*pnp.random.randn(num_qubits, requires_grad=True)
+        scale = 0.5
+        #params = scale*np.pi*pnp.random.randn(num_qubits, requires_grad=True)
+        params_shape = qml.StronglyEntanglingLayers.shape(n_layers=1, n_wires=num_qubits)
+        params = scale*np.pi * pnp.random.random(size=params_shape)
 
         for i in range(max_iterations):
 
@@ -199,7 +202,7 @@ for cut_off in cut_offs_list:
         'potential': potential,
         'cutoff': cut_off,
         'exact_eigenvalues': [round(x.real,10).tolist() for x in eigenvalues],
-        'ansatz': 'ry_cnot_ansatz',
+        'ansatz': 'StronglyEntanglingLayers-1layer',
         'ansatz_scale': scale,
         'num_VQE': num_vqe_runs,
         'Optimizer': {'name': 'AdamOptimizer',
