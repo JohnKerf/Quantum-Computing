@@ -88,13 +88,13 @@ def calculate_Hamiltonian(cut_off, potential):
     return H_SQM
 
 
-#potential = 'QHO'
-potential = 'AHO'
+potential = 'QHO'
+#potential = 'AHO'
 #potential = 'DW'
 
-cut_offs_list = [64]
-#tol_list = [1e-2, 1e-4, 1e-6, 1e-8]
-tol_list = [1e-6]
+cut_offs_list = [2,4,8,16,32]
+tol_list = [1e-2, 1e-4, 1e-6, 1e-8]
+#tol_list = [1e-6]
 
 for tolerance in tol_list:
 
@@ -164,7 +164,7 @@ for tolerance in tol_list:
             gradient_norm_check = False
 
             #Initial params
-            scale = 0.5
+            scale = 0.25
             params_shape = qml.StronglyEntanglingLayers.shape(n_layers=1, n_wires=num_qubits)
             params = scale*np.pi * pnp.random.random(size=params_shape)
 
