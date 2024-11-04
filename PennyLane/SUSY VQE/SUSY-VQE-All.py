@@ -88,13 +88,13 @@ def calculate_Hamiltonian(cut_off, potential):
     return H_SQM
 
 
-potential = 'QHO'
-#potential = 'AHO'
+#potential = 'QHO'
+potential = 'AHO'
 #potential = 'DW'
 
-cut_offs_list = [2,4,8,16,32]
+cut_offs_list = [2,4,8]#,16,32]
 tol_list = [1e-2, 1e-4, 1e-6, 1e-8]
-#tol_list = [1e-6]
+tol_list = [1e-6]
 
 for tolerance in tol_list:
 
@@ -120,8 +120,8 @@ for tolerance in tol_list:
         num_qubits = hamiltonian.num_qubits
 
         # Device
-        dev = qml.device('default.qubit', wires=num_qubits)
-        #dev = qml.device('lightning.qubit', wires=num_qubits)
+        #dev = qml.device('default.qubit', wires=num_qubits, shots=100)
+        dev = qml.device('lightning.qubit', wires=num_qubits, shots=100)
 
         # Define the cost function
         @qml.qnode(dev)
