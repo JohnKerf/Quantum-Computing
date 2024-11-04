@@ -95,7 +95,7 @@ potential = 'AHO'
 #potential = 'DW'
 
 cut_offs_list = [2,4,8]#,16,32]
-cut_offs_list = [16]
+cut_offs_list = [32]
 tol_list = [1e-2, 1e-4, 1e-6, 1e-8]
 tol_list = [1e-6]
 
@@ -103,7 +103,7 @@ for tolerance in tol_list:
 
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     #Create directory for files
-    os.makedirs(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\PennyLane\SUSY VQE\Adam\Files\{}\\{}".format(potential, str(starttime)))
+    os.makedirs(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}".format(potential, str(starttime)))
 
     print(f"Running for {potential} potential")
 
@@ -125,8 +125,8 @@ for tolerance in tol_list:
 
         # Device
         shots = 1024
-        dev = qml.device('default.qubit', wires=num_qubits, shots=1024)
-        #dev = qml.device('lightning.qubit', wires=num_qubits, shots=shots)
+        #dev = qml.device('default.qubit', wires=num_qubits, shots=1024)
+        dev = qml.device('lightning.qubit', wires=num_qubits, shots=shots)
 
 
         #Initial params shape
@@ -147,9 +147,9 @@ for tolerance in tol_list:
         vqe_start = datetime.now()
 
         #variables
-        num_vqe_runs = 100
-        max_iterations = 10000
-        tolerance = 1e-6
+        num_vqe_runs = 10
+        max_iterations = 500
+        tolerance = 1e-3
         strategy = 'best1bin'
         popsize = 15
         params_scale = 0.25
@@ -160,6 +160,7 @@ for tolerance in tol_list:
         success = []
         run_times = []
         num_iters = []
+        num_evaluations = []
 
         for i in range(num_vqe_runs):
 
@@ -177,7 +178,7 @@ for tolerance in tol_list:
             res = differential_evolution(cost_function, 
                                             bounds, 
                                             maxiter=max_iterations, 
-                                            tol=tolerance,
+                                            atol=tolerance,
                                             strategy=strategy, 
                                             popsize=popsize)
             
@@ -187,7 +188,8 @@ for tolerance in tol_list:
             energies.append(res.fun)
             x_values.append(res.x)
             success.append(res.success)
-            num_iters.append(res.nfev)
+            num_iters.append(res.nit)
+            num_evaluations.append(res.nfev)
 
             run_end = datetime.now()
             run_time = run_end - run_start
@@ -214,13 +216,14 @@ for tolerance in tol_list:
             'results': energies,
             'params': [x.tolist() for x in x_values],
             'num_iters': num_iters,
+            'num_evaluations': num_evaluations,
             'success': np.array(success, dtype=bool).tolist(),
             'run_times': [str(x) for x in run_times],
             'total_run_time': str(vqe_time)
         }
 
         # Save the variable to a JSON file
-        path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\PennyLane\SUSY VQE\Adam\Files\{}\\{}\{}_{}.json".format(potential, str(starttime), potential, cut_off)
+        path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}\{}_{}.json".format(potential, str(starttime), potential, cut_off)
         with open(path, 'w') as json_file:
             json.dump(run, json_file, indent=4)
 
@@ -228,7 +231,7 @@ for tolerance in tol_list:
     # Load all data and create graphs
     print("Creating plots")
     data_dict = {}
-    base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\PennyLane\SUSY VQE\Adam\Files\{}\\{}\{}_{}.json"
+    base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}\{}_{}.json"
 
     for n in cut_offs_list:
         file_path = base_path.format(potential, str(starttime), potential, n)
@@ -274,7 +277,7 @@ for tolerance in tol_list:
 
     print("Saving plots")
     plt.tight_layout()
-    plt.savefig(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\PennyLane\SUSY VQE\Adam\Files\{}\\{}\results.png".format(potential, str(starttime)))
+    plt.savefig(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}\results.png".format(potential, str(starttime)))
 
     print("Done")
 
