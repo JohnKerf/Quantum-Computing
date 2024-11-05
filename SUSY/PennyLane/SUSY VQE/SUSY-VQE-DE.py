@@ -92,8 +92,6 @@ for tolerance in tol_list:
 
         for i in range(num_vqe_runs):
 
-            #params = params_scale*np.pi * pnp.random.random(size=params_shape)
-
             run_start = datetime.now()
 
             if i % 10 == 0:
