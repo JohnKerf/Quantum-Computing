@@ -74,3 +74,8 @@ class hamiltonianCalc:
         H_SQM[np.abs(H_SQM) < 10e-12] = 0
         
         return H_SQM
+    
+# Factory function for easy usage
+def calculate_Hamiltonian(cut_off, potential):
+    calculator = hamiltonianCalc()
+    return calculator.calculate_Hamiltonian(cut_off, potential)
