@@ -91,11 +91,11 @@ def calculate_Hamiltonian(cut_off, potential):
 
 
 #potential = 'QHO'
-potential = 'AHO'
-#potential = 'DW'
+#potential = 'AHO'
+potential = 'DW'
 
-cut_offs_list = [2,4,8]#,16,32]
-cut_offs_list = [32]
+cut_offs_list = [2,4,8,16]#,32]
+#cut_offs_list = [32]
 tol_list = [1e-2, 1e-4, 1e-6, 1e-8]
 tol_list = [1e-6]
 
@@ -147,7 +147,7 @@ for tolerance in tol_list:
         vqe_start = datetime.now()
 
         #variables
-        num_vqe_runs = 10
+        num_vqe_runs = 100
         max_iterations = 500
         tolerance = 1e-3
         strategy = 'best1bin'
