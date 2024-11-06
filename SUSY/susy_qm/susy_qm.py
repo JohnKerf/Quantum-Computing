@@ -3,7 +3,7 @@ import json
 import matplotlib.pyplot as plt
 
 
-def create_matrix(self, cut_off, type):
+def create_matrix(cut_off, type):
     # Initialize a zero matrix of the specified size
     matrix = np.zeros((cut_off, cut_off), dtype=np.complex128)
     
@@ -25,10 +25,10 @@ def create_matrix(self, cut_off, type):
     
     
 # Function to calculate the Hamiltonian
-def calculate_Hamiltonian(self, cut_off, potential):
+def calculate_Hamiltonian(cut_off, potential):
     # Generate the position (q) and momentum (p) matrices
-    q = self.create_matrix(cut_off, 'q')  # q matrix
-    p = self.create_matrix(cut_off, 'p')  # p matrix
+    q = create_matrix(cut_off, 'q')  # q matrix
+    p = create_matrix(cut_off, 'p')  # p matrix
 
     # Calculate q^2 and q^3 for potential terms
     q2 = np.matmul(q, q)
@@ -78,7 +78,7 @@ def calculate_Hamiltonian(self, cut_off, potential):
     return H_SQM
     
    
-def create_plots(self, potential, base_path, folder, cut_off_list):
+def create_plots(potential, base_path, folder, cut_off_list):
     # Load all data and create graphs
     print("Creating plots")
     data_dict = {}

@@ -1,7 +1,6 @@
 # PennyLane imports
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.optimize import AdamOptimizer
 
 from scipy.optimize import differential_evolution
 
@@ -10,7 +9,6 @@ import os
 import json
 import numpy as np
 from datetime import datetime
-import matplotlib.pyplot as plt
 
 from qiskit.quantum_info import SparsePauliOp
 
@@ -23,16 +21,16 @@ potential = 'AHO'
 #potential = 'DW'
 
 #cut_offs_list = [2,4,8,16]#,32]
-cut_offs_list = [2]
-tol_list = [1e-2, 1e-4, 1e-6, 1e-8]
-tol_list = [1e-1]
+cut_offs_list = [16]
+tol_list = [1e-3, 1e-4, 1e-5, 1e-6]
+#tol_list = [1e-1]
 
 for tolerance in tol_list:
 
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     folder = str(starttime)
     #Create directory for files
-    os.makedirs(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}".format(potential, folder))
+    os.makedirs(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\No Shot Noise\Files\{}\\{}".format(potential, folder))
 
     print(f"Running for {potential} potential")
 
@@ -151,11 +149,11 @@ for tolerance in tol_list:
         }
 
         # Save the variable to a JSON file
-        path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}\{}_{}.json".format(potential, folder, potential, cut_off)
+        path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\No Shot Noise\Files\{}\\{}\{}_{}.json".format(potential, folder, potential, cut_off)
         with open(path, 'w') as json_file:
             json.dump(run, json_file, indent=4)
 
 
-    base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}\\"
+    base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\No Shot Noise\Files\{}\\{}\\"
     create_plots(potential=potential, base_path=base_path, folder=folder, cut_off_list=cut_offs_list)
 
