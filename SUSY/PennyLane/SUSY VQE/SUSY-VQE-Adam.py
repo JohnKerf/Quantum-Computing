@@ -21,7 +21,7 @@ potential = 'AHO'
 #potential = 'DW'
 
 cut_offs_list = [2,4,8,16]#,32]
-tol_list = [1e-2, 1e-4, 1e-6, 1e-8]
+tol_list = [1e-1, 1e-2, 1e-3, 1e-4]
 #tol_list = [1e-6]
 
 for tolerance in tol_list:
@@ -29,7 +29,7 @@ for tolerance in tol_list:
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     folder = str(starttime)
     #Create directory for files
-    os.makedirs(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\No Shot Noise\Adam\Files\{}\\{}".format(potential, folder))
+    os.makedirs(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\Shot Noise\Adam\Files\{}\\{}".format(potential, folder))
 
     print(f"Running for {potential} potential")
 
@@ -49,7 +49,7 @@ for tolerance in tol_list:
         num_qubits = hamiltonian.num_qubits
 
         # Device
-        shots = None
+        shots = 1024
         #dev = qml.device('default.qubit', wires=num_qubits, shots=100)
         dev = qml.device('lightning.qubit', wires=num_qubits, shots=shots)
 
@@ -155,6 +155,7 @@ for tolerance in tol_list:
             'cutoff': cut_off,
             'exact_eigenvalues': [round(x.real,10).tolist() for x in eigenvalues],
             'ansatz': 'StronglyEntanglingLayers-1layer',
+            'shots': shots,
             'ansatz_scale': scale,
             'num_VQE': num_vqe_runs,
             'Optimizer': {'name': 'AdamOptimizer',
@@ -172,12 +173,12 @@ for tolerance in tol_list:
         }
 
         # Save the variable to a JSON file
-        path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\No Shot Noise\Adam\Files\{}\\{}\{}_{}.json".format(potential, folder, potential, cut_off)
+        path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\Shot Noise\Adam\Files\{}\\{}\{}_{}.json".format(potential, folder, potential, cut_off)
         with open(path, 'w') as json_file:
             json.dump(run, json_file, indent=4)
 
 
     # create plots
-    base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\No Shot Noise\Adam\Files\{}\\{}\\"
+    base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\Shot Noise\Adam\Files\{}\\{}\\"
     create_plots(potential=potential, base_path=base_path, folder=folder, cut_off_list=cut_offs_list)
    
