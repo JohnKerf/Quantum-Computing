@@ -16,21 +16,21 @@ from qiskit.quantum_info import SparsePauliOp
 from susy_qm import calculate_Hamiltonian, create_plots
 
 
-#potential = 'QHO'
+potential = 'QHO'
 #potential = 'AHO'
-potential = 'DW'
+#potential = 'DW'
 
-cut_offs_list = [2,4,8,16]#,32]
-#cut_offs_list = [16]
-tol_list = [1e-3, 1e-4, 1e-5, 1e-6]
-tol_list = [1e-5]
+#cut_offs_list = [2,4,8,16]#,32]
+cut_offs_list = [2]
+#tol_list = [1e-3, 1e-4, 1e-5, 1e-6]
+tol_list = [1e-3]
 
 for tolerance in tol_list:
 
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     folder = str(starttime)
     #Create directory for files
-    os.makedirs(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}".format(potential, folder))
+    os.makedirs(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\VQD\Shot Noise\Files\{}\\{}".format(potential, folder))
 
     print(f"Running for {potential} potential")
 
@@ -53,7 +53,6 @@ for tolerance in tol_list:
         # Device
         shots = 1024
         #shots = None
-        #dev = qml.device('default.qubit', wires=num_qubits, shots=1024)
         dev = qml.device('lightning.qubit', wires=num_qubits, shots=shots)
 
 
@@ -62,20 +61,28 @@ for tolerance in tol_list:
         params_shape = qml.StronglyEntanglingLayers.shape(n_layers=num_layers, n_wires=num_qubits)
 
 
-        # Define the cost function
+        # Define the vqd cost function
         @qml.qnode(dev)
-        def cost_function(params):
+        def vqd_cost_function(params, prev_states):
             params = pnp.tensor(params.reshape(params_shape), requires_grad=True)
             qml.StronglyEntanglingLayers(weights=params, wires=range(num_qubits), imprimitive=qml.CZ)
-            return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
+            energy = qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
+
+            # Add penalty for overlap with previous states
+            penalty = 0
+            for state in prev_states:
+                overlap = abs(np.vdot(params.flatten(), state)) ** 2
+                penalty += overlap
+            
+            return energy + penalty
         
         
 
-        # VQE
-        vqe_start = datetime.now()
+        # VQD
+        vqd_start = datetime.now()
 
         #variables
-        num_vqe_runs = 100
+        num_vqd_runs = 100
         max_iterations = 10000
         #tolerance = 1e-3
         strategy = 'best1bin'
@@ -83,13 +90,15 @@ for tolerance in tol_list:
 
         #data arrays
         energies = []
+        prev_states = []
+
         x_values = []
         success = []
         run_times = []
         num_iters = []
         num_evaluations = []
 
-        for i in range(num_vqe_runs):
+        for i in range(num_vqd_runs):
 
             run_start = datetime.now()
 
@@ -100,7 +109,7 @@ for tolerance in tol_list:
             bounds = [(0, 2 * np.pi) for _ in range(np.prod(params_shape))]
 
             # Differential Evolution optimization
-            res = differential_evolution(cost_function, 
+            res = differential_evolution(lambda x: vqd_cost_function(x, prev_states), 
                                             bounds, 
                                             maxiter=max_iterations, 
                                             atol=tolerance,
@@ -120,8 +129,8 @@ for tolerance in tol_list:
             run_time = run_end - run_start
             run_times.append(run_time)
 
-        vqe_end = datetime.now()
-        vqe_time = vqe_end - vqe_start
+        vqd_end = datetime.now()
+        vqd_time = vqd_end - vqd_start
 
         #Save run
         run = {
@@ -129,7 +138,7 @@ for tolerance in tol_list:
             'cutoff': cut_off,
             'exact_eigenvalues': [round(x.real,10).tolist() for x in eigenvalues],
             'ansatz': 'StronglyEntanglingLayers-1layer',
-            'num_VQE': num_vqe_runs,
+            'num_VQE': num_vqd_runs,
             'Optimizer': {'name': 'differential_evolution',
                         'bounds':'[(0, 2 * np.pi) for _ in range(np.prod(params_shape))]',
                         'maxiter':max_iterations,
@@ -143,15 +152,15 @@ for tolerance in tol_list:
             'num_evaluations': num_evaluations,
             'success': np.array(success, dtype=bool).tolist(),
             'run_times': [str(x) for x in run_times],
-            'total_run_time': str(vqe_time)
+            'total_run_time': str(vqd_time)
         }
 
         # Save the variable to a JSON file
-        path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}\{}_{}.json".format(potential, folder, potential, cut_off)
+        path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\VQD\Shot Noise\Files\{}\\{}\{}_{}.json".format(potential, folder, potential, cut_off)
         with open(path, 'w') as json_file:
             json.dump(run, json_file, indent=4)
 
 
-    base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}\\"
+    base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\VQD\Shot Noise\Files\{}\\{}\\"
     create_plots(potential=potential, base_path=base_path, folder=folder, cut_off_list=cut_offs_list)
 
