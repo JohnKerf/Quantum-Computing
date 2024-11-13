@@ -13,7 +13,7 @@ from datetime import datetime
 from qiskit.quantum_info import SparsePauliOp
 
 # custom module
-from susy_qm import calculate_Hamiltonian, create_plots
+from susy_qm import calculate_Hamiltonian, create_vqe_plots
 
 
 potential = 'QHO'
@@ -162,5 +162,5 @@ for tolerance in tol_list:
 
 
     base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\VQD\Shot Noise\Files\{}\\{}\\"
-    create_plots(potential=potential, base_path=base_path, folder=folder, cut_off_list=cut_offs_list)
+    create_vqe_plots(potential=potential, base_path=base_path, folder=folder, cut_off_list=cut_offs_list)
 
