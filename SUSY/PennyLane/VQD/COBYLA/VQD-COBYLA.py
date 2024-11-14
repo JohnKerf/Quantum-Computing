@@ -16,17 +16,18 @@ from qiskit.quantum_info import SparsePauliOp
 from susy_qm import calculate_Hamiltonian, create_vqd_plots
 
 
-#potential = 'QHO'
-potential = 'AHO'
+potential = 'QHO'
+#potential = 'AHO'
 #potential = 'DW'
 
-cut_offs_list = [2,4,8,16,32]
+cut_offs_list = [2,4,8,16]#,32]
 
 starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 folder = str(starttime)
 
 #Create directory for files
-base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\VQD\COBYLA\Files\{}\\{}\\".format(potential, folder)
+base_path = r"C:\Users\johnkerf\Desktop\Quantum-Computing\Quantum-Computing\SUSY\PennyLane\VQD\COBYLA\Files\{}\\{}\\".format(potential, folder)
+#base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\VQD\COBYLA\Files\{}\\{}\\".format(potential, folder)
 os.makedirs(base_path)
 
 print(f"Running for {potential} potential")
@@ -117,14 +118,14 @@ for cut_off in cut_offs_list:
     vqd_start = datetime.now()
 
     #variables
-    num_vqd_runs = 5
+    num_vqd_runs = 4
     if num_vqd_runs > len(eigenvalues):
         print("num_vqd_runs is greater than number of eigenvalues")
         raise
     
     max_iterations = 10000
     beta = 2.0
-    tolerance = 1e-6
+    tolerance = 1e-4
 
     #data arrays
     energies = []
@@ -212,5 +213,5 @@ for cut_off in cut_offs_list:
     with open(path, 'w') as json_file:
         json.dump(run, json_file, indent=4)
 
-create_vqd_plots(potential=potential, base_path=base_path, folder=folder, cut_off_list=cut_offs_list)
+create_vqd_plots(potential=potential, base_path=base_path, cut_off_list=cut_offs_list)
 

@@ -56,7 +56,7 @@ def create_vqe_plots(potential, base_path, folder, cut_off_list):
     print("Done")
 
 
-def create_vqd_plots(potential, base_path, folder, cut_off_list):
+def create_vqd_plots(potential, base_path, cut_off_list, show=False):
 
     # Load all data and create graphs
     print("Creating plots")
@@ -87,7 +87,7 @@ def create_vqd_plots(potential, base_path, folder, cut_off_list):
         ax.set_ylabel("Energy (E)")
         ax.set_title(f"{potential}: Cutoff = {data['cutoff']}")
 
-        #ax.set_ylim(None, 6)
+        ax.set_ylim(None, 6)
 
         ax.legend(loc="upper right")
         ax.grid(True)
@@ -96,8 +96,12 @@ def create_vqd_plots(potential, base_path, folder, cut_off_list):
     for idx in range(num_cutoffs, len(axes)):
         fig.delaxes(axes[idx])
 
-    print("Saving plots")
     plt.tight_layout()
-    plt.savefig(base_path + "results.png")
+
+    if show == True:
+        plt.show()
+    else:
+        print("Saving plots")
+        plt.savefig(base_path + "results.png")
 
     print("Done")
