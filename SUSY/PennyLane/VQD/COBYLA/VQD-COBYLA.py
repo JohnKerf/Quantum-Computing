@@ -20,7 +20,7 @@ from susy_qm import calculate_Hamiltonian, create_vqd_plots
 potential = 'AHO'
 #potential = 'DW'
 
-cut_offs_list = [2]#,4,8,16,32]
+cut_offs_list = [2,4,8,16,32]
 
 starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 folder = str(starttime)
@@ -58,6 +58,7 @@ for cut_off in cut_offs_list:
     shots = None
     dev = qml.device('lightning.qubit', wires=2*num_qubits+1, shots=shots)
 
+    #Swap test to calculate overlap
     @qml.qnode(dev)
     def swap_test(params1, params2):
 
@@ -78,6 +79,7 @@ for cut_off in cut_offs_list:
 
         return qml.probs(wires=ancilla)
     
+
     # Device
     shots = None
     dev2 = qml.device('lightning.qubit', wires=num_qubits, shots=shots)
@@ -90,7 +92,6 @@ for cut_off in cut_offs_list:
 
 
     def loss_f(params):
-        global prev_param_list, beta
         energy = expected_value(params)
 
         penalty = 0
@@ -102,9 +103,9 @@ for cut_off in cut_offs_list:
 
         return energy + (penalty)
     
+
     def callback(xk):
-        global iteration_counter, counts, values
-        
+        global iteration_counter
         current_cost = loss_f(xk)
 
         iteration_counter += 1
@@ -112,14 +113,18 @@ for cut_off in cut_offs_list:
         values.append(current_cost)
     
     
-
+    #VQD
     vqd_start = datetime.now()
 
     #variables
-    num_vqd_runs = 4
-    max_iterations = 5000
+    num_vqd_runs = 5
+    if num_vqd_runs > len(eigenvalues):
+        print("num_vqd_runs is greater than number of eigenvalues")
+        raise
+    
+    max_iterations = 10000
     beta = 2.0
-    tolerance = 1e-4
+    tolerance = 1e-6
 
     #data arrays
     energies = []
