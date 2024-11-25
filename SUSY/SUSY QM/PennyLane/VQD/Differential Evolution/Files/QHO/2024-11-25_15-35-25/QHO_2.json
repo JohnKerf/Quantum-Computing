@@ -1,0 +1,84 @@
+{
+    "potential": "QHO",
+    "cutoff": 2,
+    "exact_eigenvalues": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+    ],
+    "ansatz": "StronglyEntanglingLayers-1layer",
+    "num_VQD": 2,
+    "num_energy_levels": 2,
+    "Optimizer": {
+        "name": "differential_evolution",
+        "bounds": "[(0, 2 * np.pi) for _ in range(np.prod(params_shape))]",
+        "maxiter": 500,
+        "tolerance": 0.001,
+        "strategy": "best1bin",
+        "popsize": 15
+    },
+    "converged_energies": [
+        [
+            6.247988667917005e-18,
+            4.9827477460252344e-14
+        ],
+        [
+            1.7219388030518197e-10,
+            1.9379804293841914e-11
+        ]
+    ],
+    "converged_params": [
+        [
+            4.843897628920913,
+            3.141566409056624,
+            4.74627230112862,
+            2.285438997962891,
+            5.530056800077148,
+            3.950109768117779
+        ],
+        [
+            1.1645547494235318,
+            3.141598515781559,
+            1.67836983563387,
+            2.2750905769607366,
+            2.388465235291096,
+            3.9501031656692147
+        ]
+    ],
+    "num_iters": [
+        [
+            921,
+            1752
+        ],
+        [
+            1184,
+            1655
+        ]
+    ],
+    "evaluations": [
+        [
+            921,
+            1752
+        ],
+        [
+            1184,
+            1655
+        ]
+    ],
+    "success": [
+        [
+            true,
+            true
+        ],
+        [
+            true,
+            true
+        ]
+    ],
+    "run_times": [
+        "0:00:10.365708",
+        "0:00:09.843332"
+    ],
+    "total_run_time": "0:00:20.210011"
+}
