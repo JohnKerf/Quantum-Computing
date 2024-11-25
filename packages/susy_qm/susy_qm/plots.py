@@ -56,52 +56,32 @@ def create_vqe_plots(potential, base_path, folder, cut_off_list):
     print("Done")
 
 
-def create_vqd_plots(potential, base_path, cut_off_list, show=False):
+def create_vqd_plots(data, path, show=False):
 
-    # Load all data and create graphs
-    print("Creating plots")
-    data_dict = {}
+    num_VQD = data['num_VQD']
+    converged_energies = data['converged_energies']
 
-    for n in cut_off_list:
-        file_path = base_path + potential + "_" + str(n) + ".json"
-        with open(file_path, 'r') as json_file:
-            data_dict[f'c{n}'] = json.load(json_file)
+    transposed_energies = list(zip(*converged_energies))
+    medians = [np.median(energies) for energies in transposed_energies]
 
+    # Plotting
+    plt.figure(figsize=(8, 6))
 
-    #Create and save plots
-    num_cutoffs = len(cut_off_list)
-    nrows = int(np.ceil(num_cutoffs/2))
-    fig, axes = plt.subplots(nrows=nrows, ncols=2, figsize=(30, 5*nrows))
-    axes = axes.flatten()
+    for i, energies in enumerate(transposed_energies):
+        line, = plt.plot(range(1, num_VQD + 1), energies, marker='o', linestyle='-', label=f"$E_{{{i}}} \\approx {medians[i]:.3f}$")
+        plt.axhline(data['exact_eigenvalues'][i], color = line.get_color(), linestyle='--', linewidth=0.5, label=f"$E_{{{i}}}^{{\\text{{ex}}}} = {data['exact_eigenvalues'][i]:.3f}$")
 
-    for idx, (cutoff, data) in enumerate(data_dict.items()):
-        
-        # Creating the plot
-        ax = axes[idx]
-
-        for i in range(data['num_VQD']):
-            line, = ax.plot(data['num_iters'][i], data['energies'][i], linewidth=1.0, label=f"$E_{{{i}}} \\approx {data['converged_energies'][i]:.3f}$")
-            ax.axhline(data['exact_eigenvalues'][i], color = line.get_color(), linestyle='--', linewidth=0.5, label=f"$E_{{{i}}}^{{\\text{{ex}}}} = {data['exact_eigenvalues'][i]:.3f}$")
-
-        ax.set_xlabel("Iteration")
-        ax.set_ylabel("Energy (E)")
-        ax.set_title(f"{potential}: Cutoff = {data['cutoff']}")
-
-        ax.set_ylim(None, 6)
-
-        ax.legend(loc="upper right")
-        ax.grid(True)
-
-    # Hide any remaining unused axes
-    for idx in range(num_cutoffs, len(axes)):
-        fig.delaxes(axes[idx])
-
+    plt.xlabel("VQD Run")
+    plt.ylabel("Energy")
+    plt.title(f"{data['potential']}: Cutoff = {data['cutoff']}")
+    plt.xticks(range(1, num_VQD + 1))
+    plt.legend()
     plt.tight_layout()
 
     if show == True:
         plt.show()
     else:
         print("Saving plots")
-        plt.savefig(base_path + "results.png")
+        plt.savefig(path + "results.png")
 
     print("Done")
