@@ -15,7 +15,7 @@ from qiskit.quantum_info import SparsePauliOp
 # custom module
 from susy_qm import calculate_Hamiltonian, create_vqd_plots
 
-shots = None
+shots = 1024
 potential = 'QHO'
 #potential = 'AHO'
 #potential = 'DW'
@@ -120,7 +120,7 @@ for cut_off in cut_offs_list:
     bounds = [(0, 2 * np.pi) for _ in range(np.prod(params_shape))]
 
     #variables
-    num_vqd_runs = 1
+    num_vqd_runs = 10
     max_iterations = 500 #calcs per iteration = popsize*num_params
     beta = 2.0
     tolerance = 1e-3
@@ -135,7 +135,7 @@ for cut_off in cut_offs_list:
     all_num_iters = []
     all_evaluations = []
 
-    num_energy_levels = 2
+    num_energy_levels = 3
     if num_energy_levels > len(eigenvalues):
         print("num_vqd_runs is greater than number of eigenvalues")
         raise
@@ -201,6 +201,7 @@ for cut_off in cut_offs_list:
         'cutoff': cut_off,
         'exact_eigenvalues': [round(x.real,10).tolist() for x in eigenvalues],
         'ansatz': 'StronglyEntanglingLayers-1layer',
+        'shots': shots,
         'num_VQD': num_vqd_runs,
         'num_energy_levels': num_energy_levels,
         'Optimizer': {'name': 'differential_evolution',
