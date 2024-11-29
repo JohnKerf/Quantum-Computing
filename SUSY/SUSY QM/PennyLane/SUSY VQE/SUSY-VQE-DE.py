@@ -16,24 +16,26 @@ from qiskit.quantum_info import SparsePauliOp
 from susy_qm import calculate_Hamiltonian, create_vqe_plots
 
 
-#potential = 'QHO'
+potential = 'QHO'
 #potential = 'AHO'
-potential = 'DW'
+#potential = 'DW'
 
-cut_offs_list = [2,4,8,16]#,32]
-#cut_offs_list = [16]
-tol_list = [1e-3, 1e-4, 1e-5, 1e-6]
-tol_list = [1e-5]
+#cut_offs_list = [2,4,8,16]#,32]
+cut_offs_list = [2]
+tol_list = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]
+tol_list = [1e-1]
+shots = 1024
 
 for tolerance in tol_list:
 
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     folder = str(starttime)
+    folder = str(tolerance)
     #Create directory for files
-    os.makedirs(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}".format(potential, folder))
+    base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\EM Comparison\Files2\{}\\{}\\".format(potential, folder)
+    os.makedirs(base_path)
 
     print(f"Running for {potential} potential")
-
     print(f"Running for tolerance: {str(tolerance)}")
 
     for cut_off in cut_offs_list:
@@ -51,8 +53,7 @@ for tolerance in tol_list:
 
 
         # Device
-        shots = 1024
-        #shots = None
+        shots = shots
         #dev = qml.device('default.qubit', wires=num_qubits, shots=1024)
         dev = qml.device('lightning.qubit', wires=num_qubits, shots=shots)
 
@@ -70,14 +71,12 @@ for tolerance in tol_list:
             return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
         
         
-
         # VQE
         vqe_start = datetime.now()
 
         #variables
         num_vqe_runs = 100
-        max_iterations = 10000
-        #tolerance = 1e-3
+        max_iterations = 500
         strategy = 'best1bin'
         popsize = 15
 
@@ -89,6 +88,9 @@ for tolerance in tol_list:
         num_iters = []
         num_evaluations = []
 
+        #Optimizer
+        bounds = [(0, 2 * np.pi) for _ in range(np.prod(params_shape))]
+
         for i in range(num_vqe_runs):
 
             run_start = datetime.now()
@@ -96,9 +98,7 @@ for tolerance in tol_list:
             if i % 10 == 0:
                 print(f"Run: {i}")
 
-            #Optimizer
-            bounds = [(0, 2 * np.pi) for _ in range(np.prod(params_shape))]
-
+            
             # Differential Evolution optimization
             res = differential_evolution(cost_function, 
                                             bounds, 
@@ -130,6 +130,7 @@ for tolerance in tol_list:
             'exact_eigenvalues': [round(x.real,10).tolist() for x in eigenvalues],
             'ansatz': 'StronglyEntanglingLayers-1layer',
             'num_VQE': num_vqe_runs,
+            'shots': shots,
             'Optimizer': {'name': 'differential_evolution',
                         'bounds':'[(0, 2 * np.pi) for _ in range(np.prod(params_shape))]',
                         'maxiter':max_iterations,
@@ -147,11 +148,12 @@ for tolerance in tol_list:
         }
 
         # Save the variable to a JSON file
-        path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}\{}_{}.json".format(potential, folder, potential, cut_off)
+        #path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}\{}_{}.json".format(potential, folder, potential, cut_off)
+        path = base_path + "{}_{}.json".format(potential, cut_off)
         with open(path, 'w') as json_file:
             json.dump(run, json_file, indent=4)
 
 
-    base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}\\"
-    create_vqe_plots(potential=potential, base_path=base_path, folder=folder, cut_off_list=cut_offs_list)
+    #base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\PennyLane\SUSY VQE\Shot Noise\Files\{}\\{}\\"
+    #create_vqe_plots(potential=potential, base_path=base_path, folder=folder, cut_off_list=cut_offs_list)
 
