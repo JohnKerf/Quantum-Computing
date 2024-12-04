@@ -32,7 +32,7 @@ for tolerance in tol_list:
     folder = str(starttime)
     folder = str(tolerance)
     #Create directory for files
-    base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\EM Comparison\Files2\{}\\{}\\".format(potential, folder)
+    base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\SUSY VQE\Files\{}\\{}\\".format(potential, folder)
     os.makedirs(base_path)
 
     print(f"Running for {potential} potential")
