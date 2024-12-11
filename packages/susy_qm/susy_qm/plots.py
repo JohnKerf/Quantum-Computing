@@ -2,13 +2,13 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 
-def create_vqe_plots(potential, base_path, folder, cut_off_list):
+def create_vqe_plots(potential, base_path, cut_off_list, individual):
     # Load all data and create graphs
     print("Creating plots")
     data_dict = {}
 
     for n in cut_off_list:
-        file_path = base_path.format(potential, folder) + potential + "_" + str(n) + ".json"
+        file_path = base_path.format(potential) + potential + "_" + str(n) + ".json"
         with open(file_path, 'r') as json_file:
             data_dict[f'c{n}'] = json.load(json_file)
 
@@ -22,6 +22,7 @@ def create_vqe_plots(potential, base_path, folder, cut_off_list):
     for idx, (cutoff, cutoff_data) in enumerate(data_dict.items()):
         
         results = cutoff_data['results']
+        exact = np.min(cutoff_data['exact_eigenvalues'])
         x_values = range(len(results))
 
         # Calculating statistics
@@ -37,6 +38,7 @@ def create_vqe_plots(potential, base_path, folder, cut_off_list):
         ax.axhline(y=mean_value, color='r', linestyle='--', label=f'Mean = {mean_value:.6f}')
         ax.axhline(y=median_value, color='g', linestyle='-', label=f'Median = {median_value:.6f}')
         ax.axhline(y=min_value, color='b', linestyle='-.', label=f'Min = {min_value:.6f}')
+        ax.axhline(y=exact, color='orange', linestyle=':', label=f'Exact = {exact:.6f}')
 
         ax.set_ylim(min_value - 0.01, max(results) + 0.01)
         ax.set_xlabel('Run')
@@ -45,13 +47,35 @@ def create_vqe_plots(potential, base_path, folder, cut_off_list):
         ax.legend()
         ax.grid(True)
 
+
+        if individual:
+
+            # Save individual plot
+            print(f"Saving individual plot for cutoff {cutoff_data['cutoff']}")
+
+            plt.figure()
+            plt.plot(x_values, results, marker='o', label='Energy Results')
+            plt.axhline(y=mean_value, color='r', linestyle='--', label=f'Mean = {mean_value:.6f}')
+            plt.axhline(y=median_value, color='g', linestyle='-', label=f'Median = {median_value:.6f}')
+            plt.axhline(y=min_value, color='b', linestyle='-.', label=f'Min = {min_value:.6f}')
+            plt.axhline(y=exact, color='orange', linestyle=':', label=f'Exact = {exact:.6f}')
+            plt.ylim(min_value - 0.01, max(results) + 0.01)
+            plt.xlabel('Run')
+            plt.ylabel('Ground State Energy')
+            plt.title(f"{potential}: Cutoff = {cutoff_data['cutoff']}")
+            plt.legend()
+            plt.grid(True)
+            plt.savefig(base_path.format(potential) + f"cutoff_{cutoff_data['cutoff']}_plot.png")
+            plt.close()
+
     # Hide any remaining unused axes
     for idx in range(num_cutoffs, len(axes)):
         fig.delaxes(axes[idx])
 
-    print("Saving plots")
-    plt.tight_layout()
-    plt.savefig(base_path.format(potential, folder) + "results.png")
+    if not individual:
+        print("Saving combined plots")
+        plt.tight_layout()
+        plt.savefig(base_path.format(potential) + "results.png")
 
     print("Done")
 
