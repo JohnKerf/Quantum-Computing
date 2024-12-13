@@ -127,7 +127,7 @@ for tolerance in tol_list:
         run = {
             'potential': potential,
             'cutoff': cut_off,
-            'exact_eigenvalues': [round(x.real,10).tolist() for x in eigenvalues],
+            'exact_eigenvalues': [x.real.tolist() for x in eigenvalues],
             'ansatz': 'StronglyEntanglingLayers-1layer',
             'num_VQE': num_vqe_runs,
             'shots': shots,
