@@ -199,7 +199,7 @@ for cut_off in cut_offs_list:
     run = {
         'potential': potential,
         'cutoff': cut_off,
-        'exact_eigenvalues': [round(x.real,10).tolist() for x in eigenvalues],
+        'exact_eigenvalues': [x.real.tolist() for x in eigenvalues],
         'ansatz': 'StronglyEntanglingLayers-1layer',
         'shots': shots,
         'num_VQD': num_vqd_runs,
