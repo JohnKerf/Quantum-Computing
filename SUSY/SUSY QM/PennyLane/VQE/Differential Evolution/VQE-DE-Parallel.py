@@ -79,7 +79,7 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, params_shap
         "success": res.success,
         "num_iters": res.nit,
         "num_evaluations": res.nfev,
-        "run_time": str(run_time),
+        "run_time": run_time,
         "device_time": device_time
     }
 
@@ -139,13 +139,14 @@ if __name__ == "__main__":
 
             # Collect results
             seeds = [res["seed"] for res in vqe_results]
-            total_device_time = sum([res['device_time'] for res in vqe_results], timedelta())
             energies = [res["energy"] for res in vqe_results]
             x_values = [res["params"] for res in vqe_results]
             success = [res["success"] for res in vqe_results]
             num_iters = [res["num_iters"] for res in vqe_results]
             num_evaluations = [res["num_evaluations"] for res in vqe_results]
-            run_times = [res["run_time"] for res in vqe_results]
+            run_times = [str(res["run_time"]) for res in vqe_results]
+            total_run_time = sum([res["run_time"] for res in vqe_results], timedelta())
+            total_device_time = sum([res['device_time'] for res in vqe_results], timedelta())
 
             vqe_end = datetime.now()
             vqe_time = vqe_end - datetime.strptime(starttime, "%Y-%m-%d_%H-%M-%S")
@@ -176,8 +177,9 @@ if __name__ == "__main__":
                 "success": np.array(success, dtype=bool).tolist(),
                 "run_times": run_times,
                 "seeds": seeds,
-                "total_device_time": str(total_device_time),
-                "total_run_time": str(vqe_time),
+                "parallel_run_time": str(vqe_time),
+                "total_VQE_time": str(total_run_time),
+                "total_device_time": str(total_device_time)
             }
 
             # Save the variable to a JSON file

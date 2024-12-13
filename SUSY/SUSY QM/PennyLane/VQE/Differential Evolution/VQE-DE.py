@@ -134,8 +134,9 @@ for cut_off in cut_offs_list:
 
         run_end = datetime.now()
         run_time = run_end - run_start
-        run_times.append(str(run_time))
+        run_times.append(run_time)
 
+    total_run_time = sum(run_times, timedelta())
     vqe_end = datetime.now()
     vqe_time = vqe_end - vqe_start
 
@@ -163,9 +164,10 @@ for cut_off in cut_offs_list:
         "num_iters": num_iters,
         "num_evaluations": num_evaluations,
         "success": np.array(success, dtype=bool).tolist(),
-        "run_times": run_times,
-        "total_device_time": str(device_time),
-        "total_run_time": str(vqe_time),
+        "run_times": [str(x) for x in run_times],
+        "parallel_run_time": str(vqe_time),
+        "total_VQE_time": str(total_run_time),
+        "total_device_time": str(device_time)
     }
 
     # Save the variable to a JSON file
