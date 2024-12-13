@@ -7,7 +7,7 @@ from scipy.stats.qmc import Halton
 import os
 import json
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 
 from qiskit.quantum_info import SparsePauliOp
@@ -21,13 +21,18 @@ def cost_function(params, H, params_shape, num_qubits, shots):
    
     dev = qml.device("default.qubit", wires=num_qubits, shots=shots)
 
+    start = datetime.now()
+
     @qml.qnode(dev)
     def circuit(params):
         params = pnp.tensor(params.reshape(params_shape), requires_grad=True)
         qml.StronglyEntanglingLayers(weights=params, wires=range(num_qubits), imprimitive=qml.CZ)
         return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
+    
+    end = datetime.now()
+    device_time = (end - start)
 
-    return circuit(params)
+    return circuit(params), device_time
 
 
 def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, params_shape, num_qubits, shots):
@@ -43,9 +48,17 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, params_shap
     halton_samples = halton_sampler.random(n=num_samples)
     scaled_samples = 2 * np.pi * halton_samples
 
+    device_time = timedelta()
+
+    def wrapped_cost_function(params):
+        result, dt = cost_function(params, H, params_shape, num_qubits, shots)
+        nonlocal device_time
+        device_time += dt
+        return result
+
     # Differential Evolution optimization
     res = differential_evolution(
-        lambda params: cost_function(params, H, params_shape, num_qubits, shots),
+        wrapped_cost_function,
         bounds,
         maxiter=max_iter,
         tol=tol,
@@ -67,19 +80,22 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, params_shap
         "num_iters": res.nit,
         "num_evaluations": res.nfev,
         "run_time": str(run_time),
+        "device_time": device_time
     }
 
 
 if __name__ == "__main__":
     
-    potential_list = ["QHO", "AHO", "DW"]
-    cut_offs_list = [2, 4, 8, 16]
+    potential_list = ["QHO"]#, "AHO", "DW"]
+    cut_offs_list = [2]#, 4, 8, 16]
     shots = 1024
 
     for potential in potential_list:
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.join("/users/johnkerf/SUSY/VQE/QM/Files", potential)
+        folder = str(starttime)
+        #base_path = os.path.join("/users/johnkerf/SUSY/VQE/QM/Files", potential)
+        base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\Differential Evolution\Files\{}\\{}\\".format(potential, folder)
         os.makedirs(base_path, exist_ok=True)
 
         print(f"Running for {potential} potential")
@@ -104,7 +120,7 @@ if __name__ == "__main__":
             # Optimizer
             bounds = [(0, 2 * np.pi) for _ in range(np.prod(params_shape))]
 
-            num_vqe_runs = 100
+            num_vqe_runs = 1
             max_iter = 10000
             strategy = "randtobest1bin"
             tol = 1e-3
@@ -112,7 +128,7 @@ if __name__ == "__main__":
             popsize = 20
 
             # Start multiprocessing for VQE runs
-            with Pool(processes=40) as pool:
+            with Pool(processes=1) as pool:
                 vqe_results = pool.starmap(
                     run_vqe,
                     [
@@ -123,6 +139,7 @@ if __name__ == "__main__":
 
             # Collect results
             seeds = [res["seed"] for res in vqe_results]
+            total_device_time = sum([res['device_time'] for res in vqe_results], timedelta())
             energies = [res["energy"] for res in vqe_results]
             x_values = [res["params"] for res in vqe_results]
             success = [res["success"] for res in vqe_results]
@@ -159,6 +176,7 @@ if __name__ == "__main__":
                 "success": np.array(success, dtype=bool).tolist(),
                 "run_times": run_times,
                 "seeds": seeds,
+                "total_device_time": str(total_device_time),
                 "total_run_time": str(vqe_time),
             }
 
