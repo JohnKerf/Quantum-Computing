@@ -98,13 +98,13 @@ def create_vqe_plots(potential, base_path, cut_off_list, individual, converged_o
 def create_vqd_plots(data, path, show=False):
 
     num_VQD = data['num_VQD']
-    converged_energies = data['converged_energies']
+    converged_energies = data['results']
 
     transposed_energies = list(zip(*converged_energies))
     medians = [np.median(energies) for energies in transposed_energies]
 
     # Plotting
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(15, 10))
 
     for i, energies in enumerate(transposed_energies):
         line, = plt.plot(range(1, num_VQD + 1), energies, marker='o', linestyle='-', label=f"$E_{{{i}}} \\approx {medians[i]:.3f}$")
@@ -121,6 +121,6 @@ def create_vqd_plots(data, path, show=False):
         plt.show()
     else:
         print("Saving plots")
-        plt.savefig(path + "results.png")
+        plt.savefig(path + "\\results.png")
 
     print("Done")
