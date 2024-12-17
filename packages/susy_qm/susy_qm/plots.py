@@ -95,10 +95,10 @@ def create_vqe_plots(potential, base_path, cut_off_list, individual, converged_o
     print("Done")
 
 
-def create_vqd_plots(data, path, show=False):
+def create_vqd_plots(data, path, show=False, sort=True):
 
     num_VQD = data['num_VQD']
-    converged_energies = data['results']
+    converged_energies = np.sort(data['results']) if sort else data['results']
 
     transposed_energies = list(zip(*converged_energies))
     medians = [np.median(energies) for energies in transposed_energies]

@@ -128,14 +128,14 @@ def run_vqd(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, params_shap
 if __name__ == "__main__":
     
     potential_list = ["QHO"]#, "AHO", "DW"]
-    cut_offs_list = [2]
+    cut_offs_list = [16]
     shots = 1024
 
     for potential in potential_list:
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         #base_path = os.path.join("/users/johnkerf/SUSY/VQD/QM/Files", potential)
-        base_path = os.path.join(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQD\Differential Evolution\Files2", potential)
+        base_path = os.path.join(r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQD\Differential Evolution\Files", potential)
         os.makedirs(base_path, exist_ok=True)
 
         print(f"Running for {potential} potential")
@@ -160,18 +160,18 @@ if __name__ == "__main__":
             # Optimizer
             bounds = [(0, 2 * np.pi) for _ in range(np.prod(params_shape))]
 
-            num_vqd_runs = 2
+            num_vqd_runs = 1
             num_energy_levels = 2
             beta = 2.0
 
-            max_iter = 2
+            max_iter = 200
             strategy = "randtobest1bin"
             tol = 1e-3
             abs_tol = 1e-3
             popsize = 20
 
             # Start multiprocessing for VQE runs
-            with Pool(processes=2) as pool:
+            with Pool(processes=1) as pool:
                 vqd_results = pool.starmap(
                     run_vqd,
                     [
@@ -227,3 +227,5 @@ if __name__ == "__main__":
             path = os.path.join(base_path, "{}_{}.json".format(potential, cut_off))
             with open(path, "w") as json_file:
                 json.dump(run, json_file, indent=4)
+
+            print("Done")
