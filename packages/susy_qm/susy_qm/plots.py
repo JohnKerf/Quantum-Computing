@@ -113,7 +113,7 @@ def create_vqd_plots(data, path, show=False, sort=True):
     plt.xlabel("VQD Run")
     plt.ylabel("Energy")
     plt.title(f"{data['potential']}: Cutoff = {data['cutoff']}")
-    plt.xticks(range(1, num_VQD + 1))
+    #plt.xticks(range(1, num_VQD + 1))
     plt.legend()
     plt.tight_layout()
 
