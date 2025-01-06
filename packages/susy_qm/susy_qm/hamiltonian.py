@@ -4,7 +4,7 @@ import numpy as np
                            #p and q in HO basis
 #############################################################################
 
-def create_matrix(cut_off, type):
+def create_matrix(cut_off, type, m=1):
     # Initialize a zero matrix of the specified size
     matrix = np.zeros((cut_off, cut_off), dtype=np.complex128)
     
@@ -12,15 +12,15 @@ def create_matrix(cut_off, type):
     for i in range(cut_off):
         if i > 0:  # Fill left off-diagonal
             if type == 'q':
-                matrix[i][i - 1] = (1/np.sqrt(2)) * np.sqrt(i)  # sqrt(i) for left off-diagonal
+                matrix[i][i - 1] = (1/np.sqrt(2*m)) * np.sqrt(i)  # sqrt(i) for left off-diagonal
             else:
-                matrix[i][i - 1] = (1j/np.sqrt(2)) * np.sqrt(i)
+                matrix[i][i - 1] = (1j*np.sqrt(m/2)) * np.sqrt(i)
 
         if i < cut_off - 1:  # Fill right off-diagonal
             if type == 'q':
-                matrix[i][i + 1] = (1/np.sqrt(2)) * np.sqrt(i + 1)  # sqrt(i + 1) for right off-diagonal
+                matrix[i][i + 1] = (1/np.sqrt(2*m)) * np.sqrt(i + 1)  # sqrt(i + 1) for right off-diagonal
             else:
-                matrix[i][i + 1] = (-1j/np.sqrt(2)) * np.sqrt(i + 1)
+                matrix[i][i + 1] = (-1j*np.sqrt(m/2)) * np.sqrt(i + 1)
 
     return matrix
 
@@ -30,7 +30,7 @@ def create_matrix(cut_off, type):
 #############################################################################
     
 # Function to calculate the Hamiltonian
-def calculate_Hamiltonian(cut_off, potential):
+def calculate_Hamiltonian(cut_off, potential, m=1, g=1, u=1):
     # Generate the position (q) and momentum (p) matrices
     q = create_matrix(cut_off, 'q')  # q matrix
     p = create_matrix(cut_off, 'p')  # p matrix
@@ -47,16 +47,16 @@ def calculate_Hamiltonian(cut_off, potential):
 
     # Superpotential derivatives
     if potential == 'QHO':
-        W_prime = q  # W'(q) = q
-        W_double_prime = I_b #W''(q) = 1
+        W_prime = m*q  # W'(q) = mq
+        W_double_prime = m*I_b #W''(q) = m
 
     elif potential == 'AHO':
-        W_prime = q + q3  # W'(q) = q + q^3
-        W_double_prime = I_b + 3 * q2  # W''(q) = 1 + 3q^2
+        W_prime = m*q + g*q3  # W'(q) = mq + gq^3
+        W_double_prime = m*I_b + 3*g*q2  # W''(q) = m + 3gq^2
 
     elif potential == 'DW':
-        W_prime = q + q2 + I_b  # W'(q) = q + q^2 + 1
-        W_double_prime = I_b + 2 * q  # W''(q) = 1 + 2q
+        W_prime = m*q + g*q2 + g*u**2*I_b  # W'(q) = mq + gq^2 + gu^2
+        W_double_prime = m*I_b + 2*g*q  # W''(q) = m + 2gq
 
     else:
         print("Not a valid potential")
