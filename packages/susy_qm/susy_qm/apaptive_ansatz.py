@@ -93,7 +93,7 @@ class adaptive_ansatz:
         return energy
     
     
-    def run_adapt_vqe(self, num_steps, o_iters = 1000, o_tol=1e-6, con_tol=1e-4):
+    def run_adapt_vqe(self, num_steps=10, o_iters = 1000, o_tol=1e-6, con_tol=1e-4):
 
         print("Running ADAPT VQE")
 
@@ -145,9 +145,11 @@ class adaptive_ansatz:
         return op_list
         
         
-    def reduce_op_list(self, op_list):
+    def reduce_op_list(self, op_list=None):
 
         print("Reducing op list")
+
+        op_list = op_list if op_list is not None else self.op_list
 
         last_operator = {}
         reduced_op_list = []
@@ -188,8 +190,6 @@ class adaptive_ansatz:
 
     def construct_ansatz(self, params, reduced_op_list=None, type='expval', Hamiltonian=None, num_qubits=None):
 
-        print("Constructing ansatz")
-
         rol = reduced_op_list if reduced_op_list is not None else self.reduced_op_list
         H = Hamiltonian if Hamiltonian is not None else self.H
         nq = num_qubits if num_qubits is not None else self.num_qubits
@@ -214,8 +214,6 @@ class adaptive_ansatz:
                 return qml.expval(qml.Hermitian(H, wires=range(nq)))
             else:
                 return qml.state()
-            
-        print("Done")
 
         return ansatz
     
@@ -285,7 +283,10 @@ class adaptive_ansatz:
     def save_data(self, base_path):
 
         print("Saving data")
-        
+
+        params = np.random.uniform(0, 2 * np.pi, size=self.num_params)
+        fig, ax = qml.draw_mpl(self.construct_ansatz(params))()
+
         if self.type == 'qm':
 
             data = {"potential": self.potential,
@@ -298,6 +299,7 @@ class adaptive_ansatz:
                 "overlap": self.overlap,
                 "hellinger_fidelity": self.hellinger_fidelity}
 
+            base_path = os.path.join(base_path, self.potential)
             os.makedirs(base_path, exist_ok=True)
             path = os.path.join(base_path, "{}_{}.json".format(self.potential, self.cutoff))
 
@@ -307,6 +309,10 @@ class adaptive_ansatz:
                 json.dump(data, json_file, indent=4)
 
             print("Data saved")
+
+            print("Saving circuit image")
+            pic_path = os.path.join(base_path, "{}_{}_circuit_diagram.png".format(self.potential, self.cutoff))
+            fig.savefig(pic_path)
     
         elif self.type == 'wz':
 
@@ -338,7 +344,18 @@ class adaptive_ansatz:
             with open(path, 'w') as json_file:
                 json.dump(data, json_file, indent=4)
 
-            print("Data saved")
+            print("Saving circuit image")
+            pic_path = os.path.join(base_path, "{}_{}_circuit_diagram.png".format(self.potential, self.cutoff))
+            fig.savefig(pic_path)
+
+        print("Data saved")
+        
+
+    def run_all(self, path):
+        self.run_adapt_vqe()
+        self.reduce_op_list()
+        self.run_overlap_test()
+        self.save_data(path)
 
         
         
