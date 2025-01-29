@@ -39,6 +39,11 @@ class adaptive_ansatz:
         self.num_qubits = hamiltonian.num_qubits
         self.num_params = 0
 
+        eigenvalues, eigenvectors = np.linalg.eig(self.H)
+        min_index = np.argmin(eigenvalues)
+        self.min_eigenvalue = eigenvalues[min_index]
+        self.min_eigenvector = eigenvectors[:, min_index]
+
         cnot_pool = []
         cz_pool = []
 
@@ -90,6 +95,8 @@ class adaptive_ansatz:
     
     def run_adapt_vqe(self, num_steps, o_iters = 1000, o_tol=1e-6, con_tol=1e-4):
 
+        print("Running ADAPT VQE")
+
         self.num_steps = num_steps
 
         x0 = np.random.uniform(0, 2 * np.pi, size=3)
@@ -133,10 +140,14 @@ class adaptive_ansatz:
 
         self.op_list = op_list
 
+        print("Done")
+
         return op_list
         
         
     def reduce_op_list(self, op_list):
+
+        print("Reducing op list")
 
         last_operator = {}
         reduced_op_list = []
@@ -169,22 +180,27 @@ class adaptive_ansatz:
         self.num_params = num_params
         self.reduced_op_list = reduced_op_list
 
+        print("Done")
+
         return reduced_op_list
     
 
 
-    def construct_ansatz(self, reduced_op_list, params, Hamiltonian=None, num_qubits=None):
+    def construct_ansatz(self, params, reduced_op_list=None, type='expval', Hamiltonian=None, num_qubits=None):
 
+        print("Constructing ansatz")
+
+        rol = reduced_op_list if reduced_op_list is not None else self.reduced_op_list
         H = Hamiltonian if Hamiltonian is not None else self.H
         nq = num_qubits if num_qubits is not None else self.num_qubits
 
-        dev = qml.device("default.qubit", wires=num_qubits)
+        dev = qml.device("default.qubit", wires=nq)
         @qml.qnode(dev)
         def ansatz():
 
             params_index = 0
 
-            for o, w in reduced_op_list:
+            for o, w in rol:
                 if o == "CNOT":
                     qml.CNOT(wires=w)
                 elif o == "CZ":
@@ -194,10 +210,78 @@ class adaptive_ansatz:
                     qml.Rot(*params[params_index:(params_index + num_gate_params)], wires=w)
                     params_index = params_index + num_gate_params
 
-            return qml.expval(qml.Hermitian(H, wires=range(nq)))
+            if type == 'expval':
+                return qml.expval(qml.Hermitian(H, wires=range(nq)))
+            else:
+                return qml.state()
+            
+        print("Done")
 
         return ansatz
     
+
+        
+    def run_overlap_test(self, reduced_op_list=None,  min_eigenvector=None, num_params=None, o_iters = 10000, o_tol=1e-8):
+
+        print("Running overlap test")
+
+        nump = num_params if num_params is not None else self.num_params
+        me = min_eigenvector if min_eigenvector is not None else self.min_eigenvector
+
+        def overlap_function(params, type):
+
+            params = pnp.tensor(params, requires_grad=True)
+            ansatz_state = self.construct_ansatz(params, reduced_op_list, type='state')()
+            
+            if type == 'overlap':
+                overlap = np.vdot(me, ansatz_state)
+                cost = np.abs(overlap)**2  
+            
+            else:
+                min_eigenvector_prob = np.abs(me)**2
+                ansatz_prob = np.abs(ansatz_state)**2
+                cost = np.sum(np.sqrt(min_eigenvector_prob * ansatz_prob))
+
+            return (1 - cost)
+
+
+        x0 = np.random.uniform(0, 2 * np.pi, size=nump)
+
+        print("Running for overlap")
+
+        overlap_res = minimize(
+            overlap_function,
+            x0,
+            args=('overlap'),
+            method= "COBYLA",
+            options= {'maxiter':o_iters, 'tol': o_tol}
+        )
+
+        overlap = overlap_res.fun
+        self.overlap = overlap
+
+        print(f"Overlap: {overlap}")
+
+        print("Running for hellinger")
+
+        hellinger_res = minimize(
+            overlap_function,
+            x0,
+            args=('hellinger'),
+            method= "COBYLA",
+            options= {'maxiter':o_iters, 'tol': o_tol}
+        )
+
+        hellinger_fidelity = hellinger_res.fun
+        self.hellinger_fidelity = hellinger_fidelity
+
+        print(f"Hellinger fidelity: {hellinger_fidelity}")
+
+        print("Done")
+
+        return overlap, hellinger_fidelity
+
+
     def save_data(self, base_path):
 
         print("Saving data")
@@ -210,7 +294,9 @@ class adaptive_ansatz:
                 "num steps": self.num_steps,
                 "op_list": [str(x) for x in self.op_list],
                 "reduced_op_list": self.reduced_op_list,
-                "num_params": self.num_params}
+                "num_params": self.num_params,
+                "overlap": self.overlap,
+                "hellinger_fidelity": self.hellinger_fidelity}
 
             os.makedirs(base_path, exist_ok=True)
             path = os.path.join(base_path, "{}_{}.json".format(self.potential, self.cutoff))
@@ -234,7 +320,9 @@ class adaptive_ansatz:
                 "num steps": self.num_steps,
                 "op_list": [str(x) for x in self.op_list],
                 "reduced_op_list": self.reduced_op_list,
-                "num_params": self.num_params}
+                "num_params": self.num_params,
+                "overlap": self.overlap,
+                "hellinger_fidelity": self.hellinger_fidelity}
 
             if self.potential == 'quadratic':
                 folder = 'C' + str(abs(self.c)) + '/' + 'N'+ str(self.N)
