@@ -173,9 +173,12 @@ class adaptive_ansatz:
     
 
 
-    def construct_ansatz(self, reduced_op_list, params):
+    def construct_ansatz(self, reduced_op_list, params, Hamiltonian=None, num_qubits=None):
 
-        dev = qml.device("default.qubit", wires=self.num_qubits)
+        H = Hamiltonian if Hamiltonian is not None else self.H
+        nq = num_qubits if num_qubits is not None else self.num_qubits
+
+        dev = qml.device("default.qubit", wires=num_qubits)
         @qml.qnode(dev)
         def ansatz():
 
@@ -191,7 +194,7 @@ class adaptive_ansatz:
                     qml.Rot(*params[params_index:(params_index + num_gate_params)], wires=w)
                     params_index = params_index + num_gate_params
 
-            return qml.expval(qml.Hermitian(self.H, wires=range(self.num_qubits)))
+            return qml.expval(qml.Hermitian(H, wires=range(nq)))
 
         return ansatz
     
