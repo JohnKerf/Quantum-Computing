@@ -12,12 +12,16 @@ from susy_qm import calculate_Hamiltonian, calculate_wz_hamiltonian
 
 from scipy.optimize import minimize
 
+import os
+import json
+
 class adaptive_ansatz:
 
     def __init__(self, potential, cutoff, type='qm', include_cnot=False, **kwargs):
         
         self.potential = potential
         self.cutoff = cutoff
+        self.type = type
 
         if type == 'qm':
             self.H = calculate_Hamiltonian(cutoff, potential)
@@ -86,6 +90,8 @@ class adaptive_ansatz:
     
     def run_adapt_vqe(self, num_steps, o_iters = 1000, o_tol=1e-6, con_tol=1e-4):
 
+        self.num_steps = num_steps
+
         x0 = np.random.uniform(0, 2 * np.pi, size=3)
 
         op_list = []
@@ -125,6 +131,8 @@ class adaptive_ansatz:
 
             op_list.append((min_op, min_params, min_wires, min_energy))
 
+        self.op_list = op_list
+
         return op_list
         
         
@@ -159,6 +167,7 @@ class adaptive_ansatz:
                 num_params = num_params + 3
 
         self.num_params = num_params
+        self.reduced_op_list = reduced_op_list
 
         return reduced_op_list
     
@@ -186,6 +195,62 @@ class adaptive_ansatz:
 
         return ansatz
     
+    def save_data(self, base_path):
+
+        print("Saving data")
+        
+        if self.type == 'qm':
+
+            data = {"potential": self.potential,
+                "cutoff": self.cutoff,
+                "optimizer": "COBYLA",
+                "num steps": self.num_steps,
+                "op_list": [str(x) for x in self.op_list],
+                "reduced_op_list": self.reduced_op_list,
+                "num_params": self.num_params}
+
+            os.makedirs(base_path, exist_ok=True)
+            path = os.path.join(base_path, "{}_{}.json".format(self.potential, self.cutoff))
+
+            print(f"Saving to: {path}")
+
+            with open(path, 'w') as json_file:
+                json.dump(data, json_file, indent=4)
+
+            print("Data saved")
+    
+        elif self.type == 'wz':
+
+            data = {"potential": self.potential,
+                "cutoff": self.cutoff,
+                "bc": self.bc,
+                'N': self.N,
+                'a': self.a,
+                'c': None if self.potential == "linear" else self.c,
+                "optimizer": "COBYLA",
+                "num steps": self.num_steps,
+                "op_list": [str(x) for x in self.op_list],
+                "reduced_op_list": self.reduced_op_list,
+                "num_params": self.num_params}
+
+            if self.potential == 'quadratic':
+                folder = 'C' + str(abs(self.c)) + '/' + 'N'+ str(self.N)
+            else:
+                folder = 'N'+ str(self.N)
+
+            base_path = os.path.join(base_path, self.bc, self.potential, folder)
+            os.makedirs(base_path, exist_ok=True)
+            path = os.path.join(base_path, "{}_{}.json".format(self.potential, self.cutoff))
+
+            print(f"Saving to: {path}")
+
+            with open(path, 'w') as json_file:
+                json.dump(data, json_file, indent=4)
+
+            print("Data saved")
+
+        
+        
     
 
         
