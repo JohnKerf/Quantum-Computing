@@ -8,17 +8,29 @@ import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
 # custom module
-from susy_qm import calculate_Hamiltonian
+from susy_qm import calculate_Hamiltonian, calculate_wz_hamiltonian
 
 from scipy.optimize import minimize
 
-class qm_ansatz:
+class adaptive_ansatz:
 
-    def __init__(self, potential, cutoff, include_cnot=False):
+    def __init__(self, potential, cutoff, type='qm', include_cnot=False, **kwargs):
         
         self.potential = potential
         self.cutoff = cutoff
-        self.H = calculate_Hamiltonian(self.cutoff, self.potential)
+
+        if type == 'qm':
+            self.H = calculate_Hamiltonian(cutoff, potential)
+
+        elif type == 'wz':
+
+            self.N = kwargs.get("N") 
+            self.a = kwargs.get("a")
+            self.c = kwargs.get("c")
+            self.bc = kwargs.get("bc")
+
+            self.H = calculate_wz_hamiltonian(cutoff, self.N, self.a, potential, self.bc, self.c)
+
         hamiltonian = SparsePauliOp.from_operator(self.H)
         self.num_qubits = hamiltonian.num_qubits
         self.num_params = 0
