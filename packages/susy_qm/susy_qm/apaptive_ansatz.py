@@ -42,8 +42,8 @@ class adaptive_ansatz:
         eigenvalues, eigenvectors = np.linalg.eig(self.H)
         min_index = np.argmin(eigenvalues)
         self.min_eigenvalue = eigenvalues[min_index]
-        self.min_eigenvector = eigenvectors[:, min_index]
-
+        self.min_eigenvector = np.asarray(eigenvectors[:, min_index])
+       
         cnot_pool = []
         cz_pool = []
 
@@ -93,7 +93,7 @@ class adaptive_ansatz:
         return energy
     
     
-    def run_adapt_vqe(self, num_steps=10, o_iters = 1000, o_tol=1e-6, con_tol=1e-4):
+    def run_adapt_vqe(self, num_steps=10, o_iters = 1000, o_tol=1e-6, con_tol=1e-6):
 
         print("Running ADAPT VQE")
 
@@ -131,7 +131,7 @@ class adaptive_ansatz:
             min_wires = self.operator_pool[min_arg].wires
             min_params = e_params[min_arg]
 
-            if (i != 0):
+            if ((self.type == 'qm') & (i != 0)) | ((self.type == 'wz') & (i > 15)):
                 if np.abs(min_energy - op_list[i-1][3]) < con_tol:
                     print("Converged")
                     break
