@@ -17,11 +17,12 @@ import json
 
 class adaptive_ansatz:
 
-    def __init__(self, potential, cutoff, type='qm', include_cnot=False, **kwargs):
+    def __init__(self, potential, cutoff, num_steps=10, type='qm', include_cnot=False, **kwargs):
         
         self.potential = potential
         self.cutoff = cutoff
         self.type = type
+        self.num_steps = num_steps
 
         if type == 'qm':
             self.H = calculate_Hamiltonian(cutoff, potential)
@@ -93,11 +94,10 @@ class adaptive_ansatz:
         return energy
     
     
-    def run_adapt_vqe(self, num_steps=10, o_iters = 1000, o_tol=1e-6, con_tol=1e-6):
+    def run_adapt_vqe(self, num_steps=None, o_iters = 1000, o_tol=1e-6, con_tol=1e-6):
 
         print("Running ADAPT VQE")
-
-        self.num_steps = num_steps
+        num_steps = num_steps if num_steps is not None else self.num_steps
 
         x0 = np.random.uniform(0, 2 * np.pi, size=3)
 
