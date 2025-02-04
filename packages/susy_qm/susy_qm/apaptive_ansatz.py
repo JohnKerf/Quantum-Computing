@@ -136,7 +136,12 @@ class adaptive_ansatz:
                     print("Converged")
                     break
 
-            op_list.append((min_op, min_params, min_wires, min_energy))
+            if (i == 0):
+                op_list.append((min_op, min_params, min_wires, min_energy))
+
+            elif (i != 0) & (min_energy <= op_list[-1][3]):
+                op_list.append((min_op, min_params, min_wires, min_energy))
+
 
         self.op_list = op_list
 
