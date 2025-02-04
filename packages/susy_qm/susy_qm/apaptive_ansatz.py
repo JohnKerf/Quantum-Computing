@@ -238,7 +238,7 @@ class adaptive_ansatz:
             else:
                 min_eigenvector_prob = np.abs(me)**2
                 ansatz_prob = np.abs(ansatz_state)**2
-                cost = np.sum(np.sqrt(min_eigenvector_prob * ansatz_prob))
+                cost = np.sum(np.sqrt(np.vdot(min_eigenvector_prob , ansatz_prob)))
 
             return (1 - cost)
 
@@ -285,7 +285,7 @@ class adaptive_ansatz:
         print("Saving data")
 
         params = np.random.uniform(0, 2 * np.pi, size=self.num_params)
-        fig, ax = qml.draw_mpl(self.construct_ansatz(params))()
+        fig, ax = qml.draw_mpl(self.construct_ansatz(params), style='default')()
 
         if self.type == 'qm':
 
