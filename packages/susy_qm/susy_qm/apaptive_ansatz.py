@@ -132,7 +132,7 @@ class adaptive_ansatz:
             min_params = e_params[min_arg]
 
             if ((self.type == 'qm') & (i != 0)) | ((self.type == 'wz') & (i > 15)):
-                if np.abs(min_energy - op_list[i-1][3]) < con_tol:
+                if np.abs(min_energy - op_list[-1][3]) < con_tol:
                     print("Converged")
                     break
 
