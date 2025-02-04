@@ -2,23 +2,18 @@
     "potential": "DW",
     "cutoff": 32,
     "optimizer": "COBYLA",
-    "num steps": 20,
+    "num steps": 10,
     "op_list": [
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([7.28700815, 5.32786757, 6.28318602]), Wires([5]), np.float64(1.0939110867568667))",
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([7.03500979, 6.24379281, 3.39580508]), Wires([4]), np.float64(1.0921056132490827))",
-        "(<class 'pennylane.ops.op_math.controlled_ops.CZ'>, array([6.05416946, 5.00568563, 3.9000874 ]), Wires([5, 4]), np.float64(1.0550434453672102))",
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([6.80161854, 6.24379399, 5.789821  ]), Wires([5]), np.float64(1.053063974379585))",
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([6.61087289, 6.29246983, 5.71315435]), Wires([4]), np.float64(1.0513295217118799))",
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([5.76762583, 6.26551652, 5.30583735]), Wires([3]), np.float64(1.0502352075450263))",
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([6.92660867, 6.27823212, 5.63151049]), Wires([5]), np.float64(1.0500964792170921))",
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([7.35559379, 6.29146237, 5.16562861]), Wires([4]), np.float64(1.04992526228532))",
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([6.6941019 , 6.28163203, 5.86472051]), Wires([5]), np.float64(1.0498533596567035))",
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([7.40238344, 6.28808667, 5.15757087]), Wires([4]), np.float64(1.0498210317694334))",
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([6.92502063, 6.28275645, 5.6378276 ]), Wires([5]), np.float64(1.0498060318003666))",
-        "(<class 'pennylane.ops.op_math.controlled_ops.CZ'>, array([6.05416946, 5.00568563, 3.9000874 ]), Wires([3, 4]), np.float64(1.0497942738285047))",
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([7.41280668, 6.28542253, 5.15063351]), Wires([4]), np.float64(1.0497875827626673))",
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([6.82169169, 6.2828792 , 5.74311201]), Wires([5]), np.float64(1.0497844311569424))",
-        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([7.41024818, 6.28427435, 5.15470594]), Wires([4]), np.float64(1.04978284905661))"
+        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([3.97890002, 5.32786896, 6.28318615]), Wires([5]), np.float64(1.0939110867552917))",
+        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([5.27304771, 6.32277614, 6.51645567]), Wires([4]), np.float64(1.0920867512535972))",
+        "(<class 'pennylane.ops.op_math.controlled_ops.CZ'>, array([4.00617089, 5.03116315, 5.82056147]), Wires([4, 5]), np.float64(1.0546427834941907))",
+        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([4.82827269, 6.07871989, 7.60479112]), Wires([5]), np.float64(1.051104531230887))",
+        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([4.93868244, 6.25620584, 6.08894979]), Wires([3]), np.float64(1.0485507363154196))",
+        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([5.89783119, 6.31345854, 6.63638005]), Wires([4]), np.float64(1.0475140488030925))",
+        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([3.97905062, 6.23331297, 6.89259965]), Wires([3]), np.float64(1.0471739425068791))",
+        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([4.71822293, 6.32719022, 7.88385226]), Wires([5]), np.float64(1.0470652874772048))",
+        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([5.00940569, 6.28519182, 5.83330706]), Wires([2]), np.float64(1.047016486454379))",
+        "(<class 'pennylane.ops.qubit.parametric_ops_single_qubit.Rot'>, array([5.4862694 , 6.28655616, 7.05930127]), Wires([4]), np.float64(1.04699640761993))"
     ],
     "reduced_op_list": [
         [
@@ -36,8 +31,8 @@
         [
             "CZ",
             [
-                5,
-                4
+                4,
+                5
             ]
         ],
         [
@@ -49,30 +44,23 @@
         [
             "Rot",
             [
-                4
-            ]
-        ],
-        [
-            "Rot",
-            [
                 3
             ]
         ],
         [
-            "CZ",
+            "Rot",
             [
-                3,
                 4
             ]
         ],
         [
             "Rot",
             [
-                4
+                2
             ]
         ]
     ],
     "num_params": 18,
-    "overlap": 0.0016922809098798286,
-    "hellinger_fidelity": 0.0005018267381865504
+    "overlap": 0.0020627184660316766,
+    "hellinger_fidelity": 0.0006304665930992881
 }
