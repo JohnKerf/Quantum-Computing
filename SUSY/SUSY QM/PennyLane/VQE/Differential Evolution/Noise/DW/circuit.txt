@@ -1,0 +1,5 @@
+@qml.qnode(dev)
+    def circuit(params):
+        params = pnp.tensor(params.reshape(params_shape), requires_grad=True)
+        qml.StronglyEntanglingLayers(weights=params, wires=np.arange(num_qubits-3, num_qubits), imprimitive=qml.CZ)
+        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
