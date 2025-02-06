@@ -54,10 +54,8 @@ class adaptive_ansatz:
                         cnot_pool.append(qml.CNOT(wires=[control, target]))
                         cz_pool.append(qml.CZ(wires=[control, target]))
 
-        RY_pool = [qml.RY(0.0, wires=x) for x in range(self.num_qubits)]
-        RZ_pool = [qml.RZ(0.0, wires=x) for x in range(self.num_qubits)]
-        RX_pool = [qml.RX(0.0, wires=x) for x in range(self.num_qubits)]
-        self.operator_pool = cz_pool + RY_pool + RZ_pool + RX_pool
+        rot_pool = [qml.Rot(0.0, 0.0, 0.0, wires=x) for x in range(self.num_qubits)]
+        self.operator_pool = rot_pool +  cz_pool
         if include_cnot: self.operator_pool += cnot_pool
 
 
@@ -81,7 +79,7 @@ class adaptive_ansatz:
             if (type(trial_op) == qml.CNOT) | (type(trial_op) == qml.CZ):
                 op(wires=trial_op.wires)
             else:
-                op(params, wires=trial_op.wires)
+                op(*params, wires=trial_op.wires)
 
             return qml.expval(qml.Hermitian(self.H, wires=range(self.num_qubits)))
         
@@ -101,7 +99,7 @@ class adaptive_ansatz:
         print("Running ADAPT VQE")
         num_steps = num_steps if num_steps is not None else self.num_steps
 
-        x0 = np.random.rand()*np.pi*2
+        x0 = np.random.uniform(0, 2 * np.pi, size=3)
 
         op_list = []
 
@@ -164,11 +162,6 @@ class adaptive_ansatz:
 
         for o, p, w, _ in op_list:
 
-            if w[0] in last_operator.keys():
-                if last_operator[w[0]] == o:
-                    print("Operator already added previously... skipping")
-                    continue
-
             if o == qml.CNOT:
                 last_operator[w[0]] = o
                 last_operator[w[1]] = o
@@ -179,20 +172,17 @@ class adaptive_ansatz:
                 last_operator[w[1]] = o
                 reduced_op_list.append(("CZ",w.tolist()))
 
-            elif o == qml.RY:
+            elif w[0] in last_operator.keys():
+                if last_operator[w[0]] == o:
+                    continue
+                else:
+                    last_operator[w[0]] = o
+                    reduced_op_list.append(("Rot",w.tolist()))
+                    num_params = num_params + 3
+            else:
                 last_operator[w[0]] = o
-                reduced_op_list.append(("RY",w.tolist()))
-                num_params+=1
-
-            elif o == qml.RZ:
-                last_operator[w[0]] = o
-                reduced_op_list.append(("RZ",w.tolist()))
-                num_params+=1
-
-            elif o == qml.RX:
-                last_operator[w[0]] = o
-                reduced_op_list.append(("RX",w.tolist()))
-                num_params+=1
+                reduced_op_list.append(("Rot",w.tolist()))
+                num_params = num_params + 3
 
         self.num_params = num_params
         self.reduced_op_list = reduced_op_list
@@ -220,15 +210,10 @@ class adaptive_ansatz:
                     qml.CNOT(wires=w)
                 elif o == "CZ":
                     qml.CZ(wires=w)
-                elif o == "RY":
-                    qml.RY(params[params_index], wires=w)
-                    params_index +=1
-                elif o == "RZ":
-                    qml.RZ(params[params_index], wires=w)
-                    params_index +=1
-                elif o == "RX":
-                    qml.RX(params[params_index], wires=w)
-                    params_index +=1
+                else:
+                    num_gate_params = qml.Rot.num_params
+                    qml.Rot(*params[params_index:(params_index + num_gate_params)], wires=w)
+                    params_index = params_index + num_gate_params
 
             if type == 'expval':
                 return qml.expval(qml.Hermitian(H, wires=range(nq)))
@@ -258,7 +243,7 @@ class adaptive_ansatz:
             else:
                 min_eigenvector_prob = np.abs(me)**2
                 ansatz_prob = np.abs(ansatz_state)**2
-                cost = np.sum(np.sqrt(min_eigenvector_prob * ansatz_prob))
+                cost = np.sum(np.sqrt(np.vdot(min_eigenvector_prob , ansatz_prob)))
 
             return (1 - cost)
 
