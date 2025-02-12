@@ -124,3 +124,57 @@ def create_vqd_plots(data, path, show=False, sort=True):
         plt.savefig(path + "\\results.png")
 
     print("Done")
+
+
+def create_wz_vqe_plots(data, save_path, converged_only=True):
+
+    # Remove data that didnt converge if required
+    if converged_only:
+        successful_indices = [i for i, success in enumerate(data['success']) if success]
+        results = [data['results'][i] for i in successful_indices]
+    else:
+        results = data['results']
+
+    if len(results) == 0:
+        print("No data to plot")
+        return
+
+    cutoff = data['cutoff']
+    potential = data['potential']
+    num_sites = data['N']
+    c = data['c']
+    bc = data['boundary_condition']
+
+    exact = np.min(data['exact_eigenvalues'])
+    x_values = range(len(results))
+
+    # Calculating statistics
+    mean_value = np.mean(results)
+    median_value = np.median(results)
+    min_value = np.min(results)
+
+    plt.figure(figsize=(15,10))
+    plt.plot(x_values, results, marker='o', label='Energy Results')
+
+    # Plot mean, median, min and exact lines
+    plt.axhline(y=mean_value, color='r', linestyle='--', label=f'Mean = {mean_value:.8f}')
+    plt.axhline(y=median_value, color='g', linestyle='-', label=f'Median = {median_value:.8f}')
+    plt.axhline(y=min_value, color='b', linestyle='-.', label=f'Min = {min_value:.8f}')
+    plt.axhline(y=exact, color='orange', linestyle=':', label=f'Exact = {exact:.8f}')
+
+    #plt.ylim(min_value - 0.01, max(results) + 0.01)
+    plt.xlabel('Run')
+    plt.ylabel('Ground State Energy')
+
+    if potential == 'quadratic':
+        title = f"BC={bc}, Potential={potential}, c={c}, N={num_sites}, Cutoff={cutoff}"
+    else:
+        title = f"BC={bc}, Potential={potential}, N={num_sites}, Cutoff={cutoff}"
+
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+
+    print(f"Saving individual plot for {title}")# to {save_path}")
+    plt.savefig(save_path)
+    print("Done")
