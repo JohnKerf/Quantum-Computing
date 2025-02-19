@@ -1,0 +1,48 @@
+{
+    "starttime": "2025-02-19 11:08:36.545750",
+    "potential": "QHO",
+    "cutoff": 2,
+    "exact_eigenvalues": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+    ],
+    "ansatz": "StronglyEntanglingLayers-1layer",
+    "num_VQE": 1,
+    "shots": 2,
+    "Optimizer": {
+        "name": "differential_evolution",
+        "bounds": "[(0, 2 * np.pi) for _ in range(np.prod(params_shape))]",
+        "maxiter": 5,
+        "tolerance": 0.001,
+        "abs_tolerance": 0.001,
+        "strategy": "randtobest1bin",
+        "popsize": 5,
+        "init": "scaled_samples"
+    },
+    "results": [
+        0.0
+    ],
+    "params": [
+        [
+            3.42194092263666
+        ]
+    ],
+    "num_iters": [
+        1
+    ],
+    "num_evaluations": [
+        12
+    ],
+    "success": [
+        true
+    ],
+    "run_times": [
+        "0:03:19.064977"
+    ],
+    "parallel_run_time": "0:03:19.962831",
+    "total_VQE_time": "0:03:19.064977",
+    "total_device_time": "0:00:00.000438",
+    "Backend": "ibm_brisbane"
+}
