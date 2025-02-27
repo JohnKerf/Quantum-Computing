@@ -252,7 +252,7 @@ if __name__ == "__main__":
             num_vqd_runs = 1
             num_energy_levels = 3
             beta = 2.0
-            num_swap_tests = 20
+            num_swap_tests = 10
 
             max_iter = 5000
             strategy = "randtobest1bin"
