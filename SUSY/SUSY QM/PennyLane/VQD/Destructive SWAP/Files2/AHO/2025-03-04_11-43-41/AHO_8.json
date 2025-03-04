@@ -1,0 +1,94 @@
+{
+    "starttime": "2025-03-04_11-43-41",
+    "potential": "AHO",
+    "cutoff": 8,
+    "exact_eigenvalues": [
+        0.03201011000923872,
+        1.6801555245826092,
+        1.8335255754908437,
+        3.963373907862431,
+        4.009854623022743,
+        4.03692369084855,
+        8.262093942430313,
+        8.77647491444727,
+        42.528080920192565,
+        43.433335360060745,
+        55.30668959932601,
+        56.20632585135716,
+        381.87853888129405,
+        382.8212806220672,
+        408.644292767395,
+        409.5870437096132
+    ],
+    "ansatz": "StronglyEntanglingLayers-1layer",
+    "num_VQD": 2,
+    "num_energy_levels": 1,
+    "num_swap_tests": 30,
+    "beta": 2.0,
+    "shots": 1024,
+    "Optimizer": {
+        "name": "differential_evolution",
+        "bounds": "[(0, 2 * np.pi) for _ in range(np.prod(params_shape))]",
+        "maxiter": 500,
+        "tolerance": 0.01,
+        "abs_tolerance": 0.001,
+        "strategy": "randtobest1bin",
+        "popsize": 20,
+        "init": "scaled_samples"
+    },
+    "results": [
+        [
+            2.5303536692713218
+        ],
+        [
+            2.604391880693556
+        ]
+    ],
+    "params": [
+        [
+            [
+                6.122001447225857
+            ]
+        ],
+        [
+            [
+                6.158012508570476
+            ]
+        ]
+    ],
+    "num_iters": [
+        [
+            500
+        ],
+        [
+            500
+        ]
+    ],
+    "num_evaluations": [
+        [
+            10044
+        ],
+        [
+            10096
+        ]
+    ],
+    "success": [
+        [
+            false
+        ],
+        [
+            false
+        ]
+    ],
+    "run_times": [
+        "0:00:19.115073",
+        "0:00:19.150287"
+    ],
+    "seeds": [
+        31979460,
+        80404419
+    ],
+    "parallel_run_time": "0:00:23.325124",
+    "total_VQD_time": "0:00:38.265360",
+    "total_device_time": "0:00:02.640147"
+}

@@ -1,5 +1,4 @@
 import pennylane as qml
-from pennylane import numpy as pnp
 
 from scipy.optimize import differential_evolution
 from scipy.stats.qmc import Halton
@@ -21,31 +20,16 @@ def cost_function(params, prev_param_list, H, num_qubits, shots, beta, num_swap_
    
     dev = qml.device("default.qubit", wires=2*num_qubits, shots=shots)
 
-    def ansatz(params): 
-        qml.RY(params[0], wires=[0])
-
-    '''   
-    @qml.qnode(dev)
-    def ansatz(params):
-        param_index=0
-        for i in range(num_qubits):
-            qml.RY(params[param_index], wires=i)
-            param_index += 1
-        
-        # Apply entanglement
-        for j in range(1, num_qubits):
-            qml.CNOT(wires=[j - 1, j])
-
-        # Apply RY rotations
-        for k in range(num_qubits):
-            qml.RY(params[param_index], wires=k)
-            param_index += 1
-        
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
-    '''
-
     def ansatz(params, prev=False): 
+        if prev==True:
+            w = [num_qubits+1]
+        else:
+            w = [1]
+        qml.RY(params[0], wires=w)
+
+    ''' 
+
+    def ansatz(params, prev=False):
         param_index=0
         for i in range(num_qubits):
             if prev==True:
@@ -54,12 +38,45 @@ def cost_function(params, prev_param_list, H, num_qubits, shots, beta, num_swap_
                 wires=i
             qml.RY(params[param_index], wires=wires)
             param_index += 1
+        
+        # Apply entanglement
+        for j in range(1, num_qubits):
+            if prev==True:
+                wires = j+num_qubits
+            else:
+                wires=j
+            qml.CNOT(wires=[wires - 1, wires])
+
+        # Apply RY rotations
+        for k in range(num_qubits):
+            if prev==True:
+                wires = k+num_qubits
+            else:
+                wires=k
+            qml.RY(params[param_index], wires=wires)
+            param_index += 1    
+    '''
+
+    def ansatz(params, prev=False): 
+        param_index=0
+        for i in range(num_qubits-1):
+            if prev==True:
+                wires = i+num_qubits
+            else:
+                wires=i
+            qml.RY(params[param_index], wires=wires)
+            param_index += 1
+    
+        
 
     #Swap test to calculate overlap
     @qml.qnode(dev)
     def swap_test(params1, params2):
 
         start = datetime.now()
+        #basis_state = [1,0,0,0]
+        #bs = (basis_state + basis_state)
+        #qml.BasisState(bs, wires=range(2*num_qubits))
 
         ansatz(params1)
         ansatz(params2, prev=True)
@@ -116,7 +133,7 @@ def cost_function(params, prev_param_list, H, num_qubits, shots, beta, num_swap_
         return overlap#, overlap_time
     
     
-    def multi_swap_test(params, prev_params, num_swap_tests=10):
+    def multi_swap_test(params, prev_params):
 
         multi_swap_time = timedelta()
         
@@ -158,7 +175,7 @@ def run_vqd(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
     run_start = datetime.now()
 
     # Generate Halton sequence
-    num_dimensions = num_qubits
+    num_dimensions = 4#*num_qubits
     num_samples = popsize
     halton_sampler = Halton(d=num_dimensions, seed=seed)
     halton_samples = halton_sampler.random(n=num_samples)
@@ -220,7 +237,7 @@ def run_vqd(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
 
 if __name__ == "__main__":
     
-    potential_list = ["QHO"]#, "AHO", "DW"]
+    potential_list = ["AHO"]#, "AHO", "DW"]
     cut_offs_list = [16]
     shots = 1024
 
@@ -228,7 +245,7 @@ if __name__ == "__main__":
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         #base_path = os.path.join("/users/johnkerf/SUSY/VQD/QM/Files", potential)
-        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQD\Destructive SWAP\Files", potential, starttime)
+        base_path = os.path.join(r"C:\Users\johnkerf\Desktop\Quantum-Computing\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQD\Destructive SWAP\Files2", potential, starttime)
         os.makedirs(base_path, exist_ok=True)
 
         print(f"Running for {potential} potential")
@@ -247,21 +264,22 @@ if __name__ == "__main__":
             num_qubits = hamiltonian.num_qubits       
 
             # Optimizer
-            bounds = [(0, 2 * np.pi) for _ in range(num_qubits)]
+            bounds = [(0, 2 * np.pi) for _ in range(2*num_qubits)]
+            bounds = [(0, 2 * np.pi) for _ in range(4)]
 
-            num_vqd_runs = 1
+            num_vqd_runs = 2
             num_energy_levels = 3
             beta = 2.0
-            num_swap_tests = 10
+            num_swap_tests = 30
 
-            max_iter = 5000
+            max_iter = 500
             strategy = "randtobest1bin"
             tol = 1e-2
             abs_tol = 1e-3
             popsize = 20
 
             # Start multiprocessing for VQE runs
-            with Pool(processes=1) as pool:
+            with Pool(processes=2) as pool:
                 vqd_results = pool.starmap(
                     run_vqd,
                     [
