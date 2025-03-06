@@ -1,0 +1,26 @@
+def ansatz(params, prev=False):
+    param_index=0
+    for i in range(num_qubits):
+        if prev==True:
+            wires = i+num_qubits
+        else:
+            wires=i
+        qml.RY(params[param_index], wires=wires)
+        param_index += 1
+    
+    # Apply entanglement
+    for j in range(1, num_qubits):
+        if prev==True:
+            wires = j+num_qubits
+        else:
+            wires=j
+        qml.CNOT(wires=[wires - 1, wires])
+
+    # Apply RY rotations
+    for k in range(num_qubits):
+        if prev==True:
+            wires = k+num_qubits
+        else:
+            wires=k
+        qml.RY(params[param_index], wires=wires)
+        param_index += 1

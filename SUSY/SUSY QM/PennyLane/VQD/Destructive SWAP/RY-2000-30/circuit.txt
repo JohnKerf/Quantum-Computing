@@ -1,0 +1,9 @@
+def ansatz(params, prev=False): 
+    param_index=0
+    for i in range(num_qubits):
+        if prev==True:
+            wires = i+num_qubits
+        else:
+            wires=i
+        qml.RY(params[param_index], wires=wires)
+        param_index += 1
