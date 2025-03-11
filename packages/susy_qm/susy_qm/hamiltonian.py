@@ -98,7 +98,7 @@ def kron_tensor(size, site, total_sites, operator):
     return reduce(kron, operators) 
 
 
-def calculate_wz_hamiltonian(cutoff, N, a, potential, boundary_condition, c=0):
+def calculate_wz_hamiltonian(cutoff, N, a, potential, boundary_condition, c=0, to_dense=True):
 
     I_b = eye(cutoff ** N, format='coo')
     I_f = eye(2 ** N, format='coo')
@@ -190,7 +190,8 @@ def calculate_wz_hamiltonian(cutoff, N, a, potential, boundary_condition, c=0):
         H_f += (fermion_hopping)
 
     H = kron(H_b, I_f, format='coo') + kron(I_b, H_f, format='coo') + H_bi
-
-    return H.todense()
+    if to_dense: H = H.todense()
+    
+    return H
    
    
