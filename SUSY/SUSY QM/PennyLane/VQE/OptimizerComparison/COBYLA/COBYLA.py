@@ -80,7 +80,7 @@ if __name__ == "__main__":
     
     potential_list = ["DW"]
     cut_offs_list = [16]
-    shots = None
+    shots = 2
 
     for potential in potential_list:
 

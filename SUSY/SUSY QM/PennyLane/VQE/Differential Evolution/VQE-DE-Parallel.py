@@ -22,13 +22,22 @@ def cost_function(params, H, params_shape, num_qubits, shots):
     dev = qml.device("default.qubit", wires=num_qubits, shots=shots)
 
     start = datetime.now()
-
+    '''
     @qml.qnode(dev)
     def circuit(params):
         params = pnp.tensor(params.reshape(params_shape), requires_grad=True)
         qml.StronglyEntanglingLayers(weights=params, wires=range(num_qubits), imprimitive=qml.CZ)
         return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-    
+    '''
+
+    @qml.qnode(dev)
+    def circuit(params):
+        
+        qml.RY(params[0], wires=[4])
+        #qml.RY(params[1], wires=[num_qubits-2])
+
+        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))  
+
     end = datetime.now()
     device_time = (end - start)
 
@@ -42,7 +51,7 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, params_shap
     run_start = datetime.now()
 
     # Generate Halton sequence
-    num_dimensions = np.prod(params_shape)
+    num_dimensions = 1#np.prod(params_shape)
     num_samples = popsize
     halton_sampler = Halton(d=num_dimensions, seed=seed)
     halton_samples = halton_sampler.random(n=num_samples)
@@ -86,16 +95,16 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, params_shap
 
 if __name__ == "__main__":
     
-    potential_list = ["QHO"]#, "AHO", "DW"]
-    cut_offs_list = [2]#, 4, 8, 16]
-    shots = 1024
+    potential_list = ["DW"]
+    cut_offs_list = [16]#, 4, 8, 16]
+    shots = 256
 
     for potential in potential_list:
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         folder = str(starttime)
         #base_path = os.path.join("/users/johnkerf/SUSY/VQE/QM/Files", potential)
-        base_path = r"C:\Users\Johnk\OneDrive\Desktop\PhD 2024\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\Differential Evolution\Files\{}\\{}\\".format(potential, folder)
+        base_path = r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\Differential Evolution\StronglyEntanglingLayers\test\{}\\{}\\".format(potential, folder)
         os.makedirs(base_path, exist_ok=True)
 
         print(f"Running for {potential} potential")
@@ -119,8 +128,9 @@ if __name__ == "__main__":
 
             # Optimizer
             bounds = [(0, 2 * np.pi) for _ in range(np.prod(params_shape))]
+            bounds = [(0, 2 * np.pi) for _ in range(1)]
 
-            num_vqe_runs = 1
+            num_vqe_runs = 8
             max_iter = 10000
             strategy = "randtobest1bin"
             tol = 1e-3
@@ -128,7 +138,7 @@ if __name__ == "__main__":
             popsize = 20
 
             # Start multiprocessing for VQE runs
-            with Pool(processes=1) as pool:
+            with Pool(processes=8) as pool:
                 vqe_results = pool.starmap(
                     run_vqe,
                     [
