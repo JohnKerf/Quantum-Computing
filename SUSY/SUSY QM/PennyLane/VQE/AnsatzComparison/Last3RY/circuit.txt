@@ -1,0 +1,8 @@
+@qml.qnode(dev)
+def circuit(params):
+    param_index=0
+    for i in range(num_qubits-3, num_qubits):
+        qml.RY(params[param_index], wires=i)
+        param_index += 1
+
+    return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
