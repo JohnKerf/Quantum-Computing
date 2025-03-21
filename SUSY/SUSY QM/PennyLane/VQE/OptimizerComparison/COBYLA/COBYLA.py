@@ -27,8 +27,17 @@ def cost_function(params, H, num_qubits, shots):
         for i in range(num_qubits):
             qml.RY(params[param_index], wires=i)
             param_index += 1
-            
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))  
+
+        # Apply entanglement
+        for j in reversed(range(1, num_qubits)):
+            qml.CNOT(wires=[j, j-1])
+
+        # Apply RY rotations
+        for k in range(num_qubits):
+            qml.RY(params[param_index], wires=k)
+            param_index += 1
+        
+        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
 
     
     end = datetime.now()
@@ -45,7 +54,7 @@ def run_vqe(i, max_iter, tol, H, num_qubits, shots):
 
     # Optimizer
     np.random.seed(seed)
-    x0 = np.random.random(size=num_qubits)*2*np.pi
+    x0 = np.random.random(size=2*num_qubits)*2*np.pi
 
     device_time = timedelta()
 
@@ -80,7 +89,7 @@ if __name__ == "__main__":
     
     potential_list = ["DW"]
     cut_offs_list = [16]
-    shots = 2
+    shots = 1024
 
     for potential in potential_list:
 

@@ -47,18 +47,11 @@ def cost_function(params, H, num_qubits, shots):
     return circuit(params), device_time
 
 
-def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, shots):
+def run_vqe(i, bounds, max_iter, H, num_qubits, shots):
 
     # We need to generate a random seed for each process otherwise each parallelised run will have the same result
     seed = (os.getpid() * int(time.time())) % 123456789
     run_start = datetime.now()
-
-    # Generate Halton sequence
-    num_dimensions = 2*num_qubits
-    num_samples = popsize
-    halton_sampler = Halton(d=num_dimensions, seed=seed)
-    halton_samples = halton_sampler.random(n=num_samples)
-    scaled_samples = 2 * np.pi * halton_samples
 
     device_time = timedelta()
 
@@ -73,11 +66,6 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
         wrapped_cost_function,
         bounds,
         maxiter=max_iter,
-        tol=tol,
-        atol=abs_tol,
-        strategy=strategy,
-        popsize=popsize,
-        init=scaled_samples,
         seed=seed
     )
 
@@ -100,12 +88,12 @@ if __name__ == "__main__":
     
     potential_list = ["DW"]
     cut_offs_list = [16]
-    shots = None
+    shots = 1024
 
     for potential in potential_list:
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\OptimizerComparison\DifferentialEvolutionTuned", potential, str(shots))
+        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\OptimizerComparison\DifferentialEvolutionUntuned", potential, str(shots))
         os.makedirs(base_path, exist_ok=True)
 
         print(f"Running for {potential} potential")
@@ -128,17 +116,13 @@ if __name__ == "__main__":
 
             num_vqe_runs = 40
             max_iter = 10000
-            strategy = "randtobest1bin"
-            tol = 1e-3
-            abs_tol = 1e-3
-            popsize = 20
 
             # Start multiprocessing for VQE runs
             with Pool(processes=40) as pool:
                 vqe_results = pool.starmap(
                     run_vqe,
                     [
-                        (i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, shots)
+                        (i, bounds, max_iter, H, num_qubits, shots)
                         for i in range(num_vqe_runs)
                     ],
                 )
@@ -170,10 +154,6 @@ if __name__ == "__main__":
                     "name": "differential_evolution",
                     "bounds": "[(0, 2 * np.pi) for _ in range(np.prod(params_shape))]",
                     "maxiter": max_iter,
-                    "tolerance": tol,
-                    "abs_tolerance": abs_tol,
-                    "strategy": strategy,
-                    "popsize": popsize,
                     'init': 'scaled_samples',
                 },
                 "results": energies,

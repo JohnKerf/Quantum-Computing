@@ -78,7 +78,8 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
         strategy=strategy,
         popsize=popsize,
         init=scaled_samples,
-        seed=seed
+        seed=seed,
+        polish=False
     )
 
     run_end = datetime.now()
@@ -100,12 +101,12 @@ if __name__ == "__main__":
     
     potential_list = ["DW"]
     cut_offs_list = [16]
-    shots = None
+    shots = 1024
 
     for potential in potential_list:
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\OptimizerComparison\DifferentialEvolutionTuned", potential, str(shots))
+        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\OptimizerComparison\DifferentialEvolutionTuned-NoPoLish", potential, str(shots))
         os.makedirs(base_path, exist_ok=True)
 
         print(f"Running for {potential} potential")
