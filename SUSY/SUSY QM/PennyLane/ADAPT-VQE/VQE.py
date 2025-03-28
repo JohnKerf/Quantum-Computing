@@ -25,84 +25,31 @@ def cost_function(params, H, num_qubits, shots, params_shape):
     '''
     @qml.qnode(dev)
     def circuit(params):
-        param_index=0
-        for i in range(num_qubits):
-            qml.RY(params[param_index], wires=i)
-            param_index += 1
+
+        #basis = [0]*num_qubits
+        #qml.BasisState(basis, wires=range(num_qubits))
+        
+        qml.RY(params[0], wires=[num_qubits-3])
+        qml.RY(params[1], wires=[num_qubits-1])
+        qml.CRY(params[2], wires=[num_qubits-1, num_qubits-2])
+        qml.RY(params[3], wires=[num_qubits-2])
+        qml.RY(params[4], wires=[num_qubits-1])
             
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))  
-
-
-    @qml.qnode(dev)
-    def circuit(params):
-        params = pnp.tensor(params.reshape(params_shape), requires_grad=True)
-        qml.StronglyEntanglingLayers(weights=params, wires=np.arange(num_qubits), imprimitive=qml.CNOT)
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))  
-
-        
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits))) 
-
-    @qml.qnode(dev)
-    def circuit(params):
-        param_index=0
-        for i in range(num_qubits-3, num_qubits):
-            qml.RY(params[param_index], wires=i)
-            param_index += 1
-
         return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
-    @qml.qnode(dev)
-    def circuit(params):
-        param_index=0
-        for i in range(num_qubits):
-            qml.RY(params[param_index], wires=i)
-            param_index += 1
-
-        # Apply entanglement
-        for j in reversed(range(1, num_qubits)):
-            qml.CNOT(wires=[j, j-1])
-
-        # Apply RY rotations
-        for k in range(num_qubits):
-            qml.RY(params[param_index], wires=k)
-            param_index += 1
-        
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
-    @qml.qnode(dev)
-    def circuit(params):
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits))) 
-
-    @qml.qnode(dev)
-    def circuit(params):
-        param_index=0
-        for i in range(num_qubits-3, num_qubits):
-            qml.RY(params[param_index], wires=i)
-            param_index += 1
-
-        # Apply entanglement
-        for j in reversed(range(num_qubits-1, num_qubits)):
-            qml.CZ(wires=[j - 1, j])
-
-        # Apply RY rotations
-        for k in range(num_qubits-2, num_qubits):
-            qml.RY(params[param_index], wires=k)
-            param_index += 1
-        
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits))) 
     '''
 
+    
     @qml.qnode(dev)
     def circuit(params):
 
-        #basis = [1,0,0,0]
-        #qml.BasisState(basis, wires=range(num_qubits))
-      
-        qml.RY(params[0], wires=[0])
-        qml.RY(params[1], wires=[3])
-        #qml.RY(params[2], wires=3)
+        basis = [1] + [0]*(num_qubits-1)
+        qml.BasisState(basis, wires=range(num_qubits))
+        
+        qml.RY(params[0], wires=[num_qubits-2])
+        qml.RY(params[1], wires=[num_qubits-3])
+        qml.RY(params[2], wires=[num_qubits-4])
             
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))  
+        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
      
     
     end = datetime.now()
@@ -118,7 +65,7 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
     run_start = datetime.now()
 
     # Generate Halton sequence
-    num_dimensions = 2#2*num_qubits#np.prod(params_shape)
+    num_dimensions = 3
     num_samples = popsize
     halton_sampler = Halton(d=num_dimensions, seed=seed)
     halton_samples = halton_sampler.random(n=num_samples)
@@ -165,7 +112,7 @@ if __name__ == "__main__":
     potential_list = ["AHO"]
     cut_off = 16
     #shot_list = [None, 2, 8, 32, 128, 512, 1024, 2048]
-    shot_list = [2048]
+    shot_list = [1024]
 
     for potential in potential_list:
 
@@ -174,7 +121,7 @@ if __name__ == "__main__":
         for shots in shot_list:
 
             starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\ADAPT-VQE\test", potential, str(shots))
+            base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\ADAPT-VQE\test", potential)
             os.makedirs(base_path, exist_ok=True)
 
             print(f"Running for shots: {shots}")
@@ -194,7 +141,7 @@ if __name__ == "__main__":
             # Optimizer
             #bounds = [(0, 2 * np.pi) for _ in range(2*num_qubits)]
             #bounds = [(0, 2 * np.pi) for _ in range(np.prod(params_shape))]
-            bounds = [(0, 2 * np.pi) for _ in range(2)]
+            bounds = [(0, 2 * np.pi) for _ in range(3)]
 
             num_vqe_runs = 8
             max_iter = 10000
