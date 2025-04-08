@@ -182,14 +182,14 @@ def calculate_wz_hamiltonian(cutoff, N, a, potential, boundary_condition, c=0, t
         H_b += (p2 + potential_term + gradient_term + potential_gradient_term)
 
         # Boson-Fermion term
-        commutator_term = kron(W_double_prime, ((-1) ** n) * coo_matrix(chidag_n @ chi_n - 0.5 * I_f), format='coo')
+        commutator_term = kron(((-1) ** n) * coo_matrix(chidag_n @ chi_n - 0.5 * I_f), W_double_prime, format='coo')
         H_bi += commutator_term
 
         #Fermion term
         fermion_hopping = 0.5*(chidag_n @ chi_np1 + chidag_np1 @ chi_n)
         H_f += (fermion_hopping)
 
-    H = kron(H_b, I_f, format='coo') + kron(I_b, H_f, format='coo') + H_bi
+    H = kron(I_f, H_b, format='coo') + kron(H_f, I_b, format='coo') + H_bi
     if to_dense: H = H.todense()
     
     return H
