@@ -77,13 +77,6 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
     seed = (os.getpid() * int(time.time())) % 123456789
     run_start = datetime.now()
 
-    # Generate Halton sequence
-    num_dimensions = 2
-    num_samples = popsize
-    halton_sampler = Halton(d=num_dimensions, seed=seed)
-    halton_samples = halton_sampler.random(n=num_samples)
-    scaled_samples = 2 * np.pi * halton_samples
-
     device_time = timedelta()
 
     def wrapped_cost_function(params):
@@ -106,7 +99,7 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
         max_ops_list = []
         
         if i != 0:
-            #print(f"Removing {most_common_gate} from pool")
+            
             pool.remove(most_common_gate)
 
             if (type(most_common_gate) == qml.CRX) or (type(most_common_gate) == qml.CRY):
@@ -114,36 +107,35 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
                 tq = most_common_gate.wires[1]
 
                 if (qml.RY(phi, wires=cq) not in pool):
-                    #print(f"Re-adding {qml.RY(np.pi/2, wires=cq)} to pool")
                     pool.append(qml.RY(phi, wires=cq))
 
                 if (qml.RY(phi, wires=tq) not in pool):
-                    #print(f"Re-adding {qml.RY(np.pi/2, wires=tq)} to pool")
                     pool.append(qml.RY(phi, wires=tq))
         
         for param in np.random.uniform(phi, phi, size=num_grad_checks):
             grad_list = []
             for op in pool:
                 grad = compute_grad(param, H, num_qubits, op, op_list, op_params, basis_state)
-
                 o=type(op)
-                grad_op = o(param, wires=op.wires)
+
+                if (o == qml.CNOT) or (o == qml.CZ):
+                    grad_op = o(wires=op.wires)
+                else:
+                    grad_op = o(param, wires=op.wires)
 
                 grad_list.append((grad_op,abs(grad)))
 
             max_op, max_grad = max(grad_list, key=lambda x: x[1])
-            #print(f"For param {param} the max op is {max_op} with grad {max_grad}")
             max_ops_list.append(max_op)
 
         counter = Counter(max_ops_list)
         most_common_gate, count = counter.most_common(1)[0]
-        #print(f"Most common gate is {most_common_gate}")
         op_list.append(most_common_gate)
 
         # Generate Halton sequence
-        num_dimensions = len(op_list) + 1
+        num_dimensions = len(op_list)
         num_samples = popsize
-        halton_sampler = Halton(d=num_dimensions)
+        halton_sampler = Halton(d=num_dimensions, seed=seed)
         halton_samples = halton_sampler.random(n=num_samples)
         scaled_samples = 2 * np.pi * halton_samples
 
@@ -164,34 +156,44 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
         
         if i!=0: pre_min_e = min_e
         min_e = res.fun
-        pre_op_params = op_params
+        pre_op_params = op_params.copy()
         op_params = res.x
 
         energies.append(min_e)
-        #print(f"Min E: {min_e}")
-        #print(res.success)
+
 
         if i!=0:
             if abs(pre_min_e - min_e) < 1e-8:
                 #print("gradient converged")
                 energies.pop()
                 op_list.pop()
-                op_params = pre_op_params.tolist().pop()
+                final_params = pre_op_params
                 success = True
                 break
             if abs(min_eigenvalue-min_e) < 1e-6:
                 success = True
+                final_params = op_params
                 break
-
+        
     run_end = datetime.now()
     run_time = run_end - run_start
+
+    if success == False:
+        final_params = op_params
+
+    final_ops = []
+    for op, param in zip(op_list,final_params):
+        dict = {"name": op.name,
+                "param": param,
+                "wires": op.wires.tolist()}
+        final_ops.append(dict)
 
     return {
         "seed": seed,
         "energies": energies,
         "min_energy": min_e,
-        "op_params": op_params,
-        "op_list": op_list,
+        #"op_params": op_params,
+        "op_list": final_ops,
         "success": success,
         "num_iters": i+1,
         "run_time": run_time,
@@ -201,24 +203,22 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
 
 if __name__ == "__main__":
     
-    potential = "AHO"
+    potential = "DW"
     cutoff = 32
     shots = 1024
 
     print(f"Running for {potential} potential, cutoff {cutoff}")
 
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\ADAPT-VQE\Files\Files", potential, str(starttime))
+    base_path = os.path.join("/users/johnkerf/SUSY/VQE/QM/ADAPT-VQE/Files", potential)
     os.makedirs(base_path, exist_ok=True)
 
 
     # Calculate Hamiltonian and expected eigenvalues
     H = calculate_Hamiltonian(cutoff, potential)
 
-    eigenvalues, eigenvectors = np.linalg.eig(H)
-    min_index = np.argmin(eigenvalues)
-    min_eigenvalue = eigenvalues[min_index]
-    min_eigenvector = np.asarray(eigenvectors[:, min_index])
+    eigenvalues = np.sort(np.linalg.eig(H)[0])[:4]
+    min_eigenvalue = np.min(eigenvalues)
 
     #create qiskit Hamiltonian Pauli string
     hamiltonian = SparsePauliOp.from_operator(H)
@@ -226,11 +226,10 @@ if __name__ == "__main__":
 
     #Create operator pool
     operator_pool = []
-    phi = 0.0#np.pi/2
+    phi = 0.0
     for i in range(num_qubits):
         operator_pool.append(qml.RY(phi,wires=[i]))
         operator_pool.append(qml.RZ(phi,wires=[i]))
-        operator_pool.append(qml.RX(phi,wires=[i]))
 
     c_pool = []
 
@@ -238,7 +237,6 @@ if __name__ == "__main__":
             for target in range(num_qubits):
                 if control != target:
                     c_pool.append(qml.CRY(phi=phi, wires=[control, target]))
-                    c_pool.append(qml.CRX(phi=phi, wires=[control, target]))
 
     operator_pool = operator_pool + c_pool    
 
@@ -253,7 +251,7 @@ if __name__ == "__main__":
     num_steps = 10
     num_grad_checks = 10
     num_vqe_runs = 40
-    max_iter = 10000
+    max_iter = 5000
     strategy = "randtobest1bin"
     tol = 1e-3
     abs_tol = 1e-2
@@ -263,7 +261,7 @@ if __name__ == "__main__":
 
     print("Starting ADAPT-VQE")
     # Start multiprocessing for VQE runs
-    with Pool(processes=num_vqe_runs) as pool:
+    with Pool(processes=40) as pool:
         vqe_results = pool.starmap(
             run_adapt_vqe,
             [
@@ -277,8 +275,8 @@ if __name__ == "__main__":
     seeds = [res["seed"] for res in vqe_results]
     all_energies = [res["energies"] for res in vqe_results]
     min_energies = [res["min_energy"] for res in vqe_results]
-    op_params = [str(res["op_params"]) for res in vqe_results]
-    op_lists = [str(res["op_list"]) for res in vqe_results]
+    #op_params = [str(res["op_params"]) for res in vqe_results]
+    op_lists = [res["op_list"] for res in vqe_results]
     success = [res["success"] for res in vqe_results]
     num_iters = [res["num_iters"] for res in vqe_results]
     run_times = [str(res["run_time"]) for res in vqe_results]
@@ -294,7 +292,7 @@ if __name__ == "__main__":
         "endtime": vqe_end.strftime("%Y-%m-%d_%H-%M-%S"),
         "potential": potential,
         "cutoff": cutoff,
-        "exact_eigenvalues": [x.real.tolist() for x in np.sort(eigenvalues)],
+        "exact_eigenvalues": [x.real.tolist() for x in eigenvalues],
         "ansatz": "circuit.txt",
         "shots": shots,
         "Optimizer": {
@@ -315,7 +313,7 @@ if __name__ == "__main__":
         "operator_pool": [str(op) for op in operator_pool],
         "all_energies": all_energies,
         "min_energies": min_energies,
-        "op_params": op_params,
+        #"op_params": op_params,
         "op_list": op_lists,
         "num_iters": num_iters,
         "success": np.array(success, dtype=bool).tolist(),
