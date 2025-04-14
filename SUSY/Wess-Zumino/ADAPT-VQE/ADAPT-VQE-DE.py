@@ -78,7 +78,7 @@ def cost_function(params, H, num_qubits, shots, op_list, basis_state):
     return circuit(params), device_time
 
 
-def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, shots, num_steps, phi, num_grad_checks, operator_pool, basis_state, min_eigenvalue):
+def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, shots, num_steps, phi, num_grad_checks, operator_pool, basis_state, min_eigenvalue, initial_op_list, initial_params):
 
     # We need to generate a random seed for each process otherwise each parallelised run will have the same result
     seed = (os.getpid() * int(time.time())) % 123456789
@@ -94,11 +94,8 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
     
 
     # Main ADAPT-VQE script
-    #op_list = []
-    #op_params = []
-
-    op_list = [qml.RY(phi,wires=[0]), qml.RY(phi,wires=[1]), qml.CRY(phi,wires=[0,1])]
-    op_params = [np.pi/2,np.pi,np.pi]
+    op_list = initial_op_list.copy()
+    op_params = initial_params.copy()
 
     energies = []
 
@@ -113,7 +110,7 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
             
             pool.remove(most_common_gate)
 
-            if (type(most_common_gate) == qml.CRX) or (type(most_common_gate) == qml.CRY):
+            if (type(most_common_gate) == qml.FermionicSingleExcitation) or (type(most_common_gate) == qml.CRY):
                 cq = most_common_gate.wires[0]
                 tq = most_common_gate.wires[1]
 
@@ -133,7 +130,6 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
                 grad_list.append((grad_op,abs(grad)))
 
             max_op, max_grad = max(grad_list, key=lambda x: x[1])
-            #print(f"For param {param} the max op is {max_op} with grad {max_grad}")
             max_ops_list.append(max_op)
 
         counter = Counter(max_ops_list)
@@ -148,7 +144,7 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
         scaled_samples = 2 * np.pi * halton_samples
 
         bounds = [(0, 2 * np.pi) for _ in range(num_dimensions)]
-        x0 = np.concatenate((op_params, np.array([np.random.random()*2*np.pi])))
+        x0 = np.concatenate((op_params, np.array([0.0])))
         
         res = differential_evolution(wrapped_cost_function,
                                         bounds,
@@ -199,7 +195,6 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
         "seed": seed,
         "energies": energies,
         "min_energy": min_e,
-        #"op_params": op_params,
         "op_list": final_ops,
         "success": success,
         "num_iters": i+1,
@@ -212,7 +207,7 @@ if __name__ == "__main__":
     
    
     # Parameters
-    N = 2
+    N = 3
     a = 1.0
     c = -0.8
 
@@ -220,9 +215,8 @@ if __name__ == "__main__":
     #potential = 'quadratic'
     boundary_condition = 'dirichlet'
     #boundary_condition = 'periodic'
-    cutoff = 16
+    cutoff = 2
     shots = 1024
-
     
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -231,9 +225,10 @@ if __name__ == "__main__":
     else:
         folder = 'N'+ str(N) + '/' + str(starttime)
 
-    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\ADAPT-VQE\Files2", boundary_condition, potential, folder)
+    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\ADAPT-VQE\Files3", boundary_condition, potential, folder)
     os.makedirs(base_path, exist_ok=True)
 
+    print(f"Running for {N} sites")
     print(f"Running for {boundary_condition} boundary conditions")
     print(f"Running for {potential} potential, cutoff {cutoff}")
 
@@ -263,26 +258,38 @@ if __name__ == "__main__":
             for target in range(num_qubits):
                 if control != target:
                     c_pool.append(qml.CRY(phi=phi, wires=[control, target]))
+                    c_pool.append(qml.FermionicSingleExcitation(phi, wires=[control, target]))
 
-    operator_pool = operator_pool + c_pool    
+    operator_pool = operator_pool + c_pool  
+
+    #initial_op_list = [qml.RY(phi,wires=[0]), qml.CRY(phi,wires=[0,1]), qml.CRY(phi,wires=[1,2]), qml.CRY(phi,wires=[0,1]), qml.RY(phi,wires=[0])]
+    #initial_params = [1.910633, np.pi/2, np.pi, np.pi, np.pi] 
+    #initial_op_list = [qml.RY(phi,wires=[0]), qml.RY(phi,wires=[1]), qml.CRY(phi,wires=[0,1])]
+    #initial_params = [np.pi/2,np.pi,np.pi] 
+
+    #initial_op_list = []
+    #initial_params = []
+    initial_op_list = [qml.RY(phi,wires=[1]), qml.FermionicSingleExcitation(phi,wires=[0,1])]
+    initial_params = [np.pi, np.pi/4] 
+
+    initial_op_list = [qml.RY(phi,wires=[2]), qml.FermionicSingleExcitation(phi,wires=[1,2]), qml.FermionicSingleExcitation(phi,wires=[0,1])]
+    initial_params = [np.pi, np.pi/4, np.pi/6] 
+
+    combined_intital = []
+    for op, param in zip(initial_op_list,initial_params):
+        dict = {"name": op.name,
+                "param": param,
+                "wires": op.wires.tolist()}
+        combined_intital.append(dict)
 
     # Choose basis state
-    #if potential == 'DW':
-    #    basis_state = [0]*(num_qubits)
-    #else:
-    #    basis_state = [1] + [0]*(num_qubits-1)
-    #basis_state = [0,0,0,0,0,0,0,1]
-    #basis_state = [0]*(num_qubits-1) + [1]
     basis_state = [0]*(num_qubits)
-    #basis_state = [1] + [0]*(num_qubits-1)
-    #basis_state = [0,1] + [0]*(num_qubits-2)
-    #basis_state = [1,0,1,0,1,0]
 
     # Optimizer
-    num_steps = 20
+    num_steps = 10
     num_grad_checks = 10
     num_vqe_runs = 4
-    max_iter = 500
+    max_iter = 300
     strategy = "randtobest1bin"
     tol = 1e-3
     abs_tol = 1e-2
@@ -296,7 +303,7 @@ if __name__ == "__main__":
         vqe_results = pool.starmap(
             run_adapt_vqe,
             [
-                (i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, shots, num_steps, phi, num_grad_checks, operator_pool, basis_state, min_eigenvalue)
+                (i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, shots, num_steps, phi, num_grad_checks, operator_pool, basis_state, min_eigenvalue, initial_op_list, initial_params)
                 for i in range(num_vqe_runs)
             ],
         )
@@ -306,6 +313,7 @@ if __name__ == "__main__":
     seeds = [res["seed"] for res in vqe_results]
     all_energies = [res["energies"] for res in vqe_results]
     min_energies = [res["min_energy"] for res in vqe_results]
+    #op_params = [str(res["op_params"]) for res in vqe_results]
     op_lists = [res["op_list"] for res in vqe_results]
     success = [res["success"] for res in vqe_results]
     num_iters = [res["num_iters"] for res in vqe_results]
@@ -346,6 +354,7 @@ if __name__ == "__main__":
         "operator_pool": [str(op) for op in operator_pool],
         "all_energies": all_energies,
         "min_energies": min_energies,
+        "initial_op_list": combined_intital,
         "op_list": op_lists,
         "num_iters": num_iters,
         "success": np.array(success, dtype=bool).tolist(),

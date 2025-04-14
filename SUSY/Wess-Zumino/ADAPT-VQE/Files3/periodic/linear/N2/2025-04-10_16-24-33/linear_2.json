@@ -1,0 +1,353 @@
+{
+    "starttime": "2025-04-10_16-24-33",
+    "endtime": "2025-04-10_16-24-41",
+    "potential": "linear",
+    "cutoff": 2,
+    "N": 2,
+    "a": 1.0,
+    "c": null,
+    "exact_eigenvalues": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ],
+    "ansatz": "circuit.txt",
+    "shots": 1024,
+    "Optimizer": {
+        "name": "differential_evolution",
+        "bounds": "[(0, 2 * np.pi)]",
+        "maxiter": 300,
+        "tolerance": 0.001,
+        "abs_tolerance": 0.01,
+        "strategy": "randtobest1bin",
+        "popsize": 20,
+        "init": "scaled_samples"
+    },
+    "num_VQE": 4,
+    "num_steps": 10,
+    "num_grad_checks": 10,
+    "phi": 0.0,
+    "basis_state": [
+        0,
+        0,
+        0,
+        0
+    ],
+    "operator_pool": [
+        "RY(0.0, wires=[0])",
+        "RZ(0.0, wires=[0])",
+        "RY(0.0, wires=[1])",
+        "RZ(0.0, wires=[1])",
+        "RY(0.0, wires=[2])",
+        "RZ(0.0, wires=[2])",
+        "RY(0.0, wires=[3])",
+        "RZ(0.0, wires=[3])",
+        "CRY(0.0, wires=[0, 1]))",
+        "FermionicSingleExcitation(0.0, wires=[0, 1])",
+        "CRY(0.0, wires=[0, 2]))",
+        "FermionicSingleExcitation(0.0, wires=[0, 2])",
+        "CRY(0.0, wires=[0, 3]))",
+        "FermionicSingleExcitation(0.0, wires=[0, 3])",
+        "CRY(0.0, wires=[1, 0]))",
+        "FermionicSingleExcitation(0.0, wires=[1, 0])",
+        "CRY(0.0, wires=[1, 2]))",
+        "FermionicSingleExcitation(0.0, wires=[1, 2])",
+        "CRY(0.0, wires=[1, 3]))",
+        "FermionicSingleExcitation(0.0, wires=[1, 3])",
+        "CRY(0.0, wires=[2, 0]))",
+        "FermionicSingleExcitation(0.0, wires=[2, 0])",
+        "CRY(0.0, wires=[2, 1]))",
+        "FermionicSingleExcitation(0.0, wires=[2, 1])",
+        "CRY(0.0, wires=[2, 3]))",
+        "FermionicSingleExcitation(0.0, wires=[2, 3])",
+        "CRY(0.0, wires=[3, 0]))",
+        "FermionicSingleExcitation(0.0, wires=[3, 0])",
+        "CRY(0.0, wires=[3, 1]))",
+        "FermionicSingleExcitation(0.0, wires=[3, 1])",
+        "CRY(0.0, wires=[3, 2]))",
+        "FermionicSingleExcitation(0.0, wires=[3, 2])"
+    ],
+    "all_energies": [
+        [
+            0.0
+        ],
+        [
+            0.0
+        ],
+        [
+            0.0
+        ],
+        [
+            0.0
+        ]
+    ],
+    "min_energies": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ],
+    "initial_op_list": [
+        {
+            "name": "RY",
+            "param": 1.910633,
+            "wires": [
+                0
+            ]
+        },
+        {
+            "name": "CRY",
+            "param": 1.5707963267948966,
+            "wires": [
+                0,
+                1
+            ]
+        },
+        {
+            "name": "CRY",
+            "param": 3.141592653589793,
+            "wires": [
+                1,
+                2
+            ]
+        },
+        {
+            "name": "CRY",
+            "param": 3.141592653589793,
+            "wires": [
+                0,
+                1
+            ]
+        },
+        {
+            "name": "RY",
+            "param": 3.141592653589793,
+            "wires": [
+                0
+            ]
+        }
+    ],
+    "op_list": [
+        [
+            {
+                "name": "RY",
+                "param": 0.3553626952420945,
+                "wires": [
+                    0
+                ]
+            },
+            {
+                "name": "CRY",
+                "param": 0.4023261177123225,
+                "wires": [
+                    0,
+                    1
+                ]
+            },
+            {
+                "name": "CRY",
+                "param": 2.7400282910870897,
+                "wires": [
+                    1,
+                    2
+                ]
+            },
+            {
+                "name": "CRY",
+                "param": 1.2941614620047215,
+                "wires": [
+                    0,
+                    1
+                ]
+            },
+            {
+                "name": "RY",
+                "param": 2.817134701568646,
+                "wires": [
+                    0
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 3.4347950920728803,
+                "wires": [
+                    0,
+                    1
+                ]
+            }
+        ],
+        [
+            {
+                "name": "RY",
+                "param": 6.243274907013616,
+                "wires": [
+                    0
+                ]
+            },
+            {
+                "name": "CRY",
+                "param": 4.943097079170287,
+                "wires": [
+                    0,
+                    1
+                ]
+            },
+            {
+                "name": "CRY",
+                "param": 5.969906083847865,
+                "wires": [
+                    1,
+                    2
+                ]
+            },
+            {
+                "name": "CRY",
+                "param": 2.3579187066069514,
+                "wires": [
+                    0,
+                    1
+                ]
+            },
+            {
+                "name": "RY",
+                "param": 3.1744748184891716,
+                "wires": [
+                    0
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 3.1898232250138743,
+                "wires": [
+                    0,
+                    1
+                ]
+            }
+        ],
+        [
+            {
+                "name": "RY",
+                "param": 6.234406541618524,
+                "wires": [
+                    0
+                ]
+            },
+            {
+                "name": "CRY",
+                "param": 4.3271720333153825,
+                "wires": [
+                    0,
+                    1
+                ]
+            },
+            {
+                "name": "CRY",
+                "param": 0.6878716345804352,
+                "wires": [
+                    1,
+                    2
+                ]
+            },
+            {
+                "name": "CRY",
+                "param": 5.422157030817253,
+                "wires": [
+                    0,
+                    1
+                ]
+            },
+            {
+                "name": "RY",
+                "param": 3.1142240679830246,
+                "wires": [
+                    0
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 3.1542607681372647,
+                "wires": [
+                    0,
+                    1
+                ]
+            }
+        ],
+        [
+            {
+                "name": "RY",
+                "param": 0.32343631909634407,
+                "wires": [
+                    0
+                ]
+            },
+            {
+                "name": "CRY",
+                "param": 0.8746519456184552,
+                "wires": [
+                    0,
+                    1
+                ]
+            },
+            {
+                "name": "CRY",
+                "param": 6.177378580769084,
+                "wires": [
+                    1,
+                    2
+                ]
+            },
+            {
+                "name": "CRY",
+                "param": 1.2557520358718048,
+                "wires": [
+                    0,
+                    1
+                ]
+            },
+            {
+                "name": "RY",
+                "param": 2.8157756886748126,
+                "wires": [
+                    0
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 3.2311277418176805,
+                "wires": [
+                    0,
+                    1
+                ]
+            }
+        ]
+    ],
+    "num_iters": [
+        2,
+        2,
+        2,
+        2
+    ],
+    "success": [
+        true,
+        true,
+        true,
+        true
+    ],
+    "run_times": [
+        "0:00:05.461605",
+        "0:00:07.241376",
+        "0:00:06.441311",
+        "0:00:05.504193"
+    ],
+    "seeds": [
+        32604742,
+        37301,
+        1222042,
+        38786617
+    ],
+    "parallel_run_time": "0:00:08.917666",
+    "total_VQE_time": "0:00:24.648485",
+    "total_device_time": "0:00:00.440097",
+    "ham_calc_time": "0:00:00.004320"
+}
