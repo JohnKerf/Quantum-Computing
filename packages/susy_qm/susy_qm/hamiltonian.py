@@ -1,24 +1,26 @@
 import numpy as np
+from scipy.sparse import eye, kron, coo_matrix
+from functools import reduce
 
 #############################################################################
                            #p and q in HO basis
 #############################################################################
 
 def create_matrix(cut_off, type, m=1):
-    # Initialize a zero matrix of the specified size
+    # Initialize a zero matrix
     matrix = np.zeros((cut_off, cut_off), dtype=np.complex128)
     
-    # Fill the off-diagonal values with square roots of integers
+    # Fill the off-diagonal values
     for i in range(cut_off):
         if i > 0:  # Fill left off-diagonal
             if type == 'q':
-                matrix[i][i - 1] = (1/np.sqrt(2*m)) * np.sqrt(i)  # sqrt(i) for left off-diagonal
+                matrix[i][i - 1] = (1/np.sqrt(2*m)) * np.sqrt(i)
             else:
                 matrix[i][i - 1] = (1j*np.sqrt(m/2)) * np.sqrt(i)
 
         if i < cut_off - 1:  # Fill right off-diagonal
             if type == 'q':
-                matrix[i][i + 1] = (1/np.sqrt(2*m)) * np.sqrt(i + 1)  # sqrt(i + 1) for right off-diagonal
+                matrix[i][i + 1] = (1/np.sqrt(2*m)) * np.sqrt(i + 1)
             else:
                 matrix[i][i + 1] = (-1j*np.sqrt(m/2)) * np.sqrt(i + 1)
 
@@ -85,9 +87,6 @@ def calculate_Hamiltonian(cut_off, potential, m=1, g=1, u=1):
 #################################################################################
                                 #Wess-Zumino
 #################################################################################
-
-from scipy.sparse import eye, kron, coo_matrix
-from functools import reduce
 
 def kron_tensor(size, site, total_sites, operator):
 

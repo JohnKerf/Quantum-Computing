@@ -102,7 +102,7 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
             
             pool.remove(most_common_gate)
 
-            if (type(most_common_gate) == qml.CRX) or (type(most_common_gate) == qml.CRY):
+            if (type(most_common_gate) == qml.SingleExcitation) or (type(most_common_gate) == qml.CRY):
                 cq = most_common_gate.wires[0]
                 tq = most_common_gate.wires[1]
 
@@ -204,13 +204,13 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
 if __name__ == "__main__":
     
     potential = "DW"
-    cutoff = 32
+    cutoff = 8
     shots = 1024
 
     print(f"Running for {potential} potential, cutoff {cutoff}")
 
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_path = os.path.join("/users/johnkerf/SUSY/VQE/QM/ADAPT-VQE/Files", potential)
+    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\ADAPT-VQE\TestFiles", potential)
     os.makedirs(base_path, exist_ok=True)
 
 
@@ -237,6 +237,7 @@ if __name__ == "__main__":
             for target in range(num_qubits):
                 if control != target:
                     c_pool.append(qml.CRY(phi=phi, wires=[control, target]))
+                    c_pool.append(qml.SingleExcitation(phi, wires=[control, target]))
 
     operator_pool = operator_pool + c_pool    
 
@@ -250,8 +251,8 @@ if __name__ == "__main__":
     # Optimizer
     num_steps = 10
     num_grad_checks = 10
-    num_vqe_runs = 40
-    max_iter = 5000
+    num_vqe_runs = 4
+    max_iter = 500
     strategy = "randtobest1bin"
     tol = 1e-3
     abs_tol = 1e-2
@@ -261,7 +262,7 @@ if __name__ == "__main__":
 
     print("Starting ADAPT-VQE")
     # Start multiprocessing for VQE runs
-    with Pool(processes=40) as pool:
+    with Pool(processes=4) as pool:
         vqe_results = pool.starmap(
             run_adapt_vqe,
             [
