@@ -59,13 +59,13 @@ def cost_function(params, prev_param_list, H, num_qubits, shots, beta, num_swap_
 
     def ansatz(params, prev=False): 
         param_index=0
-        for i in range(num_qubits-1):
-            if prev==True:
-                wires = i+num_qubits
-            else:
-                wires=i
-            qml.RY(params[param_index], wires=wires)
-            param_index += 1
+        #for i in range(num_qubits-1):
+        #    if prev==True:
+        #        wires = i+num_qubits
+        #   else:
+        #        wires=i
+        qml.RY(params[param_index], wires=[0])
+        param_index += 1
     
         
 
@@ -175,7 +175,7 @@ def run_vqd(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
     run_start = datetime.now()
 
     # Generate Halton sequence
-    num_dimensions = 4#*num_qubits
+    num_dimensions = 1#*num_qubits
     num_samples = popsize
     halton_sampler = Halton(d=num_dimensions, seed=seed)
     halton_samples = halton_sampler.random(n=num_samples)
@@ -237,15 +237,15 @@ def run_vqd(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
 
 if __name__ == "__main__":
     
-    potential_list = ["AHO"]#, "AHO", "DW"]
-    cut_offs_list = [16]
+    potential_list = ["QHO"]#, "AHO", "DW"]
+    cut_offs_list = [8]
     shots = 1024
 
     for potential in potential_list:
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         #base_path = os.path.join("/users/johnkerf/SUSY/VQD/QM/Files", potential)
-        base_path = os.path.join(r"C:\Users\johnkerf\Desktop\Quantum-Computing\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQD\Destructive SWAP\Files2", potential, starttime)
+        base_path = os.path.join(r"C:\Users\johnkerf\Desktop\Quantum-Computing\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQD\Destructive SWAP\TestFiles", potential, starttime)
         os.makedirs(base_path, exist_ok=True)
 
         print(f"Running for {potential} potential")
@@ -265,11 +265,11 @@ if __name__ == "__main__":
 
             # Optimizer
             bounds = [(0, 2 * np.pi) for _ in range(2*num_qubits)]
-            bounds = [(0, 2 * np.pi) for _ in range(4)]
+            bounds = [(0, 2 * np.pi) for _ in range(1)]
 
             num_vqd_runs = 2
             num_energy_levels = 3
-            beta = 2.0
+            beta = 1.0
             num_swap_tests = 30
 
             max_iter = 500
