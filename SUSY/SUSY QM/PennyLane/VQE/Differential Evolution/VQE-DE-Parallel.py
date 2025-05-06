@@ -20,23 +20,23 @@ from susy_qm import calculate_Hamiltonian
 def cost_function(params, H, params_shape, num_qubits, shots):
    
     dev = qml.device("default.qubit", wires=num_qubits, shots=shots)
-
     start = datetime.now()
-    '''
+    
     @qml.qnode(dev)
     def circuit(params):
-        params = pnp.tensor(params.reshape(params_shape), requires_grad=True)
-        qml.StronglyEntanglingLayers(weights=params, wires=range(num_qubits), imprimitive=qml.CZ)
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-    '''
+        param_index=0
+        for i in range(num_qubits):
+            qml.RY(params[param_index], wires=i)
+            param_index += 1
 
-    @qml.qnode(dev)
-    def circuit(params):
+        for j in reversed(range(1, num_qubits)):
+            qml.CNOT(wires=[j, j-1])
+
+        for k in range(num_qubits):
+            qml.RY(params[param_index], wires=k)
+            param_index += 1
         
-        qml.RY(params[0], wires=[4])
-        #qml.RY(params[1], wires=[num_qubits-2])
-
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))  
+        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
 
     end = datetime.now()
     device_time = (end - start)
@@ -51,7 +51,7 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, params_shap
     run_start = datetime.now()
 
     # Generate Halton sequence
-    num_dimensions = 1#np.prod(params_shape)
+    num_dimensions = 2*num_qubits
     num_samples = popsize
     halton_sampler = Halton(d=num_dimensions, seed=seed)
     halton_samples = halton_sampler.random(n=num_samples)
@@ -95,16 +95,14 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, params_shap
 
 if __name__ == "__main__":
     
-    potential_list = ["DW"]
-    cut_offs_list = [16]#, 4, 8, 16]
-    shots = 256
+    potential_list = ["QHO"]
+    cut_offs_list = [4, 8, 16]
+    shots = 1024
 
     for potential in potential_list:
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        folder = str(starttime)
-        #base_path = os.path.join("/users/johnkerf/SUSY/VQE/QM/Files", potential)
-        base_path = r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\Differential Evolution\StronglyEntanglingLayers\test\{}\\{}\\".format(potential, folder)
+        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\Differential Evolution\RealAmplitudes\Noise", potential)
         os.makedirs(base_path, exist_ok=True)
 
         print(f"Running for {potential} potential")
@@ -115,22 +113,20 @@ if __name__ == "__main__":
 
             # Calculate Hamiltonian and expected eigenvalues
             H = calculate_Hamiltonian(cut_off, potential)
-            eigenvalues = np.sort(np.linalg.eig(H)[0])
+            eigenvalues = np.sort(np.linalg.eig(H)[0])[:4]
             min_eigenvalue = min(eigenvalues.real)
 
             # Create qiskit Hamiltonian Pauli string
             hamiltonian = SparsePauliOp.from_operator(H)
             num_qubits = hamiltonian.num_qubits
 
-            # Initial params shape
-            num_layers = 1
-            params_shape = qml.StronglyEntanglingLayers.shape(n_layers=num_layers, n_wires=num_qubits)
-
+          
             # Optimizer
-            bounds = [(0, 2 * np.pi) for _ in range(np.prod(params_shape))]
-            bounds = [(0, 2 * np.pi) for _ in range(1)]
+            bounds = [(0, 2 * np.pi) for _ in range(2*num_qubits)]
 
-            num_vqe_runs = 8
+            params_shape = None
+
+            num_vqe_runs = 100
             max_iter = 10000
             strategy = "randtobest1bin"
             tol = 1e-3
@@ -138,7 +134,7 @@ if __name__ == "__main__":
             popsize = 20
 
             # Start multiprocessing for VQE runs
-            with Pool(processes=8) as pool:
+            with Pool(processes=10) as pool:
                 vqe_results = pool.starmap(
                     run_vqe,
                     [
@@ -167,7 +163,7 @@ if __name__ == "__main__":
                 "potential": potential,
                 "cutoff": cut_off,
                 "exact_eigenvalues": [x.real.tolist() for x in eigenvalues],
-                "ansatz": "StronglyEntanglingLayers-1layer",
+                "ansatz": "circuit.txt",
                 "num_VQE": num_vqe_runs,
                 "shots": shots,
                 "Optimizer": {
