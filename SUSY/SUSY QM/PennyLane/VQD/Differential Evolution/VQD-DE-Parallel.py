@@ -22,8 +22,11 @@ def cost_function(params, prev_param_list, H, params_shape, num_qubits, shots, b
     dev = qml.device("default.qubit", wires=2*num_qubits+1, shots=shots)
 
     def ansatz(params, wires):
-        params = pnp.tensor(params.reshape(params_shape), requires_grad=True)
-        qml.StronglyEntanglingLayers(weights=params, wires=wires, imprimitive=qml.CZ)
+        params_idx=0
+        for i in wires:
+            qml.RY(params[params_idx], wires=[i])
+            params_idx +=1
+     
 
     #Swap test to calculate overlap
     @qml.qnode(dev)
@@ -67,6 +70,7 @@ def cost_function(params, prev_param_list, H, params_shape, num_qubits, shots, b
 
         return overlap, multi_swap_time
 
+    dev = qml.device("default.qubit", wires=2*num_qubits+1, shots=shots)
     @qml.qnode(dev)
     def expected_value(params):
 

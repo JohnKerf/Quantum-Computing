@@ -357,7 +357,7 @@ if __name__ == "__main__":
     print(f"Running for {potential} potential, cutoff {cutoff}")
 
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\ADAPT-VQD\TestFiles", potential)
+    base_path = os.path.join(r"C:\Users\johnkerf\Desktop\Quantum-Computing\Quantum-Computing\SUSY\SUSY QM\PennyLane\ADAPT-VQD\TestFiles", potential, str(starttime))
     os.makedirs(base_path, exist_ok=True)
 
 
@@ -379,8 +379,8 @@ if __name__ == "__main__":
 
     c_pool = []
 
-    for control in range(num_qubits):
-            for target in range(num_qubits):
+    for control in range(1,num_qubits):
+            for target in range(1,num_qubits):
                 if control != target:
                     c_pool.append(qml.CRY(phi=phi, wires=[control, target]))
 
@@ -389,7 +389,7 @@ if __name__ == "__main__":
 
     # Optimizer
     num_energy_levels = 3
-    num_adapt_steps = 3
+    num_adapt_steps = 5
     num_grad_checks = 10
     beta = 1.0
 
@@ -409,6 +409,7 @@ if __name__ == "__main__":
     #AHO
     basis_list = [[1] + [0]*(num_qubits-1),
                 [1] + [0]*(num_qubits-1),
+                #[0]*(num_qubits),
                 [0]*(num_qubits)
                 ]
 

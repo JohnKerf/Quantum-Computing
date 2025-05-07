@@ -18,59 +18,28 @@ from susy_qm import calculate_Hamiltonian
 
 def cost_function(params, prev_param_list, H, num_qubits, shots, beta, num_swap_tests):
    
-    dev = qml.device("default.qubit", wires=2*num_qubits, shots=shots)
+    swap_dev = qml.device("default.qubit", wires=2*num_qubits, shots=None)
 
     def ansatz(params, prev=False): 
+
+        basis = [0]*num_qubits
+        wires = np.array([0,1,2,3])
+
         if prev==True:
-            w = [num_qubits+1]
+            qml.BasisState(basis, wires=range(num_qubits, 2*num_qubits))
+            wires = wires + num_qubits
         else:
-            w = [1]
-        qml.RY(params[0], wires=w)
-
-    ''' 
-
-    def ansatz(params, prev=False):
-        param_index=0
-        for i in range(num_qubits):
-            if prev==True:
-                wires = i+num_qubits
-            else:
-                wires=i
-            qml.RY(params[param_index], wires=wires)
-            param_index += 1
-        
-        # Apply entanglement
-        for j in range(1, num_qubits):
-            if prev==True:
-                wires = j+num_qubits
-            else:
-                wires=j
-            qml.CNOT(wires=[wires - 1, wires])
-
-        # Apply RY rotations
-        for k in range(num_qubits):
-            if prev==True:
-                wires = k+num_qubits
-            else:
-                wires=k
-            qml.RY(params[param_index], wires=wires)
-            param_index += 1    
-    '''
-
-    def ansatz(params, prev=False): 
-        param_index=0
-        #for i in range(num_qubits-1):
-        #    if prev==True:
-        #        wires = i+num_qubits
-        #   else:
-        #        wires=i
-        qml.RY(params[param_index], wires=[0])
-        param_index += 1
+            qml.BasisState(basis, wires=range(num_qubits))
+  
+        params_idx=0
+        for i in wires:
+            qml.RY(params[params_idx], wires=[i])
+            params_idx +=1
     
         
 
     #Swap test to calculate overlap
-    @qml.qnode(dev)
+    @qml.qnode(swap_dev)
     def swap_test(params1, params2):
 
         start = datetime.now()
@@ -94,7 +63,7 @@ def cost_function(params, prev_param_list, H, num_qubits, shots, beta, num_swap_
 
         return prob
     
-
+    dev = qml.device("default.qubit", wires=2*num_qubits, shots=None)
     @qml.qnode(dev)
     def expected_value(params):
 
@@ -175,7 +144,7 @@ def run_vqd(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
     run_start = datetime.now()
 
     # Generate Halton sequence
-    num_dimensions = 1#*num_qubits
+    num_dimensions = 4#*num_qubits
     num_samples = popsize
     halton_sampler = Halton(d=num_dimensions, seed=seed)
     halton_samples = halton_sampler.random(n=num_samples)
@@ -237,8 +206,8 @@ def run_vqd(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
 
 if __name__ == "__main__":
     
-    potential_list = ["QHO"]#, "AHO", "DW"]
-    cut_offs_list = [8]
+    potential_list = ["AHO"]#, "AHO", "DW"]
+    cut_offs_list = [16]
     shots = 1024
 
     for potential in potential_list:
@@ -264,22 +233,21 @@ if __name__ == "__main__":
             num_qubits = hamiltonian.num_qubits       
 
             # Optimizer
-            bounds = [(0, 2 * np.pi) for _ in range(2*num_qubits)]
-            bounds = [(0, 2 * np.pi) for _ in range(1)]
+            bounds = [(0, 2 * np.pi) for _ in range(4)]
 
-            num_vqd_runs = 2
+            num_vqd_runs = 4
             num_energy_levels = 3
             beta = 1.0
-            num_swap_tests = 30
+            num_swap_tests = 1
 
-            max_iter = 500
+            max_iter = 200
             strategy = "randtobest1bin"
             tol = 1e-2
             abs_tol = 1e-3
             popsize = 20
 
             # Start multiprocessing for VQE runs
-            with Pool(processes=2) as pool:
+            with Pool(processes=4) as pool:
                 vqd_results = pool.starmap(
                     run_vqd,
                     [
