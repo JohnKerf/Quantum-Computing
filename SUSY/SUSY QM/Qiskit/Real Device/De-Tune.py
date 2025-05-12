@@ -91,18 +91,10 @@ def cost_function(params, H, num_qubits, shots):
 
     @qml.qnode(dev)
     def circuit(params):
-
-        #basis = [0]*num_qubits
-        #qml.BasisState(basis, wires=range(num_qubits))
-        
-        qml.RY(params[0], wires=[num_qubits-3])
-        qml.RY(params[1], wires=[num_qubits-1])
-        qml.CRY(params[2], wires=[num_qubits-1, num_qubits-2])
-        qml.RY(params[3], wires=[num_qubits-2])
-        qml.RY(params[4], wires=[num_qubits-1])
+       
+        qml.RY(params[0], wires=[0])
             
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-     
+        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))      
     
     end = datetime.now()
     device_time = (end - start)
@@ -161,16 +153,16 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
 
 if __name__ == "__main__":
     
-    potential = "DW"
+    potential = "QHO"
     shots = 1024
-    cutoff_list = [512]#, 4, 8, 16, 32, 64, 128, 256]
+    cutoff_list = [16]#, 4, 8, 16, 32, 64, 128, 256]
 
     for cutoff in cutoff_list:
 
         print(f"Running for {potential} potential and cutoff {cutoff}")
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\Differential Evolution\test", potential)
+        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\Differential Evolution\Real Device\Files", potential)
         os.makedirs(base_path, exist_ok=True)
 
 
@@ -181,20 +173,20 @@ if __name__ == "__main__":
         num_qubits = int(1 + np.log2(cutoff))
 
         # Optimizer
-        num_params = 5
+        num_params = 1
         bounds = [(0, 2 * np.pi) for _ in range(num_params)]
 
-        num_vqe_runs = 1
-        max_iter = 2000
+        num_vqe_runs = 8
+        max_iter = 250
         strategy = "randtobest1bin"
         tol = 1e-3
         abs_tol = 1e-3
-        popsize = 20
+        popsize = 5
 
         vqe_starttime = datetime.now()
 
         # Start multiprocessing for VQE runs
-        with Pool(processes=1) as pool:
+        with Pool(processes=8) as pool:
             vqe_results = pool.starmap(
                 run_vqe,
                 [
