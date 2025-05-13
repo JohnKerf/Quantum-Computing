@@ -8,8 +8,6 @@ import numpy as np
 from datetime import datetime, timedelta
 import time
 
-from qiskit.quantum_info import SparsePauliOp
-
 from multiprocessing import Pool
 
 from susy_qm import calculate_Hamiltonian
@@ -88,13 +86,13 @@ def run_vqe(i, max_iter, tol, H, num_qubits, shots):
 if __name__ == "__main__":
     
     potential_list = ["DW"]
-    cut_offs_list = [16]
+    cut_offs_list = [128]
     shots = 1024
 
     for potential in potential_list:
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\OptimizerComparison\COBYLA", potential, str(shots))
+        base_path = os.path.join(r"C:\Users\johnkerf\Desktop\Quantum-Computing\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\OptimizerComparison\COBYLA\All", potential)
         os.makedirs(base_path, exist_ok=True)
 
         print(f"Running for {potential} potential")
@@ -105,21 +103,19 @@ if __name__ == "__main__":
 
             # Calculate Hamiltonian and expected eigenvalues
             H = calculate_Hamiltonian(cut_off, potential)
-            eigenvalues = np.sort(np.linalg.eig(H)[0])
+            eigenvalues = np.sort(np.linalg.eig(H)[0])[:4]
             min_eigenvalue = min(eigenvalues.real)
 
-            # Create qiskit Hamiltonian Pauli string
-            hamiltonian = SparsePauliOp.from_operator(H)
-            num_qubits = hamiltonian.num_qubits
+            num_qubits = int(1+np.log2(cut_off))
 
-            num_vqe_runs = 40
+            num_vqe_runs = 100
             max_iter = 10000
             tol = 1e-6
     
             vqe_starttime = datetime.now()
 
             # Start multiprocessing for VQE runs
-            with Pool(processes=40) as pool:
+            with Pool(processes=5) as pool:
                 vqe_results = pool.starmap(
                     run_vqe,
                     [
@@ -137,6 +133,7 @@ if __name__ == "__main__":
             #num_evaluations = [res["num_evaluations"] for res in vqe_results]
             run_times = [str(res["run_time"]) for res in vqe_results]
             total_run_time = sum([res["run_time"] for res in vqe_results], timedelta())
+            device_times = [str(res["device_time"]) for res in vqe_results]
             total_device_time = sum([res['device_time'] for res in vqe_results], timedelta())
 
             vqe_end = datetime.now()
@@ -163,6 +160,7 @@ if __name__ == "__main__":
                 "num_iters": num_iters,
                 "success": np.array(success, dtype=bool).tolist(),
                 "run_times": run_times,
+                "device_times": device_times,
                 "seeds": seeds,
                 "parallel_run_time": str(vqe_time),
                 "total_VQE_time": str(total_run_time),
