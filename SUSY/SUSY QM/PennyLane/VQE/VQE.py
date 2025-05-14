@@ -20,8 +20,30 @@ def cost_function(params, H, num_qubits, shots):
     dev = qml.device("default.qubit", wires=num_qubits, shots=shots)
     start = datetime.now()
   
+    
     '''
     ############### DW ##########################
+    ## 2
+    @qml.qnode(dev)
+    def circuit(params):
+
+        qml.RY(params[0], wires=[1])
+            
+        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
+
+    ## 4
+    @qml.qnode(dev)
+    def circuit(params):
+    
+        basis = [1]*num_qubits
+        qml.BasisState(basis, wires=range(num_qubits))
+
+        qml.RY(params[0], wires=[1])
+        qml.RY(params[1], wires=[2])
+            
+        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
+
+    ## 8+
     @qml.qnode(dev)
     def circuit(params):
 
@@ -37,6 +59,29 @@ def cost_function(params, H, num_qubits, shots):
         return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
 
     ############### AHO ##########################
+    ## 2
+    @qml.qnode(dev)
+    def circuit(params):
+
+        basis = [1] + [0]*(num_qubits-1)
+        qml.BasisState(basis, wires=range(num_qubits))
+
+        qml.RY(params[0], wires=[0])
+            
+        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
+
+    ## 4
+    @qml.qnode(dev)
+    def circuit(params):
+
+        basis = [1] + [0]*(num_qubits-1)
+        qml.BasisState(basis, wires=range(num_qubits))
+
+        qml.RY(params[0], wires=[1])
+            
+        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
+
+    ## 8+
     @qml.qnode(dev)
     def circuit(params):
 
@@ -99,7 +144,7 @@ def cost_function(params, H, num_qubits, shots):
         qml.RY(params[1], wires=[num_qubits-1])
         qml.CRY(params[2], wires=[num_qubits-1, num_qubits-2])
         qml.RY(params[3], wires=[num_qubits-2])
-        qml.RY(params[4], wires=[num_qubits-1])
+        #qml.RY(params[4], wires=[num_qubits-1])
             
         return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
      
@@ -163,14 +208,14 @@ if __name__ == "__main__":
     
     potential = "DW"
     shots = 1024
-    cutoff_list = [512]#, 4, 8, 16, 32, 64, 128, 256]
+    cutoff_list = [8]#, 4, 8, 16, 32, 64, 128, 256]
 
     for cutoff in cutoff_list:
 
         print(f"Running for {potential} potential and cutoff {cutoff}")
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\Differential Evolution\test", potential)
+        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\test", potential, str(starttime))
         os.makedirs(base_path, exist_ok=True)
 
 
@@ -181,10 +226,10 @@ if __name__ == "__main__":
         num_qubits = int(1 + np.log2(cutoff))
 
         # Optimizer
-        num_params = 5
+        num_params = 4
         bounds = [(0, 2 * np.pi) for _ in range(num_params)]
 
-        num_vqe_runs = 1
+        num_vqe_runs = 100
         max_iter = 2000
         strategy = "randtobest1bin"
         tol = 1e-3
@@ -194,7 +239,7 @@ if __name__ == "__main__":
         vqe_starttime = datetime.now()
 
         # Start multiprocessing for VQE runs
-        with Pool(processes=1) as pool:
+        with Pool(processes=10) as pool:
             vqe_results = pool.starmap(
                 run_vqe,
                 [
