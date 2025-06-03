@@ -9,7 +9,6 @@ import numpy as np
 from datetime import datetime, timedelta
 import time
 
-from qiskit.quantum_info import SparsePauliOp
 
 from multiprocessing import Pool
 
@@ -23,7 +22,7 @@ def cost_function(params, prev_param_list, H, num_qubits, shots, beta, num_swap_
     def ansatz(params, prev=False): 
 
         basis = [0]*num_qubits
-        wires = np.array([0,1,2,3])
+        wires = np.arange(num_qubits)
 
         if prev==True:
             qml.BasisState(basis, wires=range(num_qubits, 2*num_qubits))
@@ -31,10 +30,14 @@ def cost_function(params, prev_param_list, H, num_qubits, shots, beta, num_swap_
         else:
             qml.BasisState(basis, wires=range(num_qubits))
   
-        params_idx=0
-        for i in wires:
-            qml.RY(params[params_idx], wires=[i])
-            params_idx +=1
+
+        qml.RY(params[0], wires=wires[0])
+        qml.RY(params[1], wires=wires[-1])
+        #params_idx=0
+        #num_gates = 3
+        #for i in range(num_gates):
+        #    qml.RY(params[params_idx], wires=[i])
+        #    params_idx +=1
     
         
 
@@ -63,7 +66,7 @@ def cost_function(params, prev_param_list, H, num_qubits, shots, beta, num_swap_
 
         return prob
     
-    dev = qml.device("default.qubit", wires=2*num_qubits, shots=None)
+    dev = qml.device("default.qubit", wires=num_qubits, shots=shots)
     @qml.qnode(dev)
     def expected_value(params):
 
@@ -137,14 +140,14 @@ def cost_function(params, prev_param_list, H, num_qubits, shots, beta, num_swap_
     return loss_f(params)
 
 
-def run_vqd(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, shots, num_energy_levels, beta, num_swap_tests):
+def run_vqd(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, num_dimensions, shots, num_energy_levels, beta, num_swap_tests):
     
     # We need to generate a random seed for each process otherwise each parallelised run will have the same result
     seed = (os.getpid() * int(time.time())) % 123456789
     run_start = datetime.now()
 
     # Generate Halton sequence
-    num_dimensions = 4#*num_qubits
+    #num_dimensions = num_dimensions
     num_samples = popsize
     halton_sampler = Halton(d=num_dimensions, seed=seed)
     halton_samples = halton_sampler.random(n=num_samples)
@@ -206,7 +209,7 @@ def run_vqd(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
 
 if __name__ == "__main__":
     
-    potential_list = ["AHO"]#, "AHO", "DW"]
+    potential_list = ["QHO"]#, "AHO", "DW"]
     cut_offs_list = [16]
     shots = 1024
 
@@ -214,7 +217,7 @@ if __name__ == "__main__":
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         #base_path = os.path.join("/users/johnkerf/SUSY/VQD/QM/Files", potential)
-        base_path = os.path.join(r"C:\Users\johnkerf\Desktop\Quantum-Computing\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQD\Destructive SWAP\TestFiles", potential, starttime)
+        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQD\Destructive SWAP\TestFiles", potential, starttime)
         os.makedirs(base_path, exist_ok=True)
 
         print(f"Running for {potential} potential")
@@ -225,19 +228,18 @@ if __name__ == "__main__":
 
             # Calculate Hamiltonian and expected eigenvalues
             H = calculate_Hamiltonian(cut_off, potential)
-            eigenvalues = np.sort(np.linalg.eig(H)[0])
+            eigenvalues = np.sort(np.linalg.eig(H)[0])[:3]
             min_eigenvalue = min(eigenvalues.real)
 
-            # Create qiskit Hamiltonian Pauli string
-            hamiltonian = SparsePauliOp.from_operator(H)
-            num_qubits = hamiltonian.num_qubits       
+            num_qubits = int(np.log2(cut_off)+1)    
 
             # Optimizer
-            bounds = [(0, 2 * np.pi) for _ in range(4)]
+            num_dimensions = 2
+            bounds = [(0, 2 * np.pi) for _ in range(num_dimensions)]
 
             num_vqd_runs = 4
             num_energy_levels = 3
-            beta = 1.0
+            beta = 2.0
             num_swap_tests = 1
 
             max_iter = 200
@@ -251,7 +253,7 @@ if __name__ == "__main__":
                 vqd_results = pool.starmap(
                     run_vqd,
                     [
-                        (i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, shots, num_energy_levels, beta, num_swap_tests)
+                        (i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, num_dimensions, shots, num_energy_levels, beta, num_swap_tests)
                         for i in range(num_vqd_runs)
                     ],
                 )

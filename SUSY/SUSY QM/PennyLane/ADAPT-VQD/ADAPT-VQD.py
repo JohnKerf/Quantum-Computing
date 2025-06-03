@@ -10,8 +10,6 @@ import numpy as np
 from datetime import datetime, timedelta
 import time
 
-from qiskit.quantum_info import SparsePauliOp
-
 from multiprocessing import Pool
 
 from collections import Counter
@@ -308,7 +306,7 @@ def run_adapt_vqd(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
                     final_params = pre_op_params
                     success = True
                     break
-                if abs(current_eigenval-min_e) < 1e-6:
+                if abs(current_eigenval-min_e) < 1e-2:
                     #print("Converged to min e")
                     success = True
                     final_params = op_params
@@ -357,7 +355,7 @@ if __name__ == "__main__":
     print(f"Running for {potential} potential, cutoff {cutoff}")
 
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_path = os.path.join(r"C:\Users\johnkerf\Desktop\Quantum-Computing\Quantum-Computing\SUSY\SUSY QM\PennyLane\ADAPT-VQD\TestFiles", potential, str(starttime))
+    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\ADAPT-VQD\TestFiles", potential, str(starttime))
     os.makedirs(base_path, exist_ok=True)
 
 
@@ -367,9 +365,7 @@ if __name__ == "__main__":
     eigenvalues = np.sort(np.linalg.eig(H)[0])[:4]
     min_eigenvalue = np.min(eigenvalues)
 
-    #create qiskit Hamiltonian Pauli string
-    hamiltonian = SparsePauliOp.from_operator(H)
-    num_qubits = hamiltonian.num_qubits
+    num_qubits = int(np.log2(cutoff)+1) 
 
     #Create operator pool
     operator_pool = []
@@ -389,22 +385,22 @@ if __name__ == "__main__":
 
     # Optimizer
     num_energy_levels = 3
-    num_adapt_steps = 5
+    num_adapt_steps = 10
     num_grad_checks = 10
     beta = 1.0
 
     num_vqd_runs = 16
     max_iter = 200
     strategy = "randtobest1bin"
-    tol = 1e-3
+    tol = 1e-2
     abs_tol = 1e-2
     popsize = 20
 
     #QHO
-    #basis_list = [[1] + [0]*(num_qubits-1),
-    #            [0]*(num_qubits),
-    #            [1] + [0]*(num_qubits-1)
-    #            ]
+    basis_list =[[1] + [0]*(num_qubits-1),
+                [0]*(num_qubits),
+                [1] + [0]*(num_qubits-1)
+                ]
 
     #AHO
     basis_list = [[1] + [0]*(num_qubits-1),
