@@ -97,7 +97,7 @@ if __name__ == "__main__":
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         base_path = os.path.join(
-            r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\Qiskit\VQE\test",
+            r"C:\Users\johnkerf\Desktop\Quantum-Computing\Quantum-Computing\SUSY\SUSY QM\Qiskit\VQE\test",
             potential)
         os.makedirs(base_path, exist_ok=True)
 
@@ -110,7 +110,7 @@ if __name__ == "__main__":
 
         simulator = AerSimulator()
         estimator = Estimator(mode=simulator)
-        estimator.options.default_shots = 4096
+        estimator.options.default_shots = 1024
         
         # Prepare parameterized ansatz
         #theta = [Parameter(f'theta_{i}') for i in range(num_params)]
@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
         # Use Qiskit's RealAmplitudes ansatz
         reps = 1  # You can increase reps for deeper circuits
-        ansatz = RealAmplitudes(num_qubits, reps=reps, entanglement='full')
+        ansatz = RealAmplitudes(num_qubits, reps=reps, entanglement='reverse_linear')
         theta = ansatz.parameters  # This is a ParameterVector
         transpiled_qc = transpile(ansatz, simulator)
         num_params = len(theta)  # Update num_params accordingly
