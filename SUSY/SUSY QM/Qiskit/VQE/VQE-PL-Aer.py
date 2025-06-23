@@ -14,10 +14,13 @@ from multiprocessing import Pool
 
 from susy_qm import calculate_Hamiltonian
 
+from qiskit_aer import AerSimulator
+sim = AerSimulator(method="automatic")
 
 def cost_function(params, H, num_qubits, shots):
    
-    dev = qml.device("qiskit.aer", wires=num_qubits, shots=shots)
+    #dev = qml.device("qiskit.aer", wires=num_qubits, shots=shots)
+    dev = qml.device("qiskit.aer", wires=num_qubits, backend=sim, shots=shots)
     start = datetime.now()
   
     
@@ -140,11 +143,10 @@ def cost_function(params, H, num_qubits, shots):
         #basis = [0]*num_qubits
         #qml.BasisState(basis, wires=range(num_qubits))
         
-        qml.RY(params[0], wires=[num_qubits-3])
-        qml.RY(params[1], wires=[num_qubits-1])
-        qml.CRY(params[2], wires=[num_qubits-1, num_qubits-2])
-        qml.RY(params[3], wires=[num_qubits-2])
-        qml.RY(params[4], wires=[num_qubits-1])
+        qml.RY(params[0], wires=[0])
+        qml.RY(params[1], wires=[1])
+        qml.RY(params[2], wires=[2])
+        qml.RY(params[3], wires=[3])
             
         return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
      
@@ -206,9 +208,9 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
 
 if __name__ == "__main__":
     
-    potential = "DW"
+    potential = "AHO"
     shots = 1024
-    cutoff_list = [16]#, 4, 8, 16, 32, 64, 128, 256]
+    cutoff_list = [8]#, 4, 8, 16, 32, 64, 128, 256]
 
     for cutoff in cutoff_list:
 
@@ -226,7 +228,7 @@ if __name__ == "__main__":
         num_qubits = int(1 + np.log2(cutoff))
 
         # Optimizer
-        num_params = 5
+        num_params = 4
         bounds = [(0, 2 * np.pi) for _ in range(num_params)]
 
         num_vqe_runs = 8
