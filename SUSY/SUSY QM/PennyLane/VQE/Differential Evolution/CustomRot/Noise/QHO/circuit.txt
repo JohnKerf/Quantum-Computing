@@ -1,5 +1,0 @@
-@qml.qnode(dev)
-def circuit(params):
-    rot_params = pnp.tensor(params, requires_grad=True)
-    qml.Rot(*rot_params, wires=[0])
-    return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
