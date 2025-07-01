@@ -136,11 +136,15 @@ def cost_function(params, H, num_qubits, shots):
 
     @qml.qnode(dev)
     def circuit(params):
-       
-        qml.RY(params[0], wires=[0])
-        qml.RY(params[1], wires=[1])
-        qml.RY(params[2], wires=[2])
-        qml.RY(params[3], wires=[3])
+
+        #basis = [0]*num_qubits
+        #qml.BasisState(basis, wires=range(num_qubits))
+        
+        qml.RY(params[0], wires=[num_qubits-3])
+        qml.RY(params[1], wires=[num_qubits-1])
+        qml.CRY(params[2], wires=[num_qubits-1, num_qubits-2])
+        qml.RY(params[3], wires=[num_qubits-2])
+        qml.RY(params[4], wires=[num_qubits-1])
             
         return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
      
@@ -167,7 +171,7 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
     device_time = timedelta()
 
     def wrapped_cost_function(params):
-        result, dt = cost_function(params, H, num_qubits, shots)
+        result, dt = cost_function(params, H, num_qubits, shots, dev)
         nonlocal device_time
         device_time += dt
         return result
@@ -202,7 +206,7 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
 
 if __name__ == "__main__":
     
-    potential = "AHO"
+    potential = "DW"
     shots = 1024
     cutoff_list = [8]#, 4, 8, 16, 32, 64, 128, 256]
 
@@ -211,7 +215,7 @@ if __name__ == "__main__":
         print(f"Running for {potential} potential and cutoff {cutoff}")
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\test", potential, str(starttime))
+        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\VQE\dev-seed-test", potential, str(starttime))
         os.makedirs(base_path, exist_ok=True)
 
 
@@ -222,7 +226,7 @@ if __name__ == "__main__":
         num_qubits = int(1 + np.log2(cutoff))
 
         # Optimizer
-        num_params = 4
+        num_params = 5
         bounds = [(0, 2 * np.pi) for _ in range(num_params)]
 
         num_vqe_runs = 8
