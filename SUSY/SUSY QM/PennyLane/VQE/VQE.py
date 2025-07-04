@@ -171,7 +171,7 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits,
     device_time = timedelta()
 
     def wrapped_cost_function(params):
-        result, dt = cost_function(params, H, num_qubits, shots, dev)
+        result, dt = cost_function(params, H, num_qubits, shots)
         nonlocal device_time
         device_time += dt
         return result
