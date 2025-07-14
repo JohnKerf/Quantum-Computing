@@ -99,9 +99,9 @@ def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, observable, pa
 
 if __name__ == "__main__":
 
-    potential = "AHO"
+    potential = "QHO"
     shots = 1024
-    cutoff = 4
+    cutoff = 2
 
     print(f"Running VQE for {potential} with cutoff {cutoff}")
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -135,7 +135,7 @@ if __name__ == "__main__":
 
     aer_sim = AerSimulator(method='automatic')
     pm = generate_preset_pass_manager(backend=aer_sim, optimization_level=3)
-    isa_qc = qc#pm.run(qc)
+    isa_qc = pm.run(qc)
 
     seed = (os.getpid() * int(time.time())) % 123456789
     estimator = AerEstimator(run_options={"seed": seed, "shots": shots})
