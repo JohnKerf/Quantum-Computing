@@ -49,8 +49,8 @@ def compute_grad(param, H, num_qubits, operator_ham, op_list, op_params, basis_s
 
 def cost_function(params, H, num_qubits, shots, op_list, basis_state):
    
-    #dev = qml.device("default.qubit", wires=num_qubits, shots=shots)
-    dev = qml.device("qiskit.aer", wires=num_qubits, shots=shots)
+    dev = qml.device("default.qubit", wires=num_qubits, shots=shots)
+    #dev = qml.device("qiskit.aer", wires=num_qubits, shots=shots)
     start = datetime.now()
   
     @qml.qnode(dev)
@@ -205,7 +205,7 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
 
 if __name__ == "__main__":
     
-    potential = "DW"
+    potential = "AHO"
     cutoff = 16
     shots = 1024
 
