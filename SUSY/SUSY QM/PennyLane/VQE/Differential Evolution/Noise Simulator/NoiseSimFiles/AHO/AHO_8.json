@@ -1,0 +1,46 @@
+{
+    "potential": "AHO",
+    "cutoff": 8,
+    "exact_eigenvalues": [
+        0.03201011000923872,
+        1.6801555245826092,
+        1.8335255754908437,
+        3.963373907862431
+    ],
+    "ansatz": "StronglyEntanglingLayers-1layer",
+    "num_VQE": 1,
+    "shots": 2,
+    "Optimizer": {
+        "name": "differential_evolution",
+        "bounds": "[(0, 2 * np.pi) for _ in range(np.prod(params_shape))]",
+        "maxiter": 500,
+        "tolerance": 0.001,
+        "abs_tolerance": 0.001,
+        "strategy": "randtobest1bin",
+        "popsize": 20,
+        "init": "scaled_samples"
+    },
+    "results": [
+        0.032010110009236495
+    ],
+    "params": [
+        [
+            1.036808638154139,
+            1.9363955815050282
+        ]
+    ],
+    "num_iters": [
+        169
+    ],
+    "num_evaluations": [
+        3499
+    ],
+    "success": [
+        true
+    ],
+    "run_times": [
+        "0:08:52.274998"
+    ],
+    "parallel_run_time": "0:08:52.275733",
+    "total_VQE_time": "0:08:52.274998"
+}

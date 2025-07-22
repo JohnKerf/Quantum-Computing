@@ -205,8 +205,8 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
 
 if __name__ == "__main__":
     
-    potential = "AHO"
-    cutoff = 16
+    potential = "DW"
+    cutoff = 32
     shots = 1024
 
     print(f"Running for {potential} potential, cutoff {cutoff}")
@@ -231,7 +231,7 @@ if __name__ == "__main__":
     phi = 0.0
     for i in range(num_qubits):
         operator_pool.append(qml.RY(phi,wires=[i]))
-        operator_pool.append(qml.RZ(phi,wires=[i]))
+        #operator_pool.append(qml.RZ(phi,wires=[i]))
 
     c_pool = []
 
