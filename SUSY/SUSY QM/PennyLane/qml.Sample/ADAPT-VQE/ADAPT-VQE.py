@@ -16,12 +16,14 @@ from collections import Counter
 
 from susy_qm import calculate_Hamiltonian
 
-def compute_grad(param, H, num_qubits, operator_ham, op_list, op_params, basis_state):
+def compute_grad(param, H_decomp, num_qubits, operator_ham, op_list, op_params, basis_state):
 
     dev2 = qml.device("default.qubit", wires=num_qubits, shots=100000)
-    @qml.qnode(dev2)
+    paulis = H_decomp.ops
+    coeffs = pnp.array(H_decomp.coeffs)
 
-    def grad_circuit(param, operator_ham, op_list, op_params):
+    @qml.qnode(dev2)
+    def grad_pauli_circuit(param, operator_ham, op_list, op_params):
 
         qml.BasisState(basis_state, wires=range(num_qubits))
 
@@ -34,7 +36,15 @@ def compute_grad(param, H, num_qubits, operator_ham, op_list, op_params, basis_s
         oph = type(operator_ham)
         oph(param, wires=operator_ham.wires)
 
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
+        return [qml.sample(op) for op in paulis]  
+
+    def grad_circuit(param, operator_ham, op_list, op_params):
+
+        samples = grad_pauli_circuit(param, operator_ham, op_list, op_params)  
+        samples = pnp.array(samples).T 
+        energy = pnp.mean(samples @ coeffs)
+
+        return energy
     
     params = pnp.tensor(param, requires_grad=True)
     grad_fn = qml.grad(grad_circuit)
@@ -44,10 +54,13 @@ def compute_grad(param, H, num_qubits, operator_ham, op_list, op_params, basis_s
 
 
 
-def cost_function(params, H, num_qubits, shots, op_list, basis_state):
+def cost_function(params, H_decomp, num_qubits, shots, op_list, basis_state):
    
     dev = qml.device("default.qubit", wires=num_qubits, shots=shots)
     start = datetime.now()
+
+    paulis = H_decomp.ops
+    coeffs = H_decomp.coeffs
   
     @qml.qnode(dev)
     def circuit(params):
@@ -60,13 +73,16 @@ def cost_function(params, H, num_qubits, shots, op_list, basis_state):
             o(params[param_index], wires=op.wires)
             param_index +=1
 
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
+        return [qml.sample(op) for op in paulis]
+       
+    samples = circuit(params)  
+    samples = np.array(samples).T 
+    energy = np.mean(samples @ coeffs)
      
     end = datetime.now()
     device_time = (end - start)
 
-    return circuit(params), device_time
+    return energy, device_time
 
 
 def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, shots, num_steps, phi, num_grad_checks, operator_pool, basis_state, min_eigenvalue):
@@ -123,6 +139,7 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
 
                 grad_list.append((grad_op,abs(grad)))
 
+            #print(grad_list)
             max_op, max_grad = max(grad_list, key=lambda x: x[1])
             max_ops_list.append(max_op)
 
@@ -201,23 +218,25 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
 
 if __name__ == "__main__":
     
-    potential = "DW"
+    potential = "AHO"
     cutoff = 16
-    shots = 1024
+    shots = 100000
 
     print(f"Running for {potential} potential, cutoff {cutoff}")
 
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\ADAPT-VQE\TestFiles", potential)
+    base_path = os.path.join("/users/johnkerf/Quantum Computing/SUSY-QM/PennyLane/qml.Sample/ADAPT-VQE/Files", potential)
     os.makedirs(base_path, exist_ok=True)
 
 
     # Calculate Hamiltonian and expected eigenvalues
     H = calculate_Hamiltonian(cutoff, potential)
-
+    
     eigenvalues = np.sort(np.linalg.eig(H)[0])[:4]
     min_eigenvalue = np.min(eigenvalues)
     num_qubits = int(1 + np.log2(cutoff))
+
+    H_decomp = qml.pauli_decompose(H, wire_order=range(num_qubits))
 
     #Create operator pool
     operator_pool = []
@@ -242,26 +261,26 @@ if __name__ == "__main__":
     else:
         basis_state = [1] + [0]*(num_qubits-1)
     
-
+   
     # Optimizer
     num_steps = 10
     num_grad_checks = 10
-    num_vqe_runs = 8
+    num_vqe_runs = 100
     max_iter = 500
     strategy = "randtobest1bin"
-    tol = 1e-3
-    abs_tol = 1e-2
-    popsize = 20
+    tol = 1e-8
+    abs_tol = 1e-7
+    popsize = 5
 
     vqe_starttime = datetime.now()
 
     print("Starting ADAPT-VQE")
     # Start multiprocessing for VQE runs
-    with Pool(processes=8) as pool:
+    with Pool(processes=100) as pool:
         vqe_results = pool.starmap(
             run_adapt_vqe,
             [
-                (i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, shots, num_steps, phi, num_grad_checks, operator_pool, basis_state, min_eigenvalue)
+                (i, max_iter, tol, abs_tol, strategy, popsize, H_decomp, num_qubits, shots, num_steps, phi, num_grad_checks, operator_pool, basis_state, min_eigenvalue)
                 for i in range(num_vqe_runs)
             ],
         )
