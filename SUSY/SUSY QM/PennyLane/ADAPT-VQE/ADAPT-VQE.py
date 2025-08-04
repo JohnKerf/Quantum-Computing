@@ -18,7 +18,7 @@ from susy_qm import calculate_Hamiltonian
 
 def compute_grad(param, H, num_qubits, operator_ham, op_list, op_params, basis_state):
 
-    dev2 = qml.device("default.qubit", wires=num_qubits, shots=100000)
+    dev2 = qml.device("default.qubit", wires=num_qubits, shots=None)
     @qml.qnode(dev2)
 
     def grad_circuit(param, operator_ham, op_list, op_params):
@@ -201,14 +201,14 @@ def run_adapt_vqe(i, max_iter, tol, abs_tol, strategy, popsize, H, num_qubits, s
 
 if __name__ == "__main__":
     
-    potential = "DW"
-    cutoff = 16
-    shots = 1024
+    potential = "AHO"
+    cutoff = 8
+    shots = None
 
     print(f"Running for {potential} potential, cutoff {cutoff}")
 
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\ADAPT-VQE\TestFiles", potential)
+    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\ADAPT-VQE\Statevector", potential)
     os.makedirs(base_path, exist_ok=True)
 
 
