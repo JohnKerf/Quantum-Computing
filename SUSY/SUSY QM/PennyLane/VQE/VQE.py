@@ -88,7 +88,6 @@ def cost_function(params, H, num_qubits, shots):
         basis = [1] + [0]*(num_qubits-1)
         qml.BasisState(basis, wires=range(num_qubits))
         
-        qml.RY(params[0], wires=[num_qubits-2])
         qml.RY(params[1], wires=[num_qubits-3])
         qml.RY(params[2], wires=[num_qubits-4])
             
