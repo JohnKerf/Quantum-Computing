@@ -110,21 +110,12 @@ def run_vqe(i, max_iter, tol, H, num_qubits, shots, num_params, log_dir):
     #'''
 
 
-
     def wrapped_cost(params):
         result, dt = cost_function(params, estimator, observable, param_objs, qc)
         nonlocal device_time
         device_time += dt
         return result
 
-
-    iteration_count = 0
-    def callback(xk, convergence=None):
-        nonlocal iteration_count
-        iteration_count += 1
-        if iteration_count % 50 == 0:
-            energy, _ = cost_function(xk, estimator, observable, param_objs, qc)
-            logger.info(f"Iteration {iteration_count}: Energy = {energy:.8f}")
 
     logger.info(f"Starting VQE run {i} (seed={seed})")
 
