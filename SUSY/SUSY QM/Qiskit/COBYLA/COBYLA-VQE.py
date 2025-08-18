@@ -19,6 +19,10 @@ from multiprocessing import Pool
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+import git
+repo = git.Repo('.', search_parent_directories=True)
+repo_path = repo.working_tree_dir
+
 
 def setup_logger(logfile_path, name):
     logger = logging.getLogger(name)
@@ -40,7 +44,7 @@ def cost_function(params, estimator, observable, param_objs, qc):
     bound = qc.assign_parameters(param_dict, inplace=False)
 
     result = estimator.run([(bound, observable)]).result()
-    energy = result[0].data.evs.sum()
+    energy = result[0].data.evs
 
     end = datetime.now()
     return energy, end - start
@@ -104,7 +108,7 @@ def run_vqe(i, max_iter, tol, H, num_qubits, shots, num_params, log_dir):
 
     qc.ry(param_objs[0], 0)   
     qc.ry(param_objs[1], 2)
-    qc.append(CRYGate(param_objs[2]), [0, 1])
+    qc.cry(param_objs[2], 0, 1)
     qc.ry(param_objs[3], 1)
     qc.ry(param_objs[4], 0)
     #'''
@@ -145,8 +149,8 @@ def run_vqe(i, max_iter, tol, H, num_qubits, shots, num_params, log_dir):
 if __name__ == "__main__":
 
     potential = "DW"
-    shotslist = [None, 10000, 100000]
-    cutoffs = [8,16,32]
+    shotslist = [None]#, 10000, 100000]
+    cutoffs = [8]
 
     for shots in shotslist:
         for cutoff in cutoffs:
@@ -154,7 +158,7 @@ if __name__ == "__main__":
             print(f"Running for {potential} potential and cutoff {cutoff} and shots {shots}")
 
             starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            base_path = os.path.join("/users/johnkerf/Quantum Computing/SUSY-QM/Qiskit/COBYLA/Files", str(shots), potential)
+            base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\COBYLA\Files2", str(shots), potential)
             log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
             os.makedirs(log_path, exist_ok=True)
 
@@ -163,14 +167,14 @@ if __name__ == "__main__":
             num_qubits = int(1 + np.log2(cutoff))
 
             num_params = 5
-            num_vqe_runs = 100
+            num_vqe_runs = 1
             max_iter = 10000
             tol = 1e-8
 
             vqe_starttime = datetime.now()
 
             #Start multiprocessing for VQE runs
-            with Pool(processes=100) as pool:
+            with Pool(processes=1) as pool:
                 vqe_results = pool.starmap(
                     run_vqe,
                     [
