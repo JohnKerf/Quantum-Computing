@@ -79,11 +79,49 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
     observable = SparsePauliOp.from_operator(H)
     param_objs = [Parameter(f"θ{i}") for i in range(num_params)]
 
+    '''
     ############ QHO ##################
     qc = QuantumCircuit(num_qubits)
     n = num_qubits-1
     qc.x(n)
     qc.ry(param_objs[0], n)
+    '''
+
+    #'''
+    ############ AHO ##################
+    qc = QuantumCircuit(num_qubits)
+
+    # 2
+    #qc.x(1)
+    #qc.ry(param_objs[0], 1)
+
+    # 4
+    qc.x(2)
+    qc.ry(param_objs[0], 1)
+
+    # 8+
+    #n = num_qubits-1
+    #qc.x(n)
+    #qc.ry(param_objs[0], 1)
+    #qc.ry(param_objs[1], 2)
+    #'''
+
+    '''
+    ############ DW ##################
+    qc = QuantumCircuit(num_qubits)
+
+    #qc.ry(param_objs[0], 0)
+
+    #qc.x(2)
+    #qc.ry(param_objs[0], 0)
+    #qc.ry(param_objs[1], 1)
+
+    qc.ry(param_objs[0], 0)   
+    qc.ry(param_objs[1], 2)
+    qc.cry(param_objs[2], 0, 1)
+    qc.ry(param_objs[3], 1)
+    qc.ry(param_objs[4], 0)
+    '''
 
 
     target = aer_backend.target
@@ -153,9 +191,9 @@ if __name__ == "__main__":
 
     log_enabled = True
 
-    potential = "QHO"
+    potential = "AHO"
     shotslist = [None]
-    cutoffs = [2]
+    cutoffs = [4]
 
     for shots in shotslist:
         for cutoff in cutoffs:
@@ -174,9 +212,9 @@ if __name__ == "__main__":
 
             num_params = 1
             num_vqe_runs = 1
-            max_iter = 50
-            initial_tr_radius = 0.8
-            final_tr_radius = 1e-3
+            max_iter = 100
+            initial_tr_radius = 0.3
+            final_tr_radius = 1e-11
 
             vqe_starttime = datetime.now()
 
