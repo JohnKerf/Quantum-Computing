@@ -19,13 +19,14 @@ from multiprocessing import Pool
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
 
 import git
 repo = git.Repo('.', search_parent_directories=True)
 repo_path = repo.working_tree_dir
 
 service = QiskitRuntimeService(name="NQCC-Q3")
-real_backend = service.backend('ibm_pittsburgh')
+real_backend = service.backend('ibm_kingston')
 noise_model = NoiseModel.from_backend(real_backend)
 
 def setup_logger(logfile_path, name, enabled=True):
@@ -73,21 +74,21 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
     run_start = datetime.now()
     device_time = timedelta()
 
-    #aer_backend = AerSimulator(noise_model=noise_model)
-    aer_backend = AerSimulator()
+    aer_backend = AerSimulator(noise_model=noise_model)
+    #aer_backend = AerSimulator()
 
     observable = SparsePauliOp.from_operator(H)
     param_objs = [Parameter(f"θ{i}") for i in range(num_params)]
 
-    '''
+    #'''
     ############ QHO ##################
     qc = QuantumCircuit(num_qubits)
     n = num_qubits-1
     qc.x(n)
     qc.ry(param_objs[0], n)
-    '''
-
     #'''
+
+    '''
     ############ AHO ##################
     qc = QuantumCircuit(num_qubits)
 
@@ -104,7 +105,7 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
     #qc.x(n)
     #qc.ry(param_objs[0], 1)
     #qc.ry(param_objs[1], 2)
-    #'''
+    '''
 
     '''
     ############ DW ##################
@@ -155,7 +156,7 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
     with Session(backend=aer_backend) as session:
         estimator = Estimator(mode=session)
         estimator.options.default_shots = shots
-        #estimator.options.resilience_level = 2
+        estimator.options.resilience_level = 2
 
         logger.info(estimator.options)
 
@@ -191,9 +192,9 @@ if __name__ == "__main__":
 
     log_enabled = True
 
-    potential = "AHO"
-    shotslist = [None]
-    cutoffs = [4]
+    potential = "QHO"
+    shotslist = [1024]
+    cutoffs = [2]
 
     for shots in shotslist:
         for cutoff in cutoffs:
@@ -213,7 +214,7 @@ if __name__ == "__main__":
             num_params = 1
             num_vqe_runs = 1
             max_iter = 100
-            initial_tr_radius = 0.3
+            initial_tr_radius = 0.8
             final_tr_radius = 1e-11
 
             vqe_starttime = datetime.now()

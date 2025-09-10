@@ -51,7 +51,7 @@ def cost_function(params, H_decomp, num_qubits, shots, device, seed):
     
     @qml.qnode(dev)
     def circuit(params, groups):
-        #'''
+        '''
         ############### DW ##########################
         ## 2
         #qml.RY(params[0], wires=[1])
@@ -68,9 +68,9 @@ def cost_function(params, H_decomp, num_qubits, shots, device, seed):
         qml.CRY(params[2], wires=[num_qubits-1, num_qubits-2])
         qml.RY(params[3], wires=[num_qubits-2])
         qml.RY(params[4], wires=[num_qubits-1])
-        #'''      
+        '''      
           
-        '''
+        #'''
         ############### AHO ##########################
         ## 2
         #basis = [1] + [0]*(num_qubits-1)
@@ -78,16 +78,16 @@ def cost_function(params, H_decomp, num_qubits, shots, device, seed):
         #qml.RY(params[0], wires=[0])
 
         ## 4
-        #basis = [1] + [0]*(num_qubits-1)
-        #qml.BasisState(basis, wires=range(num_qubits))
-        #qml.RY(params[0], wires=[1])
-                
-        ## 8+
         basis = [1] + [0]*(num_qubits-1)
         qml.BasisState(basis, wires=range(num_qubits))
-        qml.RY(params[0], wires=[num_qubits-2])
-        qml.RY(params[1], wires=[num_qubits-3])
-        '''        
+        qml.RY(params[0], wires=[1])
+                
+        ## 8+
+        #basis = [1] + [0]*(num_qubits-1)
+        #qml.BasisState(basis, wires=range(num_qubits))
+        #qml.RY(params[0], wires=[num_qubits-2])
+        #qml.RY(params[1], wires=[num_qubits-3])
+        #'''        
     
         '''
         ############### QHO ##########################
@@ -95,9 +95,9 @@ def cost_function(params, H_decomp, num_qubits, shots, device, seed):
         qml.BasisState(basis, wires=range(num_qubits))
 
         qml.RY(params[0], wires=[0])      
-        '''
+        #'''
         return [qml.expval(op) for op in groups]
-        #return [qml.expval(op) for op in paulis]
+        return [qml.expval(op) for op in paulis]
 
     
     energy = 0
@@ -117,7 +117,7 @@ def cost_function(params, H_decomp, num_qubits, shots, device, seed):
 
     
 
-def run_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, H_decomp, num_qubits, shots, num_params, device, log_dir, log_enabled):
+def run_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, H_decomp, num_qubits, shots, num_params, device, log_dir, log_enabled, lam=15, pen=2):
 
     if log_enabled: os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, f"vqe_run_{i}.log")
@@ -134,7 +134,11 @@ def run_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, H_decomp, num_
         result, dt = cost_function(params, H_decomp, num_qubits, shots, device, seed)
         nonlocal device_time
         device_time += dt
-        return result
+
+        neg = max(0.0, -(result + 0.5))
+        return result + lam * (neg ** pen)
+        #return result
+        #return abs(result)
 
 
     iteration_count = 0
@@ -144,6 +148,7 @@ def run_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, H_decomp, num_
         if log_enabled and iteration_count % 50 == 0:
             energy, _ = cost_function(xk, H_decomp, num_qubits, shots, device, seed)
             logger.info(f"Iteration {iteration_count}: Energy = {energy:.8f}")
+
 
     np.random.seed(seed)
     x0 = np.random.random(size=num_params)*2*np.pi
@@ -188,12 +193,12 @@ if __name__ == "__main__":
     
     log_enabled = False
 
-    potential = "DW"
+    potential = "AHO"
     device = 'default.qubit'
     #device = 'qiskit.aer'
 
     shotslist = [10000]#[None, 10000, 100000]
-    cutoffs = [16]
+    cutoffs = [8]
 
     for shots in shotslist:
         for cutoff in cutoffs:
@@ -201,7 +206,7 @@ if __name__ == "__main__":
             print(f"Running for {potential} potential and cutoff {cutoff} and shots {shots}")
 
             starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            base_path = os.path.join(repo_path, r"SUSY\SUSY QM\PennyLane\COBYQA\PauliDecomp\VQE\Grouped Vs NoGrouped\NoGrouped", potential)
+            base_path = os.path.join(repo_path, r"SUSY\SUSY QM\PennyLane\COBYQA\PauliDecomp\VQE\NegPenalty", potential)
             os.makedirs(base_path, exist_ok=True)
 
             log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
@@ -215,7 +220,7 @@ if __name__ == "__main__":
             H_decomp = qml.pauli_decompose(H, wire_order=range(num_qubits))
 
             # Optimizer
-            num_params = 5
+            num_params = 1
 
             num_vqe_runs = 50
             max_iter = 10000
