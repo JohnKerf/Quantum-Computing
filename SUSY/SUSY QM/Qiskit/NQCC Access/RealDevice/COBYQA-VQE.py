@@ -26,8 +26,8 @@ repo = git.Repo('.', search_parent_directories=True)
 repo_path = repo.working_tree_dir
 
 #service = QiskitRuntimeService(name="NQCC-Q3")
-NQCC_IBM_QUANTUM_API_KEY = "R6iYDy8QfPF7Jc2BXMn--QuV3XGXNg8oAZNe2V_nvlWj"
-ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/d4f95db0515b47b7ba61dba8a424f873:55736fd5-c0a0-4f44-8180-ce6e81d6c9d0::"
+NQCC_IBM_QUANTUM_API_KEY = ""
+ibm_instance_crn = ""
 service = QiskitRuntimeService(channel="ibm_quantum_platform", token=NQCC_IBM_QUANTUM_API_KEY, instance=ibm_instance_crn)
 backend_name = 'ibm_kingston'
 real_backend = service.backend(backend_name)
