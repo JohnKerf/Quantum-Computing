@@ -276,7 +276,7 @@ if __name__ == "__main__":
                 "device": device,
                 "shots": shots,
                 "Optimizer": {
-                    "name": "COBYLA",
+                    "name": "COBYQA",
                     "maxiter": max_iter,
                     'maxfev': max_iter,
                     "tolerance": tol,
