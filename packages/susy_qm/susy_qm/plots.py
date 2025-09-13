@@ -2,6 +2,11 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 
+import git
+repo_path = git.Repo('.', search_parent_directories=True).working_tree_dir
+
+
+
 def create_vqe_plots(potential, base_path, cut_off_list, individual, converged_only=False):
 
     # Load all data from folder
