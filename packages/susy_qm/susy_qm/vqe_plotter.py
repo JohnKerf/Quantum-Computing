@@ -65,15 +65,18 @@ class VQEPlotter:
         ax.xaxis.set_minor_locator(ticker.NullLocator())
 
     # ---------- plots ----------
-    def plot_delta_e_vs_cutoff_line(self, *, axes=None, marker="^"):
-        """|E_exact - E_median| vs cutoff, one panel per potential."""
+    def plot_delta_e_vs_cutoff_line(self, *, axes=None, marker="^", markersize=4.0):
+
+        markers = ["o", "s", "^", "D", "v", "P", "*", "X"]
         fig, axes_arr = self._ensure_axes_grid(existing_axes=axes, sharey=True)
+
         for i, pot in enumerate(self.potentials):
             ax = axes_arr[i]
-            for label, path in self.data_paths:
+            for j, (label, path) in enumerate(self.data_paths):
                 summary = self._load(path)
                 y = summary.delta_e[pot].reindex(self.cutoffs)
-                ax.plot(self.cutoffs, y, marker=marker, label=label)
+                marker = markers[j]
+                ax.plot(self.cutoffs, y, marker=marker, markersize=markersize, label=label)
             ax.set_title(pot)
             ax.set_yscale("symlog", linthresh=1.0)
             ax.grid(True)
@@ -158,7 +161,7 @@ class VQEPlotter:
             if i > 0:
                 ax.tick_params(axis="y", which="both", left=False, right=False, labelleft=False)
 
-        axes_arr[0].set_ylabel(r"$N_{Evals}$")
+        axes_arr[0].set_ylabel(r"$N_{evals}$")
         axes_arr[len(self.potentials) // 2].set_xlabel(r"$\Lambda$")
         
         legend_patches = [
