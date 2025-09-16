@@ -67,7 +67,7 @@ def cost_function(params, H, num_qubits, shots, op_list, basis_state):
     return circuit(params), device_time
 
 
-def run_adapt_vqe(i, max_iter, tol, H, num_qubits, shots, num_steps, phi, num_grad_checks, operator_pool, basis_state, min_eigenvalue):
+def run_adapt_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, H, num_qubits, shots, num_steps, phi, num_grad_checks, operator_pool, basis_state, min_eigenvalue):
 
     # We need to generate a random seed for each process otherwise each parallelised run will have the same result
     seed = (os.getpid() * int(time.time())) % 123456789
@@ -145,12 +145,21 @@ def run_adapt_vqe(i, max_iter, tol, H, num_qubits, shots, num_steps, phi, num_gr
 
         np.random.seed(seed)
         x0 = np.concatenate((op_params, np.array([np.random.random()*2*np.pi])))
+        bounds = [(0, 2 * np.pi) for _ in range(len(op_params)+1)]
         
         res = minimize(
             wrapped_cost_function,
             x0,
-            method= "COBYLA",
-            options= {'maxiter':max_iter, 'tol':tol}
+            bounds=bounds,
+            method= "COBYQA",
+            options= {
+                'maxiter':max_iter, 
+                'maxfev':max_iter, 
+                #'tol':tol, 
+                'initial_tr_radius':initial_tr_radius, 
+                'final_tr_radius':final_tr_radius, 
+                'scale':True, 
+                'disp':False}
         )
         
         if i!=0: pre_min_e = min_e
@@ -202,7 +211,7 @@ def run_adapt_vqe(i, max_iter, tol, H, num_qubits, shots, num_steps, phi, num_gr
 
 if __name__ == "__main__":
     
-    potential = "DW"
+    potential = "QHO"
     cutoff_list = [32]
     shots = None
 
@@ -211,7 +220,7 @@ if __name__ == "__main__":
         print(f"Running for {potential} potential, cutoff {cutoff}")
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.join("/users/johnkerf/Quantum Computing/SUSY-QM/PennyLane/ADAPT-VQE/COBYLA-Test/StatevectorFilesLargerPool", potential)
+        base_path = os.path.join(r"SUSY/SUSY QM/PennyLane/COBYQA/qml.expval/Adaptive-VQE/StatevectorFiles", potential)
         os.makedirs(base_path, exist_ok=True)
 
 
@@ -242,11 +251,12 @@ if __name__ == "__main__":
 
         # Choose basis state
         if potential == 'DW':
-            basis_state = [0]*(num_qubits)
+            if cutoff == 4:
+                basis_state = [1] + [0]*(num_qubits-1)
+            else:
+                basis_state = [0]*(num_qubits)
         else:
             basis_state = [1] + [0]*(num_qubits-1)
-        
-        #basis_state = [1] + [0]*(num_qubits-1)
 
         # Optimizer
         num_steps = 30
@@ -254,6 +264,8 @@ if __name__ == "__main__":
         num_vqe_runs = 100
         max_iter = 10000
         tol = 1e-8
+        initial_tr_radius = 0.1
+        final_tr_radius = 1e-11
 
 
         vqe_starttime = datetime.now()
@@ -264,7 +276,7 @@ if __name__ == "__main__":
             vqe_results = pool.starmap(
                 run_adapt_vqe,
                 [
-                    (i, max_iter, tol, H, num_qubits, shots, num_steps, phi, num_grad_checks, operator_pool, basis_state, min_eigenvalue)
+                    (i, max_iter, tol, initial_tr_radius, final_tr_radius, H, num_qubits, shots, num_steps, phi, num_grad_checks, operator_pool, basis_state, min_eigenvalue)
                     for i in range(num_vqe_runs)
                 ],
             )
@@ -295,11 +307,13 @@ if __name__ == "__main__":
             "ansatz": "circuit.txt",
             "shots": shots,
             "Optimizer": {
-                "name": "differential_evolution",
-                "bounds": "[(0, 2 * np.pi)]",
-                "maxiter": max_iter,
-                "tolerance": tol
-            },
+                    "name": "COBYQA",
+                    "maxiter": max_iter,
+                    'maxfev': max_iter,
+                    "tolerance": tol,
+                    "initial_tr_radius": initial_tr_radius,
+                    "final_tr_radius": final_tr_radius
+                },
             "num_VQE": num_vqe_runs,
             "num_steps":num_steps,
             "num_grad_checks":num_grad_checks,
