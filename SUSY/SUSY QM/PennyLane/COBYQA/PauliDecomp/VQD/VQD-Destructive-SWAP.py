@@ -14,9 +14,6 @@ from multiprocessing import Pool
 
 from susy_qm import calculate_Hamiltonian
 
-import git
-repo_path = git.Repo('.', search_parent_directories=True).working_tree_dir
-
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -41,25 +38,17 @@ def cost_function(params, prev_param_list, H_decomp, num_qubits, shots, beta, nu
         else:
             qml.BasisState(basis, wires=range(num_qubits))
   
-        #params_idx=0
-        #for i in range(num_qubits):
-        #    qml.RY(params[params_idx], wires=[i])
-        #    params_idx +=1
-        #'''
-        param_index=0
-        for i in range(num_qubits):
-            qml.RY(params[param_index], wires=i)
-            param_index += 1
+        n = num_qubits-1
+        for i, w in enumerate(wires):
+            qml.RY(params[i], wires=w)
 
-        for j in reversed(range(1, num_qubits)):
-            #qml.CNOT(wires=[j, j-1])
-            qml.CRY(params[param_index], wires=[j, j-1])
-            param_index += 1
+        for i in range(1, num_qubits):
+            qml.CNOT(wires=[wires[i-1], wires[i]])
 
-        #for k in range(num_qubits):
-        #    qml.RY(params[param_index], wires=k)
-        #    param_index += 1
-        #'''
+        qml.CNOT(wires=[wires[-1], wires[0]])
+
+        for i, w in enumerate(wires):
+            qml.RY(params[n + i], wires=w)
 
     #Swap test to calculate overlap
     @qml.qnode(swap_dev)
@@ -196,7 +185,7 @@ def run_vqd(i, max_iter, tol, initial_tr_radius, final_tr_radius, H_decomp, num_
         res = minimize(
             wrapped_cost_function,
             x0,
-            bounds=bounds,
+            #bounds=bounds,
             method= "COBYQA",
             options= {
                 'maxiter':max_iter, 
@@ -233,106 +222,115 @@ def run_vqd(i, max_iter, tol, initial_tr_radius, final_tr_radius, H_decomp, num_
 
 if __name__ == "__main__":
     
-    potential_list = ["AHO"]#, "DW"]
-    cut_offs_list = [2,4,8,16]
-    shots = None
-    beta = 5.0
-
-    num_vqd_runs = 50
-    num_energy_levels = 3   
+    potential_list = ["QHO"]#, "AHO", "DW"]
+    cut_offs_list = [8,16]#,8,16]
+    shots_list = [10000]#, 10000, 100000]
+    
+    num_vqd_runs = 100
+    num_energy_levels = 3    
     num_swap_tests = 1
+    beta = 2.0
 
-    max_iter = 500
+    max_iter = 10000
     tol = 1e-8
-    initial_tr_radius = 0.8
-    final_tr_radius = 1e-3
+    initial_tr_radius = 0.1
+    final_tr_radius = 1e-11
+
+    #rads = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]
+    #rads = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    #betas = [1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 20.0]
 
     #for beta in betas:
-    for potential in potential_list:
+    #for beta in betas:
+    #print(f"Running for {str(final_tr_radius)} final_tr_radius")
 
-        starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.join(repo_path, r"SUSY\SUSY QM\PennyLane\COBYQA\PauliDecomp\VQD\Files\RYS_CRYS", str(shots), potential)
-        os.makedirs(base_path, exist_ok=True)
+    for shots in shots_list:
 
-        print(f"Running for {potential} potential")
+        print(f"Running for {str(shots)} shots")
 
-        for cut_off in cut_offs_list:
+        for potential in potential_list:
 
-            print(f"Running for cutoff: {cut_off}")
+            starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\COBYQA\PauliDecomp\VQD\Files\NegPen2", str(shots), potential)
+            os.makedirs(base_path, exist_ok=True)
 
-            # Calculate Hamiltonian and expected eigenvalues
-            H = calculate_Hamiltonian(cut_off, potential)
-            eigenvalues = np.sort(np.linalg.eig(H)[0])[:3]
-            min_eigenvalue = min(eigenvalues.real)
+            print(f"Running for {potential} potential")
 
-            num_qubits = int(np.log2(cut_off)+1)    
+            for cut_off in cut_offs_list:
 
-            H_decomp = qml.pauli_decompose(H, wire_order=range(num_qubits))
+                print(f"Running for cutoff: {cut_off}")
 
-            # Optimizer
-            num_params = 2*num_qubits-1
+                # Calculate Hamiltonian and expected eigenvalues
+                H = calculate_Hamiltonian(cut_off, potential)
+                eigenvalues = np.sort(np.linalg.eig(H)[0])[:3]
+                min_eigenvalue = min(eigenvalues.real)
 
-            
+                num_qubits = int(np.log2(cut_off)+1)    
 
-            # Start multiprocessing for VQE runs
-            with Pool(processes=10) as pool:
-                vqd_results = pool.starmap(
-                    run_vqd,
-                    [
-                        (i, max_iter, tol, initial_tr_radius, final_tr_radius, H_decomp, num_qubits, num_params, shots, num_energy_levels, beta, num_swap_tests)
-                        for i in range(num_vqd_runs)
-                    ],
-                )
+                H_decomp = qml.pauli_decompose(H, wire_order=range(num_qubits))
 
-            # Collect results
-            seeds = [res["seed"] for res in vqd_results]
-            all_energies = [result["energies"] for result in vqd_results]
-            all_params = [result["params"] for result in vqd_results]
-            all_success = [result["success"] for result in vqd_results]
-            all_num_iters = [result["num_iters"] for result in vqd_results]
-            all_evaluations = [result["evaluations"] for result in vqd_results]
-            run_times = [str(res["run_time"]) for res in vqd_results]
-            total_run_time = sum([res["run_time"] for res in vqd_results], timedelta())
-            total_device_time = sum([res['device_time'] for res in vqd_results], timedelta())
+                # Optimizer
+                num_params = 2*num_qubits
 
-            vqd_end = datetime.now()
-            vqd_time = vqd_end - datetime.strptime(starttime, "%Y-%m-%d_%H-%M-%S")
+                # Start multiprocessing for VQE runs
+                with Pool(processes=10) as pool:
+                    vqd_results = pool.starmap(
+                        run_vqd,
+                        [
+                            (i, max_iter, tol, initial_tr_radius, final_tr_radius, H_decomp, num_qubits, num_params, shots, num_energy_levels, beta, num_swap_tests)
+                            for i in range(num_vqd_runs)
+                        ],
+                    )
 
-            # Save run
-            run = {
-                "starttime": starttime,
-                "potential": potential,
-                "cutoff": cut_off,
-                "exact_eigenvalues": [x.real.tolist() for x in eigenvalues],
-                "ansatz": "StronglyEntanglingLayers-1layer",
-                "num_VQD": num_vqd_runs,
-                "num_energy_levels": num_energy_levels,
-                "num_swap_tests": num_swap_tests,
-                "beta": beta,
-                "shots": shots,
-                "Optimizer": {
-                    "name": "COBYQA",
-                    "maxiter": max_iter,
-                    'maxfev': max_iter,
-                    "tolerance": tol,
-                    "initial_tr_radius": initial_tr_radius,
-                    "final_tr_radius": final_tr_radius
-                },
-                "results": all_energies,
-                "params": [[x.tolist() for x in param_list] for param_list in all_params],
-                "num_iters": all_num_iters,
-                "num_evaluations": all_evaluations,
-                "success": [np.array(x, dtype=bool).tolist() for x in all_success],
-                "run_times": run_times,
-                "seeds": seeds,
-                "parallel_run_time": str(vqd_time),
-                "total_VQD_time": str(total_run_time),
-                "total_device_time": str(total_device_time)
-            }
+                # Collect results
+                seeds = [res["seed"] for res in vqd_results]
+                all_energies = [result["energies"] for result in vqd_results]
+                all_params = [result["params"] for result in vqd_results]
+                all_success = [result["success"] for result in vqd_results]
+                all_num_iters = [result["num_iters"] for result in vqd_results]
+                all_evaluations = [result["evaluations"] for result in vqd_results]
+                run_times = [str(res["run_time"]) for res in vqd_results]
+                total_run_time = sum([res["run_time"] for res in vqd_results], timedelta())
+                total_device_time = sum([res['device_time'] for res in vqd_results], timedelta())
 
-            # Save the variable to a JSON file
-            path = os.path.join(base_path, "{}_{}.json".format(potential, cut_off))
-            with open(path, "w") as json_file:
-                json.dump(run, json_file, indent=4)
+                vqd_end = datetime.now()
+                vqd_time = vqd_end - datetime.strptime(starttime, "%Y-%m-%d_%H-%M-%S")
 
-            print("Done")
+                # Save run
+                run = {
+                    "starttime": starttime,
+                    "potential": potential,
+                    "cutoff": cut_off,
+                    "exact_eigenvalues": [x.real.tolist() for x in eigenvalues],
+                    "ansatz": "StronglyEntanglingLayers-1layer",
+                    "num_VQD": num_vqd_runs,
+                    "num_energy_levels": num_energy_levels,
+                    "num_swap_tests": num_swap_tests,
+                    "beta": beta,
+                    "shots": shots,
+                    "Optimizer": {
+                        "name": "COBYQA",
+                        "maxiter": max_iter,
+                        'maxfev': max_iter,
+                        "tolerance": tol,
+                        "initial_tr_radius": initial_tr_radius,
+                        "final_tr_radius": final_tr_radius
+                    },
+                    "results": all_energies,
+                    "params": [[x.tolist() for x in param_list] for param_list in all_params],
+                    "num_iters": all_num_iters,
+                    "num_evaluations": all_evaluations,
+                    "success": [np.array(x, dtype=bool).tolist() for x in all_success],
+                    "run_times": run_times,
+                    "seeds": seeds,
+                    "parallel_run_time": str(vqd_time),
+                    "total_VQD_time": str(total_run_time),
+                    "total_device_time": str(total_device_time)
+                }
+
+                # Save the variable to a JSON file
+                path = os.path.join(base_path, "{}_{}.json".format(potential, cut_off))
+                with open(path, "w") as json_file:
+                    json.dump(run, json_file, indent=4)
+
+                print("Done")

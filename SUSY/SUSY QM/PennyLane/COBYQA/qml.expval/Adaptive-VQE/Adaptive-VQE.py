@@ -150,8 +150,9 @@ def run_adapt_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, H, num_q
         res = minimize(
             wrapped_cost_function,
             x0,
-            bounds=bounds,
+            #bounds=bounds,
             method= "COBYQA",
+            tol=tol,
             options= {
                 'maxiter':max_iter, 
                 'maxfev':max_iter, 
@@ -211,8 +212,8 @@ def run_adapt_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, H, num_q
 
 if __name__ == "__main__":
     
-    potential = "QHO"
-    cutoff_list = [32]
+    potential = "AHO"
+    cutoff_list = [2,4,8,16,32]
     shots = None
 
     for cutoff in cutoff_list:
@@ -220,7 +221,7 @@ if __name__ == "__main__":
         print(f"Running for {potential} potential, cutoff {cutoff}")
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.join(r"SUSY/SUSY QM/PennyLane/COBYQA/qml.expval/Adaptive-VQE/StatevectorFiles", potential)
+        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\COBYQA\qml.expval\Adaptive-VQE\StatevectorFiles", potential)
         os.makedirs(base_path, exist_ok=True)
 
 
@@ -237,7 +238,7 @@ if __name__ == "__main__":
         for i in range(num_qubits):
             operator_pool.append(qml.RY(phi,wires=[i]))
             operator_pool.append(qml.RZ(phi,wires=[i]))
-            operator_pool.append(qml.RX(phi,wires=[i]))
+            #operator_pool.append(qml.RX(phi,wires=[i]))
 
         c_pool = []
 
@@ -272,7 +273,7 @@ if __name__ == "__main__":
 
         print("Starting ADAPT-VQE")
         # Start multiprocessing for VQE runs
-        with Pool(processes=100) as pool:
+        with Pool(processes=10) as pool:
             vqe_results = pool.starmap(
                 run_adapt_vqe,
                 [
