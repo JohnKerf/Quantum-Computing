@@ -11,6 +11,10 @@ from datetime import datetime, timedelta
 from multiprocessing import Pool
 
 from susy_qm import calculate_Hamiltonian
+from susy_qm import ansatze
+
+import git
+repo_path = git.Repo('.', search_parent_directories=True).working_tree_dir
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -36,177 +40,12 @@ def setup_logger(logfile_path, name, enabled=True):
     return logger
 
 
-def cost_function(params, paulis, coeffs, num_qubits, dev):
+def cost_function(params, paulis, coeffs, num_qubits, dev, ansatz):
        
     @qml.qnode(dev, cache=False)
     def circuit(params):
-        '''
-        ############### DW ##########################
-        ## 2
-        #qml.RY(params[0], wires=[1])
-                
-        ## 4
-        #basis = [1,0,0]
-        #qml.BasisState(basis, wires=range(num_qubits))
-        #qml.RY(params[0], wires=[1])
-        #qml.RY(params[1], wires=[2])
-                
-        ## 8+ 
-        qml.RY(params[0], wires=[num_qubits-3])
-        qml.RY(params[1], wires=[num_qubits-1])
-        qml.CRY(params[2], wires=[num_qubits-1, num_qubits-2])
-        qml.RY(params[3], wires=[num_qubits-2])
-        qml.RY(params[4], wires=[num_qubits-1])
-        '''      
-          
-        '''
-        ############### AHO ##########################
-
-        basis = [1] + [0]*(num_qubits-1)
-        qml.BasisState(basis, wires=range(num_qubits))
-
-        ## 2
-        qml.RY(params[0], wires=[0])
-
-        ## 4
-        #qml.RY(params[0], wires=[1])
-                
-        ## 8+
-        #qml.RY(params[0], wires=[num_qubits-2])
-        #qml.RY(params[1], wires=[num_qubits-3])
-        '''        
-    
-        '''
-        ############### QHO ##########################
-        basis = [1] + [0]*(num_qubits-1)
-        qml.BasisState(basis, wires=range(num_qubits))
-
-        qml.RY(params[0], wires=[0])      
-        '''
-
-        '''
-        #################### RA ##################
-        n = num_qubits-1
-        wires = range(num_qubits)
-        for i, w in enumerate(wires):
-            qml.RY(params[i], wires=w)
-
-        for i in range(1, num_qubits):
-            qml.CNOT(wires=[wires[i-1], wires[i]])
-
-        qml.CNOT(wires=[wires[-1], wires[0]])
-
-        for i, w in enumerate(wires):
-            qml.RY(params[n + i], wires=w)
-        '''
-
-        #'''
-        #################### DW ##################
-        # 2
-        #qml.RY(params[0], wires=[1])
-
-        # 4
-        #basis = [1] + [0]*(num_qubits-1)
-        #qml.BasisState(basis, wires=range(num_qubits))
-        #qml.RY(params[0], wires=[1])
-        #qml.RY(params[1], wires=[2])
-        #qml.CRY(params[2], wires=[1,2])
-
-        # 8
-        '''
-        qml.RY(params[0], wires=[num_qubits-1])
-        qml.CRY(params[1], wires=[num_qubits-1, num_qubits-2])
-        qml.RY(params[2], wires=[num_qubits-3])
-        qml.RY(params[3], wires=[num_qubits-2])
-        qml.CRY(params[4], wires=[num_qubits-1, num_qubits-3])
-        qml.CRY(params[5], wires=[num_qubits-2, num_qubits-3])
-        qml.RY(params[6], wires=[num_qubits-2])
-        '''
-        # 16
-        #'''
-        qml.RY(params[0], wires=[num_qubits-1])
-        qml.CRY(params[1], wires=[num_qubits-1, num_qubits-2])
-        qml.RY(params[2], wires=[num_qubits-3])
-        qml.RY(params[3], wires=[num_qubits-2])
-        qml.RY(params[4], wires=[num_qubits-4])
-        qml.CRY(params[5], wires=[num_qubits-1, num_qubits-3])
-        qml.CRY(params[6], wires=[num_qubits-1, num_qubits-4])
-        qml.CRY(params[7], wires=[num_qubits-2, num_qubits-3])
-        qml.RY(params[8], wires=[num_qubits-2])
-        qml.CRY(params[9], wires=[num_qubits-2, num_qubits-4])
-        qml.CRY(params[10], wires=[num_qubits-3, num_qubits-4])
-        qml.RY(params[11], wires=[num_qubits-2])
-        qml.CRY(params[12], wires=[num_qubits-3, num_qubits-2])
-        qml.RY(params[13], wires=[num_qubits-3])
-        qml.CRY(params[14], wires=[num_qubits-4, num_qubits-3])
-        qml.RY(params[15], wires=[num_qubits-4])
-        qml.CRY(params[16], wires=[num_qubits-4, num_qubits-2])
-        qml.RY(params[17], wires=[num_qubits-3])
-        #'''
-
-        # 32
-        '''
-        qml.RY(params[0], wires=[num_qubits-1])
-        qml.CRY(params[1], wires=[num_qubits-1, num_qubits-2])
-        qml.RY(params[2], wires=[num_qubits-3])
-        qml.RY(params[3], wires=[num_qubits-2])
-        qml.RY(params[4], wires=[num_qubits-4])
-        qml.CRY(params[5], wires=[num_qubits-1, num_qubits-3])
-        qml.CRY(params[6], wires=[num_qubits-1, num_qubits-4])
-        qml.CRY(params[7], wires=[num_qubits-2, num_qubits-3])
-        qml.RY(params[8], wires=[num_qubits-2])
-        qml.CRY(params[9], wires=[num_qubits-2, num_qubits-4])
-        '''
-
-        #'''      
-          
-        '''
-        ############### AHO ##########################
-        # 2
-        #basis = [1] + [0]*(num_qubits-1)
-        #qml.BasisState(basis, wires=range(num_qubits))
-        #qml.RY(params[0], wires=[0])
-
-        # 4
-        #basis = [1] + [0]*(num_qubits-1)
-        #qml.BasisState(basis, wires=range(num_qubits))
-        #qml.RY(params[0], wires=[1])
-
-        # 8
-        #basis = [1] + [0]*(num_qubits-1)
-        #qml.BasisState(basis, wires=range(num_qubits))
-        #qml.RY(params[0], wires=[num_qubits-3])
-        #qml.RY(params[1], wires=[num_qubits-2])
-        #qml.CRY(params[2], wires=[num_qubits-2, num_qubits-3])
-
-
-        #16
-        #basis = [1] + [0]*(num_qubits-1)
-        #qml.BasisState(basis, wires=range(num_qubits))
-        #qml.RY(params[0], wires=[num_qubits-2])
-        #qml.RY(params[1], wires=[num_qubits-3])
-        #qml.RY(params[2], wires=[num_qubits-4])
-        #qml.CRY(params[3], wires=[num_qubits-2, num_qubits-3])
-        #qml.CRY(params[4], wires=[num_qubits-2, num_qubits-4])
-        #qml.CRY(params[5], wires=[num_qubits-3, num_qubits-4])
-        #qml.CRY(params[6], wires=[num_qubits-4, num_qubits-3])
-
-        #32
-        basis = [1] + [0]*(num_qubits-1)
-        qml.BasisState(basis, wires=range(num_qubits))
-        qml.RY(params[0], wires=[num_qubits-2])
-        qml.RY(params[1], wires=[num_qubits-3])
-        qml.RY(params[2], wires=[num_qubits-4])
-        qml.CRY(params[3], wires=[num_qubits-2, num_qubits-3])
-        qml.CRY(params[4], wires=[num_qubits-2, num_qubits-4])
-        qml.RY(params[5], wires=[num_qubits-5])
-        qml.CRY(params[6], wires=[num_qubits-3, num_qubits-4])
-        #qml.CRY(params[6], wires=[num_qubits-4, num_qubits-3])
-        '''      
-
-
+        ansatz(params, num_qubits)
         return [qml.expval(op) for op in paulis]
-
 
     expvals = circuit(params)                 
     energy = float(np.dot(coeffs, expvals)) 
@@ -215,7 +54,7 @@ def cost_function(params, paulis, coeffs, num_qubits, dev):
 
     
 
-def run_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, paulis, coeffs, num_qubits, shots, num_params, device, log_dir, log_enabled, eps, lam, p):
+def run_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, paulis, coeffs, num_qubits, shots, num_params, device, log_dir, log_enabled, eps, lam, p, ansatz):
 
     if log_enabled: os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, f"vqe_run_{i}.log")
@@ -231,7 +70,7 @@ def run_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, paulis, coeffs
     iteration_count = 0
     def wrapped_cost_function(params):
         nonlocal last_energy, iteration_count
-        result = cost_function(params, paulis, coeffs, num_qubits, dev)
+        result = cost_function(params, paulis, coeffs, num_qubits, dev, ansatz)
 
         last_energy = result
         iteration_count +=1
@@ -255,7 +94,7 @@ def run_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, paulis, coeffs
         res = minimize(
                 wrapped_cost_function,
                 x0,
-                #bounds=bounds,
+                bounds=bounds,
                 method= "COBYQA",
                 options= {
                     'maxiter':max_iter, 
@@ -263,7 +102,7 @@ def run_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, paulis, coeffs
                     'tol':tol, 
                     'initial_tr_radius':initial_tr_radius, 
                     'final_tr_radius':final_tr_radius, 
-                    #'scale':True, 
+                    'scale':True, 
                     'disp':False},
                 callback=callback
             )
@@ -291,23 +130,20 @@ def run_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, paulis, coeffs
 
 if __name__ == "__main__":
     
-    log_enabled = True
+    log_enabled = False
 
-    potential = "DW"
+    potential = "AHO"
     device = 'default.qubit'
     #device = 'qiskit.aer'
 
     #shotslist = [10000, None, 100000]
     shotslist = [None] #for shots=None dont use bounds
-    cutoffs = [16]#,32,64]
+    cutoffs = [16]
 
-    #eps = 1e-3#1e-2#0.5
     lam = 15
     p = 2
 
-
     # Optimizer
-    num_params = 18
     num_vqe_runs = 100
     max_iter = 10000
     tol = 1e-8
@@ -316,6 +152,16 @@ if __name__ == "__main__":
 
     for shots in shotslist:
         for cutoff in cutoffs:
+
+            if potential == "QHO":
+                ansatz_name = f"CQAVQE_QHO_Reduced"
+            else:
+                ansatz_name = f"CQAVQE_{potential}{cutoff}_Reduced"
+
+            ansatz = ansatze.get(ansatz_name)
+            num_params = ansatz.n_params
+
+            print(f"Running VQE with {ansatz_name} ansatz using {num_params} params")
 
             if potential == "AHO":
                 i = np.log2(cutoff)
@@ -327,7 +173,7 @@ if __name__ == "__main__":
             print(f"Running for {potential} potential and cutoff {cutoff} and shots {shots}")
 
             starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\COBYQA\PauliDecomp\VQE\FilesNP-CQAVQE-Full", str(shots), potential)
+            base_path = os.path.join(repo_path, r"SUSY\SUSY QM\PennyLane\COBYQA\PauliDecomp\VQE\ReducedCQAVQE", str(shots), potential)
             os.makedirs(base_path, exist_ok=True)
 
             log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
@@ -337,8 +183,6 @@ if __name__ == "__main__":
             
             eigenvalues = np.sort(np.linalg.eig(H)[0])[:4]
             num_qubits = int(1 + np.log2(cutoff))
-
-            #num_params = 2*num_qubits
             
             H_decomp = qml.pauli_decompose(H, wire_order=range(num_qubits))
             paulis = H_decomp.ops
@@ -351,7 +195,7 @@ if __name__ == "__main__":
                 vqe_results = pool.starmap(
                     run_vqe,
                     [
-                        (i, max_iter, tol, initial_tr_radius, final_tr_radius, paulis, coeffs, num_qubits, shots, num_params, device, log_path, log_enabled, eps, lam, p)
+                        (i, max_iter, tol, initial_tr_radius, final_tr_radius, paulis, coeffs, num_qubits, shots, num_params, device, log_path, log_enabled, eps, lam, p, ansatz)
                         for i in range(num_vqe_runs)
                     ],
                 )

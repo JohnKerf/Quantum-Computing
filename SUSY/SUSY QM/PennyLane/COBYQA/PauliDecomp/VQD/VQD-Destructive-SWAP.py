@@ -19,14 +19,12 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 
 
-def cost_function(params, prev_param_list, H_decomp, num_qubits, shots, beta, num_swap_tests):
+def cost_function(params, prev_param_list, H_decomp, num_qubits, shots, beta, num_swap_tests, dev, swap_dev):
 
     paulis = H_decomp.ops
     coeffs = H_decomp.coeffs
     groups = group_observables(paulis)    
    
-    swap_dev = qml.device("default.qubit", wires=2*num_qubits, shots=None)
-
     def ansatz(params, prev=False): 
 
         basis = [0]*num_qubits
@@ -45,7 +43,7 @@ def cost_function(params, prev_param_list, H_decomp, num_qubits, shots, beta, nu
         for i in range(1, num_qubits):
             qml.CNOT(wires=[wires[i-1], wires[i]])
 
-        qml.CNOT(wires=[wires[-1], wires[0]])
+        #qml.CNOT(wires=[wires[-1], wires[0]])
 
         for i, w in enumerate(wires):
             qml.RY(params[n + i], wires=w)
@@ -53,8 +51,6 @@ def cost_function(params, prev_param_list, H_decomp, num_qubits, shots, beta, nu
     #Swap test to calculate overlap
     @qml.qnode(swap_dev)
     def swap_test(params1, params2):
-
-        start = datetime.now()
 
         ansatz(params1)
         ansatz(params2, prev=True)
@@ -66,33 +62,18 @@ def cost_function(params, prev_param_list, H_decomp, num_qubits, shots, beta, nu
 
         prob = qml.probs(wires=range(2*num_qubits))
 
-        end = datetime.now()
-        global swap_time
-        swap_time = (end - start)
-
         return prob
     
-    dev = qml.device("default.qubit", wires=num_qubits, shots=shots)
+    
     @qml.qnode(dev)
     def expected_value(params, groups):
-
-        start = datetime.now()
-
         ansatz(params)
-        #exval = qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
-        end = datetime.now()
-        global expval_time
-        expval_time = (end - start)
-
         return [qml.expval(op) for op in groups]
     
     
     def overlap(params, prev_params):
 
-        #overlap_time = timedelta()
         probs = swap_test(params, prev_params)
-        #overlap_time += swap_time
 
         overlap = 0
         for idx, p in enumerate(probs):
@@ -108,28 +89,10 @@ def cost_function(params, prev_param_list, H_decomp, num_qubits, shots, beta, nu
 
             overlap += p*(-1)**counter_11
 
-        return overlap#, overlap_time
-    
-    
-    def multi_swap_test(params, prev_params):
-
-        multi_swap_time = timedelta()
+        return overlap
         
-        results = []
-        for _ in range(num_swap_tests):
-
-            ol = overlap(params, prev_params)
-            multi_swap_time += swap_time
-            results.append(ol)
-        
-        avg_ol = sum(results) / num_swap_tests
-
-        return avg_ol, multi_swap_time
-    
 
     def loss_f(params):
-
-        total_time = timedelta()
 
         energy = 0
         for group in groups:
@@ -142,13 +105,11 @@ def cost_function(params, prev_param_list, H_decomp, num_qubits, shots, beta, nu
 
         if len(prev_param_list) != 0:
             for prev_param in prev_param_list:
-                ol, ol_time = multi_swap_test(params,prev_param)
+                ol= overlap(params,prev_param)
                 penalty += (beta*ol)
-                total_time += ol_time
 
-        device_time = total_time + expval_time
 
-        return energy + (penalty), device_time
+        return energy + penalty
 
     return loss_f(params)
 
@@ -157,9 +118,11 @@ def run_vqd(i, max_iter, tol, initial_tr_radius, final_tr_radius, H_decomp, num_
     
     # We need to generate a random seed for each process otherwise each parallelised run will have the same result
     seed = (os.getpid() * int(time.time())) % 123456789
-    run_start = datetime.now()
-
     np.random.seed(seed)
+
+    dev = qml.device("default.qubit", wires=num_qubits, shots=shots, seed=seed)
+    swap_dev = qml.device("default.qubit", wires=2*num_qubits, shots=None, seed=seed)
+
     x0 = np.random.random(size=num_params)*2*np.pi
     bounds = [(0, 2 * np.pi) for _ in range(num_params)]
 
@@ -168,41 +131,47 @@ def run_vqd(i, max_iter, tol, initial_tr_radius, final_tr_radius, H_decomp, num_
     all_success = []
     all_num_iters = []
     all_evaluations = []
-    all_dev_times = []
 
-    device_time = timedelta()
+    run_start = datetime.now()
+    
 
-    def wrapped_cost_function(params):
-        result, dt = cost_function(params, prev_param_list, H_decomp, num_qubits, shots, beta, num_swap_tests)
-        nonlocal device_time
-        device_time += dt
-        all_dev_times.append(dt)
-        return result
+    Tdev = qml.Tracker(dev)
+    Tswap = qml.Tracker(swap_dev)
 
     for _ in range(num_energy_levels):
-        
-        # Differential Evolution optimization
-        res = minimize(
-            wrapped_cost_function,
-            x0,
-            #bounds=bounds,
-            method= "COBYQA",
-            options= {
-                'maxiter':max_iter, 
-                'maxfev':max_iter, 
-                #'tol':tol, 
-                'initial_tr_radius':initial_tr_radius, 
-                'final_tr_radius':final_tr_radius, 
-                'scale':True, 
-                'disp':False}
-        )
 
+        Tdev.reset() 
+        Tswap.reset()
+        
+        with Tdev, Tswap:
+            res = minimize(
+                cost_function,
+                x0,
+                args=(prev_param_list, H_decomp, num_qubits, shots, beta, num_swap_tests, dev, swap_dev),
+                #bounds=bounds,
+                #tol=tol,
+                method= "COBYQA",
+                options= {
+                    'maxiter':max_iter, 
+                    'maxfev':max_iter, 
+                    'initial_tr_radius':initial_tr_radius, 
+                    'final_tr_radius':final_tr_radius, 
+                    'scale':True, 
+                    'disp':False}
+            )
+
+        totals_d = getattr(Tdev, "totals", {})
+        num_evals_d = int(totals_d.get("executions", 0))
+        totals_s = getattr(Tswap, "totals", {})
+        num_evals_s = int(totals_s.get("executions", 0))
+
+        num_evals = num_evals_d + num_evals_s
 
         all_energies.append(res.fun)
         prev_param_list.append(res.x)
         all_success.append(res.success)
         all_num_iters.append(res.nit)
-        all_evaluations.append(res.nfev)
+        all_evaluations.append(num_evals)
 
     run_end = datetime.now()
     run_time = run_end - run_start
@@ -215,18 +184,17 @@ def run_vqd(i, max_iter, tol, initial_tr_radius, final_tr_radius, H_decomp, num_
         "success": all_success,
         "num_iters": all_num_iters,
         "evaluations": all_evaluations,
-        "run_time": run_time,
-        "device_time": device_time
+        "run_time": run_time
     }
 
 
 if __name__ == "__main__":
     
     potential_list = ["QHO"]#, "AHO", "DW"]
-    cut_offs_list = [8,16]#,8,16]
+    cut_offs_list = [2]
     shots_list = [10000]#, 10000, 100000]
     
-    num_vqd_runs = 100
+    num_vqd_runs = 10
     num_energy_levels = 3    
     num_swap_tests = 1
     beta = 2.0
@@ -251,7 +219,7 @@ if __name__ == "__main__":
         for potential in potential_list:
 
             starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\COBYQA\PauliDecomp\VQD\Files\NegPen2", str(shots), potential)
+            base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\COBYQA\PauliDecomp\VQD\Files\test", str(shots), potential)
             os.makedirs(base_path, exist_ok=True)
 
             print(f"Running for {potential} potential")
@@ -291,7 +259,6 @@ if __name__ == "__main__":
                 all_evaluations = [result["evaluations"] for result in vqd_results]
                 run_times = [str(res["run_time"]) for res in vqd_results]
                 total_run_time = sum([res["run_time"] for res in vqd_results], timedelta())
-                total_device_time = sum([res['device_time'] for res in vqd_results], timedelta())
 
                 vqd_end = datetime.now()
                 vqd_time = vqd_end - datetime.strptime(starttime, "%Y-%m-%d_%H-%M-%S")
@@ -324,8 +291,7 @@ if __name__ == "__main__":
                     "run_times": run_times,
                     "seeds": seeds,
                     "parallel_run_time": str(vqd_time),
-                    "total_VQD_time": str(total_run_time),
-                    "total_device_time": str(total_device_time)
+                    "total_VQD_time": str(total_run_time)
                 }
 
                 # Save the variable to a JSON file

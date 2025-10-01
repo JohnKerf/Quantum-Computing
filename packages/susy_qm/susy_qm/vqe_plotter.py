@@ -97,6 +97,7 @@ class VQEPlotter:
         *,
         axes=None,
         box_width: float = 0.25,
+        group_spacing: float = 1.8,
         showfliers: bool = False,
         alpha: float = 0.6,
         show_legend: bool = True,
@@ -110,7 +111,7 @@ class VQEPlotter:
         """
         fig, axes_arr = self._ensure_axes_grid(existing_axes=axes, sharey=True, figsize=(12, 4))
 
-        x = np.arange(len(self.cutoffs))
+        x = np.arange(len(self.cutoffs))*group_spacing
         labels = [lab for lab, _ in self.data_paths]
         n_labels = len(labels)
 
