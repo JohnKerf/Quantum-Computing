@@ -1,4 +1,7 @@
 import pennylane as qml
+from qiskit import QuantumCircuit
+from qiskit.circuit import Parameter
+import numpy as np
 
 '''
 Function to list gate operations within a circuit
@@ -21,6 +24,87 @@ def truncate_ansatz(ansatz_fn, params, num_qubits, max_gates):
 
     return reduced
 
+
+
+def pl_to_qiskit(ansatz_fn, params=None, num_qubits=None, reverse_bits=True):
+    
+    num_params = ansatz_fn.n_params
+
+    if params is None:
+        param_objs = [Parameter(f"θ{i}") for i in range(num_params)]
+    else:
+        param_objs = params
+
+    with qml.tape.QuantumTape() as tape:
+        ansatz_fn(param_objs, num_qubits)
+
+    qc = QuantumCircuit(num_qubits)
+
+    def one_qubit(op, apply):
+        (q,) = [int(w) for w in op.wires]
+        apply(q)
+
+    def two_qubit(op, apply):
+        q0, q1 = [int(w) for w in op.wires]
+        apply(q0, q1)
+
+    for op in tape.operations:
+        name = op.name
+        params = list(op.parameters)
+        wires = [int(w) for w in op.wires]
+
+        # ---- Initial basis state preparation ----
+        if name == "BasisState":
+          
+            bits = np.array(params[0]).astype(int).ravel().tolist()
+            for b, w in zip(bits, wires):
+                if b == 1:
+                    qc.x(w)
+
+        # ---- single-qubit rotations ----
+        elif name == "RX":
+            one_qubit(op, lambda q: qc.rx(params[0], q))
+        elif name == "RY":
+            one_qubit(op, lambda q: qc.ry(params[0], q))
+        elif name == "RZ":
+            one_qubit(op, lambda q: qc.rz(params[0], q))
+
+        # ---- single-qubit gates ----
+        elif name == "X":
+            one_qubit(op, lambda q: qc.x(q))
+        elif name == "Y":
+            one_qubit(op, lambda q: qc.y(q))
+        elif name == "Z":
+            one_qubit(op, lambda q: qc.z(q))
+        elif name == "H":
+            one_qubit(op, lambda q: qc.h(q))
+
+         # ---- Two-qubit rotations ----
+        elif name in ("CRY"):
+            two_qubit(op, lambda q0, q1: qc.cry(params[0], q0, q1))
+        elif name == "CRZ":
+            two_qubit(op, lambda q0, q1: qc.crz(params[0], q0, q1))
+
+
+        # ---- Two-qubit gates ----
+        elif name in ("CNOT", "CX"):
+            two_qubit(op, lambda q0, q1: qc.cx(q0, q1))
+        elif name == "CZ":
+            two_qubit(op, lambda q0, q1: qc.cz(q0, q1))
+        elif name == "SWAP":
+            two_qubit(op, lambda q0, q1: qc.swap(q0, q1))
+
+        # ---- Not yet supported ----
+        else:
+            raise NotImplementedError(
+                f"Unsupported PennyLane op '{name}' with wires {wires} and params {params}. "
+                "Add a mapping above to handle it."
+            )
+
+    if reverse_bits:
+        qc = qc.reverse_bits()
+
+    return qc
 
 
 

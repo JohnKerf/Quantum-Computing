@@ -8,6 +8,7 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from matplotlib.ticker import LogLocator, LogFormatterMathtext, FuncFormatter
 from matplotlib.patches import Patch
 
 from susy_qm.vqe_metrics import VQESummary
@@ -70,6 +71,11 @@ class VQEPlotter:
         markers = ["o", "s", "^", "D", "v", "P", "*", "X"]
         fig, axes_arr = self._ensure_axes_grid(existing_axes=axes, sharey=True)
 
+        for ax in axes_arr:
+            ax.set_yscale("symlog", linthresh=1.0)
+            #ax.yaxis.set_major_locator(LogLocator(base=10.0))        
+            #ax.yaxis.set_major_formatter(LogFormatterMathtext(base=10))
+
         for i, pot in enumerate(self.potentials):
             ax = axes_arr[i]
             for j, (label, path) in enumerate(self.data_paths):
@@ -78,13 +84,22 @@ class VQEPlotter:
                 marker = markers[j]
                 ax.plot(self.cutoffs, y, marker=marker, markersize=markersize, label=label)
             ax.set_title(pot)
-            ax.set_yscale("symlog", linthresh=1.0)
             ax.grid(True)
             self._style_x_cutoffs(ax)
             if i == 0:
                 ax.set_ylabel(r"|$E_{\mathrm{exact}} - E_{\mathrm{median}}$|")
             else:
                 ax.tick_params(axis="y", left=False, labelleft=False)
+
+        def fmt_sigfig(x, _):
+            return f"{x:.3g}"
+        formatter = FuncFormatter(fmt_sigfig)
+
+        for ax in axes_arr:
+            yticks = ax.get_yticks()
+            ax.set_yticks([tick for tick in yticks if tick >= 0])
+            ax.yaxis.set_major_formatter(formatter)
+       
 
         axes_arr[len(self.potentials) // 2].set_xlabel(r"$\Lambda$")
         axes_arr[0].legend(loc="upper left", fontsize=8)

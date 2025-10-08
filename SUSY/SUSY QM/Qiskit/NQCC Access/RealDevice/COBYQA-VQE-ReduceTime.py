@@ -1,19 +1,20 @@
-# vqe_qiskit_runner.py
 import os, json, time, logging
 from datetime import datetime
 import numpy as np
 
 from scipy.optimize import minimize
 
-from qiskit.circuit import QuantumCircuit, Parameter
 from qiskit.quantum_info import SparsePauliOp
-from qiskit_aer import AerSimulator
-from qiskit_aer.noise import NoiseModel
-from qiskit_ibm_runtime import EstimatorV2 as Estimator
-from qiskit_ibm_runtime import QiskitRuntimeService, Session
-from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
-from susy_qm import calculate_Hamiltonian
+from qiskit_aer import AerSimulator
+from qiskit_aer.primitives import EstimatorV2 as AerEstimator
+from qiskit_aer.noise import NoiseModel
+
+from qiskit_ibm_runtime import EstimatorV2 as Estimator, QiskitRuntimeService, Session
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+from qiskit.primitives import StatevectorEstimator
+
+from susy_qm import calculate_Hamiltonian, ansatze
 
 
 import warnings
@@ -32,11 +33,6 @@ with open(path, encoding="utf-8") as f:
 NQCC_IBM_QUANTUM_API_KEY = api_key
 ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/d4f95db0515b47b7ba61dba8a424f873:55736fd5-c0a0-4f44-8180-ce6e81d6c9d0::"
 service = QiskitRuntimeService(channel="ibm_quantum_platform", token=NQCC_IBM_QUANTUM_API_KEY, instance=ibm_instance_crn)
-backend_name = 'ibm_kingston'
-real_backend = service.backend(backend_name)
-
-#noise_model = NoiseModel.from_backend(real_backend)
-#aer_backend = AerSimulator(noise_model=noise_model)
     
 def setup_logger(logfile_path, name, enabled=True):
     if not enabled:
@@ -58,39 +54,68 @@ def setup_logger(logfile_path, name, enabled=True):
     return logger
 
 
+def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shots, num_params, log_dir, log_enabled, eps, lam, p, ansatz, backend_name, use_noise_model=0):
 
+    if backend_name == "Aer":
 
-def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shots, num_params, log_dir, log_enabled, eps, lam, p):
+        if use_noise_model:
+            noise_model = NoiseModel.from_backend('ibm_kingston')
+            backend = AerSimulator(noise_model=noise_model)
+           
+        else:
+            backend = AerSimulator(method="statevector")
+
+    elif backend_name == "SV-Estimator":
+        pass
+
+    else:
+        backend = service.backend(backend_name)
 
     if log_enabled: os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, f"vqe_run_{i}.log")
     logger = setup_logger(log_path, f"logger_{i}", enabled=log_enabled)
 
     seed = (os.getpid() * int(time.time())) % 123456789
+    #seed = 41540533
 
     run_start = datetime.now()
 
     observable = SparsePauliOp.from_operator(H)
-    param_objs = [Parameter(f"θ{i}") for i in range(num_params)]
 
-    qc = QuantumCircuit(num_qubits)
-    n = num_qubits-1
-    qc.x(n)
-    qc.ry(param_objs[0], n)
+    #param_objs = [Parameter(f"θ{i}") for i in range(num_params)]
+    #qc = QuantumCircuit(num_qubits)
+    #n = num_qubits-1
+    #qc.x(n)
+    #qc.ry(param_objs[0], n)
 
+    qc = ansatze.pl_to_qiskit(ansatz, num_qubits=num_qubits, reverse_bits=True)
 
-    target = real_backend.target
-    #target = aer_backend.target
-    pm = generate_preset_pass_manager(target=target, optimization_level=3)
-    ansatz_isa = pm.run(qc)
+    if log_enabled:  logger.info(f"Running VQE using {backend_name} backend")
+    if log_enabled:  logger.info(f"Running VQE using {ansatz.name} ansatz with {ansatz.n_params} params")
+    print(qc)
 
-    hamiltonian_isa = observable.apply_layout(layout=ansatz_isa.layout)
+    if backend_name != "SV-Estimator":
+        target = backend.target
+        pm = generate_preset_pass_manager(target=target, optimization_level=3)
+        ansatz_isa = pm.run(qc)
+
+        layout = getattr(ansatz_isa, "layout", None)
+        hamiltonian_isa = observable.apply_layout(layout) if layout else observable
+
+        print(hamiltonian_isa)
 
     last_energy = None
     iteration_count = 0
-    def cost_function(params):
+    def cost_function(params, ansatz_isa, hamiltonian_isa, estimator):
         nonlocal last_energy, iteration_count
-        pub = (ansatz_isa, [hamiltonian_isa], [params])
+
+        #params = [
+        #    0.3966509377256218,
+        #    5.951916764806598,
+        #    6.008466886069231
+        #]
+
+        pub = (ansatz_isa, [hamiltonian_isa], params)
         result = estimator.run(pubs=[pub]).result()
         energy = result[0].data.evs[0]
 
@@ -106,25 +131,24 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
         if log_enabled:
             logger.info(f"Iteration {iteration_count}: Energy = {last_energy:.8f}")
 
-
     logger.info(f"Starting VQE run {i} (seed={seed})")
 
     np.random.seed(seed)
     x0 = np.random.random(size=num_params)*2*np.pi
     bounds = [(0, 2 * np.pi) for _ in range(num_params)]
 
-    with Session(backend=real_backend) as session:
-    #with Session(backend=aer_backend) as session:
-     
-        estimator = Estimator(mode=session)
-        estimator.options.default_shots = shots
-        estimator.options.resilience_level = 0
-        logger.info(estimator.options)
+    if backend_name == "SV-Estimator":
+
+        sesh_id = 'N/A'
+
+        print("Running for SV Estimator")
+        estimator = StatevectorEstimator()
 
         res = minimize(
             cost_function,
             x0,
-            bounds=bounds,
+            args=(qc,observable,estimator),
+            #bounds=bounds,
             method= "COBYQA",
             options= {
                 'maxiter':max_iter, 
@@ -136,6 +160,37 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
             callback=callback
         )
 
+    else:
+        print("Running with session")
+        with Session(backend=backend) as session:
+
+            sesh_id = session.session_id
+
+            print("Session ID:", sesh_id)
+            logger.info(f"Session ID: {sesh_id}")
+
+            estimator = Estimator(mode=session)
+            estimator.options.default_shots = shots
+            estimator.options.resilience_level = 0
+            logger.info(estimator.options)
+
+            res = minimize(
+                cost_function,
+                x0,
+                args=(ansatz_isa,hamiltonian_isa,estimator),
+                bounds=bounds,
+                method= "COBYQA",
+                options= {
+                    'maxiter':max_iter, 
+                    'maxfev':2*max_iter, 
+                    'initial_tr_radius':initial_tr_radius, 
+                    'final_tr_radius':final_tr_radius, 
+                    'scale':True, 
+                    'disp':False},
+                callback=callback
+            )
+
+    
     run_end = datetime.now()
     if log_enabled: logger.info(f"Completed VQE run {i}: Energy = {res.fun:.6f}")
     if log_enabled: logger.info({
@@ -146,31 +201,49 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
         "num_iters": int(res.nfev),
         "run_time": run_end - run_start,
         "message": res.message
-        #"device_time": device_time
     })
 
     return {
         "seed": seed,
+        "session_id": sesh_id,
         "energy": res.fun,
         "params": res.x.tolist(),
         "success": res.success,
         "num_iters": int(res.nfev),
         "run_time": run_end - run_start
-        #"device_time": device_time
     }
 
 if __name__ == "__main__":
 
     log_enabled = True
 
-    potential = "QHO"
-    cutoff = 2
+    backend_name = 'ibm_kingston'
+    #backend_name = "Aer"
+    #backend_name = "SV-Estimator"
 
-    shots = 1024
-    num_params = 1
+    use_noise_model = 0
+    shots = 4096#1024
+
+    potential = "AHO"
+    cutoff = 8
+
+
+    ansatze_type = 'exact' #exact or Reduced
+    if potential == "QHO":
+        ansatz_name = f"CQAVQE_QHO_{ansatze_type}"
+    elif (potential != "QHO") and (cutoff <= 16):
+        ansatz_name = f"CQAVQE_{potential}{cutoff}_{ansatze_type}"
+    else:
+        ansatz_name = f"CQAVQE_{potential}16_{ansatze_type}"
+
+    ansatz = ansatze.get(ansatz_name)
+    num_params = ansatz.n_params
+
+    print(f"Running VQE with {ansatz_name} ansatz using {num_params} params")
+
 
     num_vqe_runs = 1
-    max_iter = 50
+    max_iter = 100
     initial_tr_radius = 0.3
     final_tr_radius = 1e-8
 
@@ -184,10 +257,10 @@ if __name__ == "__main__":
     else:
         eps = 0
 
-    print(f"Running for {potential} potential and cutoff {cutoff} and shots {shots}")
+    print(f"Running for {potential} potential with cutoff {cutoff} and shots {shots}")
 
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\NQCC Access\RealDevice\{}\Files".format(backend_name), str(starttime), str(shots), potential)
+    base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\NQCC Access\RealDevice\{}\Files".format(backend_name), str(shots), potential, str(starttime))
     os.makedirs(base_path, exist_ok=True)
 
     log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
@@ -199,16 +272,16 @@ if __name__ == "__main__":
     vqe_starttime = datetime.now()
 
     i=1
-    vqe_results =  run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shots, num_params, log_path, log_enabled, eps, lam, p)
+    vqe_results =  run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shots, num_params, log_path, log_enabled, eps, lam, p, ansatz, backend_name, use_noise_model)
 
     # Collect results
     seeds = vqe_results["seed"]
+    session_id = vqe_results["session_id"]
     energies = vqe_results["energy"]
     x_values = vqe_results["params"]
     success = vqe_results["success"]
     num_iters = vqe_results["num_iters"]
     run_time = str(vqe_results["run_time"])
-    #device_time = str(vqe_results["device_time"])
 
     vqe_end = datetime.now()
     vqe_time = vqe_end - vqe_starttime
@@ -216,12 +289,14 @@ if __name__ == "__main__":
     # Save run
     run = {
         "backend": backend_name,
+        "session_id": session_id,
+        "use_noise_model": use_noise_model,
         "starttime": starttime,
         "endtime": vqe_end.strftime("%Y-%m-%d_%H-%M-%S"),
         "potential": potential,
         "cutoff": cutoff,
         "exact_eigenvalues": [x.real.tolist() for x in eigenvalues],
-        "ansatz": "circuit.txt",
+        "ansatz": ansatz_name,
         "num_VQE": num_vqe_runs,
         "shots": shots,
         "Optimizer": {
@@ -242,7 +317,6 @@ if __name__ == "__main__":
         "num_iters": num_iters,
         "success": np.array(success, dtype=bool).tolist(),
         "run_time": run_time,
-        #"device_time": device_time,
         "VQE_run_time": str(vqe_time),
         "seeds": seeds,
     }

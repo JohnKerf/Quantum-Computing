@@ -1,0 +1,39 @@
+{
+    "backend": "ibm_kingston",
+    "use_noise_model": 0,
+    "starttime": "2025-10-03_11-11-59",
+    "endtime": "2025-10-03_11-17-09",
+    "potential": "QHO",
+    "cutoff": 2,
+    "exact_eigenvalues": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+    ],
+    "ansatz": "CQAVQE_QHO_exact",
+    "num_VQE": 1,
+    "shots": 10000,
+    "Optimizer": {
+        "name": "COBYQA",
+        "maxiter": 50,
+        "maxfev": 100,
+        "initial_tr_radius": 0.1,
+        "final_tr_radius": 1e-11
+    },
+    "cost function": {
+        "type": "small negatives",
+        "p": 2,
+        "lam": 15,
+        "eps": 0
+    },
+    "results": 0.004699999999999982,
+    "params": [
+        0.00016126372343672202
+    ],
+    "num_iters": 31,
+    "success": false,
+    "run_time": "0:05:08.113591",
+    "VQE_run_time": "0:05:09.589324",
+    "seeds": 108063243
+}
