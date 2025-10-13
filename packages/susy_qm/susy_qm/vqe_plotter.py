@@ -66,7 +66,7 @@ class VQEPlotter:
         ax.xaxis.set_minor_locator(ticker.NullLocator())
 
     # ---------- plots ----------
-    def plot_delta_e_vs_cutoff_line(self, *, axes=None, marker="^", markersize=4.0):
+    def plot_delta_e_vs_cutoff_line(self, *, axes=None, marker="^", markersize=4.0, metric='median'):
 
         markers = ["o", "s", "^", "D", "v", "P", "*", "X"]
         fig, axes_arr = self._ensure_axes_grid(existing_axes=axes, sharey=True)
@@ -80,7 +80,10 @@ class VQEPlotter:
             ax = axes_arr[i]
             for j, (label, path) in enumerate(self.data_paths):
                 summary = self._load(path)
-                y = summary.delta_e[pot].reindex(self.cutoffs)
+                if metric == 'median':
+                    y = summary.delta_median_e[pot].reindex(self.cutoffs)
+                else:
+                    y = summary.delta_min_e[pot].reindex(self.cutoffs)
                 marker = markers[j]
                 ax.plot(self.cutoffs, y, marker=marker, markersize=markersize, label=label)
             ax.set_title(pot)
@@ -95,10 +98,10 @@ class VQEPlotter:
             return f"{x:.3g}"
         formatter = FuncFormatter(fmt_sigfig)
 
-        for ax in axes_arr:
-            yticks = ax.get_yticks()
-            ax.set_yticks([tick for tick in yticks if tick >= 0])
-            ax.yaxis.set_major_formatter(formatter)
+        #for ax in axes_arr:
+        #    yticks = ax.get_yticks()
+        #    ax.set_yticks([tick for tick in yticks if tick >= 0])
+        #    ax.yaxis.set_major_formatter(formatter)
        
 
         axes_arr[len(self.potentials) // 2].set_xlabel(r"$\Lambda$")

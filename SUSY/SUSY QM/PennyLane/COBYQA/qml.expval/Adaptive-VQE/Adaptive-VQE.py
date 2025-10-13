@@ -15,6 +15,30 @@ from collections import Counter
 
 from susy_qm import calculate_Hamiltonian
 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings(
+    "ignore",
+    message="functools.partial will be a method descriptor",
+    category=FutureWarning
+)
+
+class RZX(qml.operation.Operation):
+    """Hardware-native ZX rotation: exp(-i * phi/2 * Z⊗X)."""
+    num_wires = 2
+    num_params = 1
+    par_domain = "R"
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires)
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        xz = qml.PauliX(wires[0]) @ qml.PauliZ(wires[1])
+        return [qml.exp(xz, coeff=-0.5 * phi)]
+
+
 def compute_grad(param, H, num_qubits, operator_ham, op_list, op_params, basis_state):
 
     dev2 = qml.device("default.qubit", wires=num_qubits, shots=None)
@@ -98,7 +122,7 @@ def run_adapt_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, H, num_q
             
             pool.remove(most_common_gate)
 
-            if (type(most_common_gate) == qml.SingleExcitation) or (type(most_common_gate) == qml.CRY):
+            if (type(most_common_gate) == qml.SingleExcitation) or (type(most_common_gate) == qml.CRY) or (type(most_common_gate) == qml.CRZ) or (type(most_common_gate) == RZX):
                 cq = most_common_gate.wires[0]
                 tq = most_common_gate.wires[1]
 
@@ -132,6 +156,7 @@ def run_adapt_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, H, num_q
                     grad_op = o(wires=op.wires)
                 else:
                     grad_op = o(param, wires=op.wires)
+                    if o == RZX: print(abs(grad))
 
                 grad_list.append((grad_op,abs(grad)))
 
@@ -156,10 +181,9 @@ def run_adapt_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, H, num_q
             options= {
                 'maxiter':max_iter, 
                 'maxfev':max_iter, 
-                #'tol':tol, 
                 'initial_tr_radius':initial_tr_radius, 
                 'final_tr_radius':final_tr_radius, 
-                'scale':True, 
+                #'scale':True, 
                 'disp':False}
         )
         
@@ -212,16 +236,16 @@ def run_adapt_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, H, num_q
 
 if __name__ == "__main__":
     
-    potential = "AHO"
-    cutoff_list = [2,4,8,16,32]
-    shots = None
+    potential = "DW"
+    cutoff_list = [4]
+    shots = None #for shots=None dont use bounds
 
     for cutoff in cutoff_list:
 
         print(f"Running for {potential} potential, cutoff {cutoff}")
 
         starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\COBYQA\qml.expval\Adaptive-VQE\StatevectorFiles", potential)
+        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\COBYQA\qml.expval\Adaptive-VQE\StatevectorFiles-NativePooL", potential)
         os.makedirs(base_path, exist_ok=True)
 
 
@@ -235,18 +259,21 @@ if __name__ == "__main__":
         #Create operator pool
         operator_pool = []
         phi = 0.0
-        for i in range(num_qubits):
+        for i in range(1,num_qubits):
             operator_pool.append(qml.RY(phi,wires=[i]))
-            operator_pool.append(qml.RZ(phi,wires=[i]))
+            #operator_pool.append(qml.RZ(phi,wires=[i]))
             #operator_pool.append(qml.RX(phi,wires=[i]))
 
         c_pool = []
 
-        for control in range(num_qubits):
-                for target in range(num_qubits):
+        for control in range(1,num_qubits):
+                for target in range(1,num_qubits):
                     if control != target:
-                        c_pool.append(qml.CRY(phi=phi, wires=[control, target]))
+                        #c_pool.append(qml.CRY(phi=phi, wires=[control, target]))
+                        #c_pool.append(qml.CRZ(phi=phi, wires=[control, target]))
+                        c_pool.append(RZX(phi=phi, wires=[control, target]))
                         #c_pool.append(qml.SingleExcitation(phi, wires=[control, target]))
+
 
         operator_pool = operator_pool + c_pool    
 
@@ -258,11 +285,12 @@ if __name__ == "__main__":
                 basis_state = [0]*(num_qubits)
         else:
             basis_state = [1] + [0]*(num_qubits-1)
+        
 
         # Optimizer
-        num_steps = 30
+        num_steps = 5
         num_grad_checks = 1
-        num_vqe_runs = 100
+        num_vqe_runs = 10
         max_iter = 10000
         tol = 1e-8
         initial_tr_radius = 0.1

@@ -111,12 +111,12 @@ class VQESummary:
                 # --- evals distribution (always num_evaluations)
                 evals_d = np.asarray(data.get("num_evaluations", []), dtype=float)
                 if evals_d.size:
-                    mean_e = float(np.mean(evals_d))
-                    min_e = float(np.min(evals_d))
-                    max_e = float(np.max(evals_d))
+                    mean_evals = float(np.mean(evals_d))
+                    min_evals = float(np.min(evals_d))
+                    max_evals = float(np.max(evals_d))
                     evals_list = evals_d.tolist()
                 else:
-                    mean_e = min_e = max_e = 0.0
+                    mean_evals = min_evals = max_evals = 0.0
                     evals_list = []
 
                 # --- energies
@@ -132,11 +132,19 @@ class VQESummary:
                     else:
                         sel = results
                     median_e = float(np.nanmedian(sel))
+                    min_e = float(np.nanmin(sel))
                 else:
                     median_e = float("nan")
+                    min_e = float("nan")
 
                 delta_median = (
                     float(np.abs(exact_min - median_e))
+                    if not np.isnan(exact_min)
+                    else float("nan")
+                )
+
+                delta_min = (
+                    float(np.abs(exact_min - min_e))
                     if not np.isnan(exact_min)
                     else float("nan")
                 )
@@ -151,10 +159,11 @@ class VQESummary:
                         "mean_time_s": mean_t,
                         "lower_std_s": lstd,
                         "upper_std_s": ustd,
-                        "mean_evals": mean_e,
-                        "min_evals": min_e,
-                        "max_evals": max_e,
+                        "mean_evals": mean_evals,
+                        "min_evals": min_evals,
+                        "max_evals": max_evals,
                         "delta_median_e": delta_median,
+                        "delta_min_e": delta_min,
                         "n_runs": n_runs,
                         "n_converged": n_conv,
                         "evals_dist": evals_list,
@@ -201,9 +210,14 @@ class VQESummary:
         }
 
     @property
-    def delta_e(self) -> pd.DataFrame:
+    def delta_median_e(self) -> pd.DataFrame:
         """Pivot of |median(result) - min(exact)|."""
         return self.df.pivot(index="cutoff", columns="potential", values="delta_median_e")
+    
+    @property
+    def delta_min_e(self) -> pd.DataFrame:
+        """Pivot of |min(result) - min(exact)|."""
+        return self.df.pivot(index="cutoff", columns="potential", values="delta_min_e")
 
     # ----------------- Utilities -----------------
     def filter(self, *, potential: Optional[str] = None, cutoff: Optional[int] = None) -> "VQESummary":

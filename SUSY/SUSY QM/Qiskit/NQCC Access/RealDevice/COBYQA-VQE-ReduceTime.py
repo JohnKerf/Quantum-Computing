@@ -1,4 +1,4 @@
-import os, json, time, logging
+import os, json, time, logging, dataclasses
 from datetime import datetime
 import numpy as np
 
@@ -54,12 +54,16 @@ def setup_logger(logfile_path, name, enabled=True):
     return logger
 
 
-def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shots, num_params, log_dir, log_enabled, eps, lam, p, ansatz, backend_name, use_noise_model=0):
+def run_vqe(i, H, log_dir, log_enabled, ansatz, run_info):
+
+    backend_name = run_info['backend']
+    num_params = run_info['num_params']
 
     if backend_name == "Aer":
 
-        if use_noise_model:
-            noise_model = NoiseModel.from_backend('ibm_kingston')
+        if run_info['use_noise_model']:
+            real_backend = service.backend("ibm_kingston")
+            noise_model = NoiseModel.from_backend(real_backend)
             backend = AerSimulator(noise_model=noise_model)
            
         else:
@@ -76,6 +80,7 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
     logger = setup_logger(log_path, f"logger_{i}", enabled=log_enabled)
 
     seed = (os.getpid() * int(time.time())) % 123456789
+    run_info["seed"] = seed
     #seed = 41540533
 
     run_start = datetime.now()
@@ -90,11 +95,9 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
 
     qc = ansatze.pl_to_qiskit(ansatz, num_qubits=num_qubits, reverse_bits=True)
 
-    if log_enabled:  logger.info(f"Running VQE using {backend_name} backend")
-    if log_enabled:  logger.info(f"Running VQE using {ansatz.name} ansatz with {ansatz.n_params} params")
-    print(qc)
 
-    if backend_name != "SV-Estimator":
+    if (backend_name == "ibm_kingston") or use_noise_model:
+        print("Hello")
         target = backend.target
         pm = generate_preset_pass_manager(target=target, optimization_level=3)
         ansatz_isa = pm.run(qc)
@@ -102,7 +105,10 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
         layout = getattr(ansatz_isa, "layout", None)
         hamiltonian_isa = observable.apply_layout(layout) if layout else observable
 
-        print(hamiltonian_isa)
+        if log_enabled: logger.info(f"Hamiltonian: {hamiltonian_isa}")
+    else:
+        ansatz_isa = qc
+        hamiltonian_isa = observable
 
     last_energy = None
     iteration_count = 0
@@ -131,7 +137,9 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
         if log_enabled:
             logger.info(f"Iteration {iteration_count}: Energy = {last_energy:.8f}")
 
-    logger.info(f"Starting VQE run {i} (seed={seed})")
+    if log_enabled: logger.info(json.dumps(run_info, indent=4, default=str))
+    if log_enabled: logger.info(f"Starting VQE run {i} (seed={seed})")
+    #if log_enabled: logger.info(qc)
 
     np.random.seed(seed)
     x0 = np.random.random(size=num_params)*2*np.pi
@@ -162,23 +170,41 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
 
     else:
         print("Running with session")
+        
         with Session(backend=backend) as session:
 
             sesh_id = session.session_id
 
             print("Session ID:", sesh_id)
-            logger.info(f"Session ID: {sesh_id}")
+            if log_enabled: logger.info(f"Session ID: {sesh_id}")
 
-            estimator = Estimator(mode=session)
-            estimator.options.default_shots = shots
-            estimator.options.resilience_level = 0
-            logger.info(estimator.options)
+            if backend_name == "Aer":
+
+                estimator = AerEstimator(
+                    options={
+                        "backend_options": {
+                            "method": "automatic",
+                            "noise_model": noise_model if use_noise_model else None,
+                            "seed_simulator": seed
+                        },
+                        "run_options": {
+                            "shots": shots
+                        }
+                    }
+                )
+            else:
+                estimator = Estimator(mode=session)
+                estimator.options.environment.job_tags = tags
+                estimator.options.default_shots = shots
+                estimator.options.resilience_level = 0
+                
+            if log_enabled: logger.info(json.dumps(dataclasses.asdict(estimator.options), indent=4, default=str))
 
             res = minimize(
                 cost_function,
                 x0,
                 args=(ansatz_isa,hamiltonian_isa,estimator),
-                bounds=bounds,
+                #bounds=bounds,
                 method= "COBYQA",
                 options= {
                     'maxiter':max_iter, 
@@ -192,18 +218,8 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
 
     
     run_end = datetime.now()
-    if log_enabled: logger.info(f"Completed VQE run {i}: Energy = {res.fun:.6f}")
-    if log_enabled: logger.info({
-        "seed": seed,
-        "energy": res.fun,
-        "params": res.x.tolist(),
-        "success": res.success,
-        "num_iters": int(res.nfev),
-        "run_time": run_end - run_start,
-        "message": res.message
-    })
 
-    return {
+    results_data = {
         "seed": seed,
         "session_id": sesh_id,
         "energy": res.fun,
@@ -212,6 +228,13 @@ def run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shot
         "num_iters": int(res.nfev),
         "run_time": run_end - run_start
     }
+
+
+    if log_enabled: logger.info(f"Completed VQE run {i}: Energy = {res.fun:.6f}")
+    if log_enabled: logger.info(f"optimizer message: {res.message}")
+    if log_enabled: logger.info(json.dumps(results_data, indent=4, default=str))
+        
+    return results_data
 
 if __name__ == "__main__":
 
@@ -222,25 +245,24 @@ if __name__ == "__main__":
     #backend_name = "SV-Estimator"
 
     use_noise_model = 0
-    shots = 4096#1024
+    shots = 10000
 
     potential = "AHO"
     cutoff = 8
 
+    ansatze_type = 'exact' #exact, Reduced, CD3
 
-    ansatze_type = 'exact' #exact or Reduced
     if potential == "QHO":
         ansatz_name = f"CQAVQE_QHO_{ansatze_type}"
-    elif (potential != "QHO") and (cutoff <= 16):
+    elif (potential != "QHO") and (cutoff <= 64):
         ansatz_name = f"CQAVQE_{potential}{cutoff}_{ansatze_type}"
     else:
         ansatz_name = f"CQAVQE_{potential}16_{ansatze_type}"
 
+    #ansatz_name = f"CQAVQE_{potential}{cutoff}_CD3"
+    #ansatz_name = "real_amplitudes"
+
     ansatz = ansatze.get(ansatz_name)
-    num_params = ansatz.n_params
-
-    print(f"Running VQE with {ansatz_name} ansatz using {num_params} params")
-
 
     num_vqe_runs = 1
     max_iter = 100
@@ -269,10 +291,39 @@ if __name__ == "__main__":
     eigenvalues = np.sort(np.linalg.eigvals(H))[:4]
     num_qubits = int(1 + np.log2(cutoff))
 
+    if ansatz_name == 'real_amplitudes':
+        num_params = 2*num_qubits
+    else:
+        num_params = ansatz.n_params
+
+
+    tags=["NQCC-Q3", ansatz_name, f"shots:{shots}"]
+
+    run_info = {"backend":backend_name,
+                "use_noise_model": use_noise_model,
+                "Potential":potential,
+                "cutoff": cutoff,
+                "num_qubits": num_qubits,
+                "num_params": num_params,
+                "shots": shots,
+                "lam": lam,
+                "p":p,
+                "eps":eps,
+                "num_vqe_runs": num_vqe_runs,
+                "max_iter": max_iter,
+                "initial_tr_radius": initial_tr_radius,
+                "final_tr_radius": final_tr_radius,
+                "ansatz_name": ansatz_name,
+                "path": base_path,
+                "tags":tags
+                }
+
+    print(json.dumps(run_info, indent=4, default=str))
+
     vqe_starttime = datetime.now()
 
     i=1
-    vqe_results =  run_vqe(i, max_iter, initial_tr_radius, final_tr_radius, H, num_qubits, shots, num_params, log_path, log_enabled, eps, lam, p, ansatz, backend_name, use_noise_model)
+    vqe_results =  run_vqe(i, H, log_path, log_enabled, ansatz, run_info)
 
     # Collect results
     seeds = vqe_results["seed"]
