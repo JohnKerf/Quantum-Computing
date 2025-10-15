@@ -44,7 +44,7 @@ def cost_function(params, paulis, coeffs, num_qubits, dev, ansatz, max_gate):
     @qml.qnode(dev)
     def circuit(params):
 
-        ansatz(params, num_qubits)
+        ansatz(params, num_qubits, include_fermion=False)
    
         #for gate in gates:
         #    qml.apply(gate)   
@@ -154,13 +154,13 @@ if __name__ == "__main__":
     
     log_enabled = True
 
-    potential = "AHO"
+    potential = "DW"
     device = 'default.qubit'
     #device = 'qiskit.aer'
 
     #shotslist = [10000, None, 100000]
     shotslist = [None] #for shots=None dont use bounds
-    cutoffs = [128]
+    cutoffs = [16]
 
     lam = 15
     p = 2
@@ -171,8 +171,8 @@ if __name__ == "__main__":
     num_vqe_runs = 100
     max_iter = 10000
     tol = 1e-8
-    initial_tr_radius = 0.1
-    final_tr_radius = 1e-11
+    initial_tr_radius = 1.0
+    final_tr_radius = 1e-8
 
     for shots in shotslist:
 
@@ -192,7 +192,7 @@ if __name__ == "__main__":
                 ansatz_name = f"CQAVQE_{potential}16_{ansatze_type}"
 
             #ansatz_name = f"CQAVQE_{potential}{cutoff}_CD3"
-            ansatz_name = "real_amplitudes"
+            #ansatz_name = "real_amplitudes"
 
             ansatz = ansatze.get(ansatz_name)
             
@@ -210,16 +210,21 @@ if __name__ == "__main__":
             #print(f"Running for gate {max_gate}")
 
             starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            base_path = os.path.join("C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\COBYQA\PauliDecomp\VQE\ReducedHamExact", str(shots), potential)
+            base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\COBYQA\PauliDecomp\VQE\ReducedHamExact", str(shots), potential)
             os.makedirs(base_path, exist_ok=True)
 
             log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
 
             # Calculate Hamiltonian and expected eigenvalues
             H = calculate_Hamiltonian(cutoff, potential)
+
+            if potential in ["QHO","AHO"] or ((potential == "DW") and (cutoff == 4)):
+                H = H[cutoff:, cutoff:]
+            else:
+                H = H[:cutoff, :cutoff]
             
             eigenvalues = np.sort(np.linalg.eig(H)[0])[:4]
-            num_qubits = int(1 + np.log2(cutoff))
+            num_qubits = int(np.log2(cutoff))
 
             if ansatz_name == 'real_amplitudes':
                 num_params = 2*num_qubits
@@ -234,6 +239,10 @@ if __name__ == "__main__":
             run_info = {"device":device,
                         "Potential":potential,
                         "cutoff": cutoff,
+                        "num_qubits": num_qubits,
+                        "num_paulis": len(paulis),
+                        "num_params": num_params,
+                        "min_eigenvalue": eigenvalues[0].real,
                         "shots": shots,
                         "lam": lam,
                         "p":p,
@@ -255,7 +264,7 @@ if __name__ == "__main__":
             vqe_starttime = datetime.now()
 
             # Start multiprocessing for VQE runs
-            with Pool(processes=100) as pool:
+            with Pool(processes=10) as pool:
                 vqe_results = pool.starmap(
                     run_vqe,
                     [
