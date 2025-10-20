@@ -233,3 +233,44 @@ class VQESummary:
         """Write the tidy table to CSV for later analysis."""
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.df.to_csv(path, index=False, **kwargs)
+
+
+    def get_sel(
+        self,
+        potential: str,
+        cutoff: int,
+        *,
+        converged_only: bool = True,
+    ) -> np.ndarray:
+        """
+        Return the selected result array (`sel`) for a given (potential, cutoff),
+        matching the same logic used in from_path().
+        """
+        # Locate the corresponding source file
+        row = self.df[(self.df.potential == potential) & (self.df.cutoff == int(cutoff))]
+        if row.empty:
+            raise KeyError(f"No entry found for ({potential}, {cutoff})")
+
+        fp = Path(row.iloc[0]["_source_file"])
+        if not fp.exists():
+            raise FileNotFoundError(f"Missing source file: {fp}")
+
+        data = _load_json(fp)
+
+        results = np.asarray(data.get("results", []), dtype=float)
+        success = np.asarray(data.get("success", []), dtype=bool)
+        converged_idx = np.where(success)[0]
+        n_conv = int(converged_idx.size)
+
+        if results.size:
+            if converged_only and n_conv > 0:
+                sel = results[converged_idx]
+            elif converged_only and n_conv == 0:
+                sel = np.array([np.nan])
+            else:
+                sel = results
+        else:
+            sel = np.array([], dtype=float)
+
+        return sel
+

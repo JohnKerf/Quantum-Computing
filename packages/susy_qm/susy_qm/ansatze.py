@@ -16,12 +16,21 @@ def gate_list_from_ansatz(ansatz_fn, params, num_qubits):
 
 
 
-def truncate_ansatz(ansatz_fn, params, num_qubits, max_gates):
+def truncate_ansatz(ansatz_fn, params, num_qubits, max_gate):
+
+    gate_diff = ansatz_fn.n_params - max_gate if ansatz_fn.n_params > max_gate else 0
+
+    dummy_params = params + [0.0]*gate_diff
     with qml.tape.QuantumTape() as tape:
-        ansatz_fn(params, num_qubits)
+        ansatz_fn(dummy_params, num_qubits)
 
-    reduced = tape.operations[:max_gates+1]
+    ops = tape.operations
 
+    if isinstance(ops[0],qml.BasisState):
+        reduced = ops[:max_gate+1]
+    else:
+        reduced = ops[:max_gate]
+   
     return reduced
 
 
@@ -290,9 +299,9 @@ CQAVQE_AHO8_exact.name = "CQAVQE_AHO8_exact"
 def CQAVQE_AHO16_exact(params, num_qubits):
     basis = [1] + [0]*(num_qubits-1)
     qml.BasisState(basis, wires=range(num_qubits))
-    qml.RY(params[0], wires=[num_qubits-2])
-    qml.RY(params[1], wires=[num_qubits-3])
-    qml.RY(params[2], wires=[num_qubits-4])
+    qml.RY(params[0], wires=[num_qubits-3])
+    qml.RY(params[1], wires=[num_qubits-4])
+    qml.RY(params[2], wires=[num_qubits-2])
     qml.CRY(params[3], wires=[num_qubits-2, num_qubits-3])
     qml.CRY(params[4], wires=[num_qubits-2, num_qubits-4])
     qml.CRY(params[5], wires=[num_qubits-3, num_qubits-4])
@@ -304,9 +313,9 @@ CQAVQE_AHO16_exact.name = "CQAVQE_AHO16_exact"
 def CQAVQE_AHO32_exact(params, num_qubits):
     basis = [1] + [0]*(num_qubits-1)
     qml.BasisState(basis, wires=range(num_qubits))
-    qml.RY(params[0], wires=[num_qubits-2])
-    qml.RY(params[1], wires=[num_qubits-3])
-    qml.RY(params[2], wires=[num_qubits-4])
+    qml.RY(params[0], wires=[num_qubits-3])
+    qml.RY(params[1], wires=[num_qubits-4])
+    qml.RY(params[2], wires=[num_qubits-2])
     qml.CRY(params[3], wires=[num_qubits-2, num_qubits-3])
     qml.CRY(params[4], wires=[num_qubits-2, num_qubits-4])
     qml.RY(params[5], wires=[num_qubits-5])
@@ -330,9 +339,9 @@ CQAVQE_AHO32_exact.name = "CQAVQE_AHO32_exact"
 def CQAVQE_AHO64_exact(params, num_qubits):
     basis = [1] + [0]*(num_qubits-1)
     qml.BasisState(basis, wires=range(num_qubits))
-    qml.RY(params[0], wires=[num_qubits-2])
-    qml.RY(params[1], wires=[num_qubits-3])
-    qml.RY(params[2], wires=[num_qubits-4])
+    qml.RY(params[0], wires=[num_qubits-3])
+    qml.RY(params[1], wires=[num_qubits-4])
+    qml.RY(params[2], wires=[num_qubits-2])
     qml.CRY(params[3], wires=[num_qubits-2, num_qubits-3])
     qml.CRY(params[4], wires=[num_qubits-2, num_qubits-4])
     qml.RY(params[5], wires=[num_qubits-5])
@@ -365,9 +374,9 @@ CQAVQE_AHO64_exact.name = "CQAVQE_AHO64_exact"
 def CQAVQE_AHO128_exact(params, num_qubits):
     basis = [1] + [0]*(num_qubits-1)
     qml.BasisState(basis, wires=range(num_qubits))
-    qml.RY(params[0], wires=[num_qubits-2])
-    qml.RY(params[1], wires=[num_qubits-3])
-    qml.RY(params[2], wires=[num_qubits-4])
+    qml.RY(params[0], wires=[num_qubits-3])
+    qml.RY(params[1], wires=[num_qubits-4])
+    qml.RY(params[2], wires=[num_qubits-2])
     qml.CRY(params[3], wires=[num_qubits-2, num_qubits-3])
     qml.CRY(params[4], wires=[num_qubits-2, num_qubits-4])
     qml.RY(params[5], wires=[num_qubits-5])
