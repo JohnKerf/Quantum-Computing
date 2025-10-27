@@ -44,26 +44,26 @@ def format_axis(
     if scale == "linear":
         ax.set_xscale("linear")
 
-        def fmt_linear(x, _):
+        # def fmt_linear(x, _):
 
-            if x == 0:
-                return "0"
+        #     if x == 0:
+        #         return "0"
             
-            if abs(x) >= 1e3 or abs(x) < 1e-2:
-                exp = int(np.floor(np.log10(abs(x))))
-                coeff = x / (10**exp)
-                sgn = "-" if x < 0 else ""
+        #     if abs(x) >= 1e3 or abs(x) < 1e-2:
+        #         exp = int(np.floor(np.log10(abs(x))))
+        #         coeff = x / (10**exp)
+        #         sgn = "-" if x < 0 else ""
 
-                if np.isclose(abs(coeff), 1.0, atol=1e-8):
-                    return rf"${sgn}10^{{{exp}}}$"
+        #         if np.isclose(abs(coeff), 1.0, atol=1e-8):
+        #             return rf"${sgn}10^{{{exp}}}$"
                 
-                c = f"{coeff:.1f}".rstrip("0").rstrip(".")
+        #         c = f"{coeff:.1f}".rstrip("0").rstrip(".")
 
-                return rf"${c}\times10^{{{exp}}}$"
+        #         return rf"${c}\times10^{{{exp}}}$"
             
-            return f"{x:.4g}".rstrip("0").rstrip(".")
+        #     return f"{x:.4g}".rstrip("0").rstrip(".")
         
-        ax.xaxis.set_major_formatter(FuncFormatter(fmt_linear))
+        # ax.xaxis.set_major_formatter(FuncFormatter(fmt_linear))
 
     elif scale == "symlog":
 
@@ -254,6 +254,8 @@ class BoxPlotter:
                     scale = "log"
                 else:
                     scale = "symlog"
+
+                #scale="linear"
                     
                 # draw horizontal boxplots
                 bp = ax.boxplot(
@@ -326,7 +328,7 @@ class BoxPlotter:
         
         if show_legend:
             #axes_arr[0, 0].legend(loc="upper right", fontsize=8, ncol=len(self.cutoffs))
-            axes_arr[0, 0].legend(loc="upper left", fontsize=8, ncol=1)
+            axes_arr[0, 0].legend(loc="upper left", fontsize=12, ncol=1)
 
         fig.tight_layout(pad=0.6)
         return fig, axes_arr
@@ -383,11 +385,11 @@ class VQEPlotter:
         ax.xaxis.set_minor_locator(ticker.NullLocator())
 
 
-    def plot_delta_e_vs_cutoff_line(self, *, figsize=(12, 4), axes=None, linewidth=1.0, marker="^", markersize=4.0, metric='median', scale="symlog", linthresh=1.0):
+    def plot_delta_e_vs_cutoff_line(self, *, figsize=(12, 4), axes=None, linewidth=1.0, marker="^", markersize=4.0, metric='median', scale="symlog", linthresh=1.0, sharey=True):
 
         markers = ["o", "s", "^", "D", "v", "P", "*", "X"]
         #marker_cycle = itertools.cycle(markers)
-        fig, axes_arr = self._ensure_axes_grid(figsize=figsize, existing_axes=axes, sharey=True)
+        fig, axes_arr = self._ensure_axes_grid(figsize=figsize, existing_axes=axes, sharey=sharey)
 
         for ax in axes_arr:
             if scale == "symlog":
@@ -413,7 +415,7 @@ class VQEPlotter:
             self._style_x_cutoffs(ax)
             if i == 0:
                 ax.set_ylabel(r"|$E_{\mathrm{exact}} - E_{\mathrm{median}}$|")
-            else:
+            elif sharey:
                 ax.tick_params(axis="y", left=False, labelleft=False)
 
         def fmt_sigfig(x, _):
@@ -427,7 +429,7 @@ class VQEPlotter:
        
 
         axes_arr[len(self.potentials) // 2].set_xlabel(r"$\Lambda$")
-        axes_arr[0].legend(loc="upper left", fontsize=8)
+        axes_arr[0].legend(loc="upper left", fontsize=12)
         fig.tight_layout(pad=0.6)
         return fig, axes_arr
     
@@ -509,7 +511,7 @@ class VQEPlotter:
             Patch(facecolor=label_to_color[lab], edgecolor=label_to_color[lab], alpha=alpha, label=lab)
             for lab in labels
         ]
-        if show_legend: axes_arr[0].legend(handles=legend_patches, loc="upper left", fontsize=8)
+        if show_legend: axes_arr[0].legend(handles=legend_patches, loc="upper left", fontsize=12)
 
         fig.tight_layout(pad=0.6)
         return fig, axes_arr
