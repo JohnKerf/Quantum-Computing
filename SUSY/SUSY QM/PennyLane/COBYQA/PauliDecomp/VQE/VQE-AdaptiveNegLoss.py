@@ -39,15 +39,15 @@ def setup_logger(logfile_path, name, enabled=True):
 def cost_function(params, paulis, coeffs, num_qubits, dev, ansatz, max_gate):
 
     #groups = group_observables(paulis)
-    #gates = ansatze.truncate_ansatz(ansatz, params, num_qubits, max_gates=max_gate)
+    gates = ansatze.truncate_ansatz(ansatz, params, num_qubits, max_gate=max_gate)
        
     @qml.qnode(dev)
     def circuit(params):
 
-        ansatz(params, num_qubits)
+        #ansatz(params, num_qubits)
    
-        #for gate in gates:
-        #    qml.apply(gate)   
+        for gate in gates:
+            qml.apply(gate)   
 
         #return [qml.expval(op) for op in group] ##grouped
         return [qml.expval(op) for op in paulis] ##ungrouped
@@ -152,51 +152,48 @@ def run_vqe(i, max_iter, tol, initial_tr_radius, final_tr_radius, paulis, coeffs
 
 if __name__ == "__main__":
     
-    log_enabled = True
+    log_enabled = False
 
-    potential = "AHO"
+    ansatze_type = 'exact' #exact, Reduced, CD3, real_amplitudes
+    max_gate=None
+
+    potential = "QHO"
     device = 'default.qubit'
-    #device = 'qiskit.aer'
 
-    #shotslist = [10000, None, 100000]
-    shotslist = [None] #for shots=None dont use bounds
-    cutoffs = [128]
+    shotslist = [None] #for shots=None dont use bound
+    cutoffs = [2]
 
     lam = 15
     p = 2
 
-    max_gate=0
-    
     # Optimizer
-    num_vqe_runs = 100
+    num_vqe_runs = 10
     max_iter = 10000
     tol = 1e-8
-    initial_tr_radius = 0.1
-    final_tr_radius = 1e-11
+    initial_tr_radius = 0.2
+    final_tr_radius = 1e-8#1e-8
 
     for shots in shotslist:
 
         use_bounds = False if shots == None else True
-
-        print(f"Using bounds: {use_bounds}")
         
         for cutoff in cutoffs:
 
-            ansatze_type = 'exact' #exact, Reduced, CD3
 
-            if potential == "QHO":
-                ansatz_name = f"CQAVQE_QHO_{ansatze_type}"
-            elif (potential != "QHO") and (cutoff <= 64):
-                ansatz_name = f"CQAVQE_{potential}{cutoff}_{ansatze_type}"
+            if ansatze_type == "real_amplitudes":
+                ansatz_name = "real_amplitudes"
             else:
-                ansatz_name = f"CQAVQE_{potential}16_{ansatze_type}"
+                if potential == "QHO":
+                    ansatz_name = f"CQAVQE_QHO_{ansatze_type}"
+                elif (potential != "QHO") and (cutoff <= 64):
+                    ansatz_name = f"CQAVQE_{potential}{cutoff}_{ansatze_type}"
+                else:
+                    ansatz_name = f"CQAVQE_{potential}16_{ansatze_type}"
 
-            #ansatz_name = f"CQAVQE_{potential}{cutoff}_CD3"
-            ansatz_name = "real_amplitudes"
-
+            print(f"Running for {ansatz_name} ansatz")
+            
             ansatz = ansatze.get(ansatz_name)
             
-
             if potential == "AHO":
                 i = np.log2(cutoff)
                 factor = 2**(((i-1)*i)/2)
@@ -206,11 +203,16 @@ if __name__ == "__main__":
 
             print(f"Running for {potential} potential and cutoff {cutoff} and shots {shots}")
 
-            #for max_gate in range(1, num_params+1):
+            #for max_gate in range(1, ansatz.n_params+1):
+            #for max_gate in range(1, 15):
             #print(f"Running for gate {max_gate}")
 
             starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            base_path = os.path.join("C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\COBYQA\PauliDecomp\VQE\ReducedHamExact", str(shots), potential)
+            #base_path = os.path.join("/users/johnkerf/fastscratch/Data/PennyLane/COBYQA/PauliDecomp/VQE/AnsatzSteps2", str(shots), potential, str(cutoff), f"max_gate_{max_gate}")
+            #base_path = os.path.join("/users/johnkerf/fastscratch/Data/PennyLane/COBYQA/PauliDecomp/VQE/CQAVQE-Exact", str(shots), potential)
+            #base_path = os.path.join("/users/johnkerf/fastscratch/Data/PennyLane/COBYQA/PauliDecomp/VQE/FilesNP-RA", str(shots), potential)
+            #base_path = os.path.join(f"/users/johnkerf/fastscratch/Data/PennyLane/COBYQA/PauliDecomp/VQE/TruncatedAnsatz/CQAVQE-Reduced{max_gate}", str(shots), potential)
+            base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\SUSY QM\PennyLane\COBYQA\PauliDecomp\VQE\AnsatzTest", str(shots), potential)
             os.makedirs(base_path, exist_ok=True)
 
             log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
@@ -223,8 +225,12 @@ if __name__ == "__main__":
 
             if ansatz_name == 'real_amplitudes':
                 num_params = 2*num_qubits
+                max_gate = None
             else:
                 num_params = ansatz.n_params
+
+            if max_gate is not None:
+                num_params = max_gate if num_params > max_gate else num_params
             
             H_decomp = qml.pauli_decompose(H, wire_order=range(num_qubits))
             paulis = H_decomp.ops
@@ -234,6 +240,9 @@ if __name__ == "__main__":
             run_info = {"device":device,
                         "Potential":potential,
                         "cutoff": cutoff,
+                        "num_qubits": num_qubits,
+                        "num_paulis": len(paulis),
+                        "num_params": num_params,
                         "shots": shots,
                         "lam": lam,
                         "p":p,
@@ -255,7 +264,7 @@ if __name__ == "__main__":
             vqe_starttime = datetime.now()
 
             # Start multiprocessing for VQE runs
-            with Pool(processes=100) as pool:
+            with Pool(processes=10) as pool:
                 vqe_results = pool.starmap(
                     run_vqe,
                     [
@@ -283,8 +292,12 @@ if __name__ == "__main__":
                 "endtime": vqe_end.strftime("%Y-%m-%d_%H-%M-%S"),
                 "potential": potential,
                 "cutoff": cutoff,
+                "num_qubits": num_qubits,
+                "num_paulis": len(paulis),
+                "num_params": num_params,
                 "exact_eigenvalues": [x.real.tolist() for x in eigenvalues],
                 "ansatz": ansatz_name,
+                "max_gate":max_gate,
                 "num_VQE": num_vqe_runs,
                 "device": device,
                 "shots": shots,

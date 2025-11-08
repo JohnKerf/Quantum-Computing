@@ -1,314 +1,324 @@
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.pauli import group_observables
 
 from scipy.optimize import differential_evolution
 from scipy.stats.qmc import Halton
 
-import os
-import json
+import os, json, time, logging
 import numpy as np
 from datetime import datetime, timedelta
-import time
 
 from multiprocessing import Pool
 
-from susy_qm import calculate_Hamiltonian
+from susy_qm import calculate_Hamiltonian, ansatze
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 
-def cost_function(params, H_decomp, num_qubits, shots, device, seed):
-   
-    #dev = qml.device("default.qubit", wires=num_qubits, shots=shots)
-    dev = qml.device(device, wires=num_qubits, shots=shots, seed=seed)
-    start = datetime.now()
-  
-    paulis = H_decomp.ops
-    coeffs = H_decomp.coeffs
-    
-    '''
-    ############### DW ##########################
-    ## 2
-    @qml.qnode(dev)
-    def circuit(params):
-
-        qml.RY(params[0], wires=[1])
-            
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
-    ## 4
-    @qml.qnode(dev)
-    def circuit(params):
-    
-        basis = [1]*num_qubits
-        qml.BasisState(basis, wires=range(num_qubits))
-
-        qml.RY(params[0], wires=[1])
-        qml.RY(params[1], wires=[2])
-            
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
-    ## 8+
-    @qml.qnode(dev)
-    def circuit(params):
-
-        #basis = [0]*num_qubits
-        #qml.BasisState(basis, wires=range(num_qubits))
+def setup_logger(logfile_path, name, enabled=True):
+    if not enabled:
         
-        qml.RY(params[0], wires=[num_qubits-3])
-        qml.RY(params[1], wires=[num_qubits-1])
-        qml.CRY(params[2], wires=[num_qubits-1, num_qubits-2])
-        qml.RY(params[3], wires=[num_qubits-2])
-        qml.RY(params[4], wires=[num_qubits-1])
-            
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
+        logger = logging.getLogger(f"{name}_disabled")
+        logger.handlers = []               
+        logger.addHandler(logging.NullHandler())
+        logger.propagate = False
+        logger.setLevel(logging.CRITICAL)
+        return logger
 
-    ############### AHO ##########################
-    ## 2
-    @qml.qnode(dev)
-    def circuit(params):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    if not logger.handlers:
+        handler = logging.FileHandler(logfile_path)
+        formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    return logger
 
-        basis = [1] + [0]*(num_qubits-1)
-        qml.BasisState(basis, wires=range(num_qubits))
+def cost_function(params, paulis, coeffs, num_qubits, dev, ansatz, max_gate):
 
-        qml.RY(params[0], wires=[0])
-            
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
-    ## 4
-    @qml.qnode(dev)
-    def circuit(params):
-
-        basis = [1] + [0]*(num_qubits-1)
-        qml.BasisState(basis, wires=range(num_qubits))
-
-        qml.RY(params[0], wires=[1])
-            
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
-    ## 8+
-    @qml.qnode(dev)
-    def circuit(params):
-
-        basis = [1] + [0]*(num_qubits-1)
-        qml.BasisState(basis, wires=range(num_qubits))
-        
-        qml.RY(params[0], wires=[num_qubits-2])
-        qml.RY(params[1], wires=[num_qubits-3])
-            
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
-    ############### QHO ##########################
-    @qml.qnode(dev)
-    def circuit(params):
-       
-        qml.RY(params[0], wires=[0])
-            
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
-
-    ############### Real Amplitudes ##########################
-    @qml.qnode(dev)
-    def circuit(params):
-        param_index=0
-        for i in range(num_qubits):
-            qml.RY(params[param_index], wires=i)
-            param_index += 1
-
-        for j in reversed(range(1, num_qubits)):
-            qml.CNOT(wires=[j, j-1])
-
-        for k in range(num_qubits):
-            qml.RY(params[param_index], wires=k)
-            param_index += 1
-        
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
-    
-    ############################ Strongly Entangling Layers ################
-    @qml.qnode(dev)
-    def circuit(params):
-        
-        num_layers=1
-        params_shape = (num_layers, num_qubits, 3)
-        params = pnp.tensor(params.reshape(params_shape), requires_grad=True)
-        qml.StronglyEntanglingLayers(weights=params, wires=range(num_qubits), imprimitive=qml.CZ)
-
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-
-    '''
+    gates = ansatze.truncate_ansatz(ansatz, params, num_qubits, max_gate=max_gate)
 
     @qml.qnode(dev)
     def circuit(params):
-        param_index=0
-        for i in range(num_qubits):
-            qml.RY(params[param_index], wires=i)
-            param_index += 1
+        #ansatz(params, num_qubits)     
+        for gate in gates:
+            qml.apply(gate)   
+        return [qml.expval(op) for op in paulis]
 
-        for j in reversed(range(1, num_qubits)):
-            qml.CNOT(wires=[j, j-1])
 
-        for k in range(num_qubits):
-            qml.RY(params[param_index], wires=k)
-            param_index += 1
-        
-        return [qml.sample(op) for op in paulis]
+    expvals = circuit(params)                 
+    energy = float(np.dot(coeffs, expvals)) 
 
-    samples = circuit(params)  
-    samples = np.array(samples).T 
-    energy = np.mean(samples @ coeffs)
-     
-    end = datetime.now()
-    device_time = (end - start)
-
-    return energy, device_time
+    return energy
 
     
 
-def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, H_decomp, num_qubits, shots, num_params, device):
+def run_vqe(i, bounds, max_iter, tol, abs_tol, strategy, popsize, paulis, coeffs, num_qubits, shots, num_params, device, log_dir, log_enabled, eps, lam, p, ansatz, run_info):
+
+    if log_enabled: os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, f"vqe_run_{i}.log")
+    logger = setup_logger(log_path, f"logger_{i}", enabled=log_enabled)
 
     # We need to generate a random seed for each process otherwise each parallelised run will have the same result
     seed = (os.getpid() * int(time.time())) % 123456789
+    dev = qml.device(device, wires=num_qubits, shots=shots, seed=seed)
     run_start = datetime.now()
 
     # Generate Halton sequence
     num_dimensions = num_params
-    num_samples = popsize
+    num_samples = popsize*num_params
+    #num_samples = popsize
     halton_sampler = Halton(d=num_dimensions, seed=seed)
     halton_samples = halton_sampler.random(n=num_samples)
     scaled_samples = 2 * np.pi * halton_samples
 
-    device_time = timedelta()
 
+    best_energy = np.inf
+    fevals = 0
+    last_energy = None
+    iteration_count = 0
     def wrapped_cost_function(params):
-        result, dt = cost_function(params, H_decomp, num_qubits, shots, device, seed)
-        nonlocal device_time
-        device_time += dt
-        return result
+        nonlocal best_energy, fevals, last_energy, iteration_count
+
+        result = cost_function(params, paulis, coeffs, num_qubits, dev, ansatz, run_info['max_gate'])
+
+        last_energy = result
+        iteration_count +=1
+        fevals += 1
+
+        if log_enabled and (result + 1e-12 < best_energy):
+            best_energy = result
+            logger.info(f"NEW BEST at eval {fevals}: Energy = {result:.12f}")
+
+        neg = max(0.0, -(result + eps))
+
+        return result + lam * (neg ** p)
+
+
+    def callback(xk, convergence=None):
+        if log_enabled and iteration_count % 10 == 0:
+            logger.info(f"Iteration {iteration_count}: Energy = {last_energy:.8f}")
+
+    run_info["seed"] = seed
+
+    if log_enabled: logger.info(json.dumps(run_info, indent=4, default=str))
+    if log_enabled: logger.info(f"Starting VQE run {i} (seed={seed})")
 
     # Differential Evolution optimization
-    res = differential_evolution(
-        wrapped_cost_function,
-        bounds,
-        maxiter=max_iter,
-        tol=tol,
-        atol=abs_tol,
-        strategy=strategy,
-        popsize=popsize,
-        init=scaled_samples,
-        seed=seed
-    )
+    with qml.Tracker(dev) as tracker:
+        res = differential_evolution(
+            wrapped_cost_function,
+            bounds,
+            maxiter=max_iter,
+            tol=tol,
+            atol=abs_tol,
+            strategy=strategy,
+            popsize=popsize,
+            init=scaled_samples,
+            seed=seed,
+            callback=callback
+        )
 
     run_end = datetime.now()
     run_time = run_end - run_start
 
-    return {
+    if log_enabled: logger.info(f"Completed VQE run {i}: Energy = {res.fun:.6f}")
+    if log_enabled: logger.info(f"optimizer message: {res.message}")
+
+    totals = getattr(tracker, "totals", {})
+    num_evals = int(totals.get("executions", 0))
+
+    results_data = {
         "seed": seed,
         "energy": res.fun,
         "params": res.x.tolist(),
         "success": res.success,
         "num_iters": res.nit,
-        "num_evaluations": res.nfev,
-        "run_time": run_time,
-        "device_time": device_time
+        "num_evaluations": num_evals,
+        "run_time": run_time
     }
+
+    if log_enabled: logger.info(json.dumps(results_data, indent=4, default=str))
+
+    return results_data
 
 
 if __name__ == "__main__":
+
+    log_enabled = False
     
+    ansatze_type = 'exact' #exact, Reduced, CD3, real_amplitudes
+    max_gate=None
+
     potential = "DW"
     device = 'default.qubit'
-    shots = 10000
-    cutoff = 16
 
-    print(f"Running for {potential} potential and cutoff {cutoff}")
+    shotslist = [10000] 
+    cutoffs = [8]
 
-    starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_path = os.path.join("/users/johnkerf/Quantum Computing/SUSY-QM/Qiskit-Vs-PL_pauli/PL/Files", potential)
-    os.makedirs(base_path, exist_ok=True)
-
-
-    # Calculate Hamiltonian and expected eigenvalues
-    H = calculate_Hamiltonian(cutoff, potential)
-    
-    eigenvalues = np.sort(np.linalg.eig(H)[0])[:4]
-    num_qubits = int(1 + np.log2(cutoff))
-    
-    H_decomp = qml.pauli_decompose(H, wire_order=range(num_qubits))
-
-    # Optimizer
-    num_params = 2*num_qubits
-    bounds = [(0, 2 * np.pi) for _ in range(num_params)]
+    lam = 15
+    p = 2
 
     num_vqe_runs = 100
     max_iter = 10000
-    strategy = "randtobest1bin"
-    tol = 1e-3
-    abs_tol = 1e-3
-    popsize = 20
+    strategy = "best1bin"
+    tol = 1e-1
+    abs_tol = 1e-2
+    popsize = 5
 
-    vqe_starttime = datetime.now()
+    for shots in shotslist:
+        for cutoff in cutoffs:
+            if ansatze_type == "real_amplitudes":
+                ansatz_name = "real_amplitudes"
+            else:
+                if potential == "QHO":
+                    ansatz_name = f"CQAVQE_QHO_{ansatze_type}"
+                elif (potential != "QHO") and (cutoff <= 64):
+                    ansatz_name = f"CQAVQE_{potential}{cutoff}_{ansatze_type}"
+                else:
+                    ansatz_name = f"CQAVQE_{potential}16_{ansatze_type}"
 
-    # Start multiprocessing for VQE runs
-    with Pool(processes=100) as pool:
-        vqe_results = pool.starmap(
-            run_vqe,
-            [
-                (i, bounds, max_iter, tol, abs_tol, strategy, popsize, H_decomp, num_qubits, shots, num_params, device)
-                for i in range(num_vqe_runs)
-            ],
-        )
+            print(f"Running for {ansatz_name} ansatz")
+            
+            ansatz = ansatze.get(ansatz_name)
+            
+            if potential == "AHO":
+                i = np.log2(cutoff)
+                factor = 2**(((i-1)*i)/2)
+                eps = 0.5 / factor
+            else:
+                eps = 0
 
-    # Collect results
-    seeds = [res["seed"] for res in vqe_results]
-    energies = [res["energy"] for res in vqe_results]
-    x_values = [res["params"] for res in vqe_results]
-    success = [res["success"] for res in vqe_results]
-    num_iters = [res["num_iters"] for res in vqe_results]
-    num_evaluations = [res["num_evaluations"] for res in vqe_results]
-    run_times = [str(res["run_time"]) for res in vqe_results]
-    total_run_time = sum([res["run_time"] for res in vqe_results], timedelta())
-    device_times = [str(res["device_time"]) for res in vqe_results]
-    total_device_time = sum([res['device_time'] for res in vqe_results], timedelta())
+            print(f"Running for {potential} potential and cutoff {cutoff} and shots {shots}")
 
-    vqe_end = datetime.now()
-    vqe_time = vqe_end - vqe_starttime
+            #for max_gate in range(1, 5):
 
-    # Save run
-    run = {
-        "starttime": starttime,
-        "endtime": vqe_end.strftime("%Y-%m-%d_%H-%M-%S"),
-        "potential": potential,
-        "cutoff": cutoff,
-        "exact_eigenvalues": [x.real.tolist() for x in eigenvalues],
-        "ansatz": "circuit.txt",
-        "num_VQE": num_vqe_runs,
-        "device": device,
-        "shots": shots,
-        "Optimizer": {
-            "name": "differential_evolution",
-            "bounds": "[(0, 2 * np.pi)",
-            "maxiter": max_iter,
-            "tolerance": tol,
-            "abs_tolerance": abs_tol,
-            "strategy": strategy,
-            "popsize": popsize,
-            'init': 'scaled_samples',
-        },
-        "results": energies,
-        "params": x_values,
-        "num_iters": num_iters,
-        "num_evaluations": num_evaluations,
-        "success": np.array(success, dtype=bool).tolist(),
-        "run_times": run_times,
-        "device_times": device_times,
-        "parallel_run_time": str(vqe_time),
-        "total_VQE_time": str(total_run_time),
-        "total_device_time": str(total_device_time),
-        "seeds": seeds,
-    }
+            starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            base_path = os.path.join("/users/johnkerf/fastscratch/Data/PennyLane/DE/PauliDecomp/VQE/CQVQE-Exact", str(shots), potential)
+            #base_path = os.path.join(f"/users/johnkerf/fastscratch/Data/PennyLane/DE/PauliDecomp/VQE/TruncatedAnsatz/CQAVQE-Reduced{max_gate}", str(shots), potential)
+            os.makedirs(base_path, exist_ok=True)
 
-    # Save the variable to a JSON file
-    path = os.path.join(base_path, "{}_{}.json".format(potential, cutoff))
-    with open(path, "w") as json_file:
-        json.dump(run, json_file, indent=4)
+            log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
+            
+            # Calculate Hamiltonian and expected eigenvalues
+            H = calculate_Hamiltonian(cutoff, potential)
+            
+            eigenvalues = np.sort(np.linalg.eig(H)[0])[:4]
+            num_qubits = int(1 + np.log2(cutoff))
 
-    print("Done")
+            if ansatz_name == 'real_amplitudes':
+                num_params = 2*num_qubits
+                max_gate = None
+            else:
+                num_params = ansatz.n_params
+
+            if max_gate is not None:
+                num_params = max_gate if num_params > max_gate else num_params
+            
+            H_decomp = qml.pauli_decompose(H, wire_order=range(num_qubits))
+            paulis = H_decomp.ops
+            coeffs = H_decomp.coeffs
+
+            # Optimizer
+            #num_params = 2*num_qubits
+
+            bounds = [(-1*np.pi, np.pi) for _ in range(num_params)]
+            #bounds = [(None, None) for _ in range(num_params)]
+
+            run_info = {"device":device,
+                        "Potential":potential,
+                        "cutoff": cutoff,
+                        "shots": shots,
+                        "lam": lam,
+                        "p":p,
+                        "eps":eps,
+                        "max_gate":max_gate,
+                        "num_vqe_runs": num_vqe_runs,
+                        "max_iter": max_iter,
+                        "tol": tol, 
+                        "abs_tol": abs_tol,
+                        "strategy": strategy,
+                        "popsize": popsize,
+                        "bounds":bounds,
+                        "ansatz_name": ansatz_name,
+                        "path": base_path
+                        }
+
+            print(json.dumps(run_info, indent=4, default=str))
+
+            vqe_starttime = datetime.now()
+
+            # Start multiprocessing for VQE runs
+            with Pool(processes=100) as pool:
+                vqe_results = pool.starmap(
+                    run_vqe,
+                    [
+                        (i, bounds, max_iter, tol, abs_tol, strategy, popsize, paulis, coeffs, num_qubits, shots, num_params, device, log_path, log_enabled, eps, lam, p, ansatz, run_info)
+                        for i in range(num_vqe_runs)
+                    ],
+                )
+
+            # Collect results
+            seeds = [res["seed"] for res in vqe_results]
+            energies = [res["energy"] for res in vqe_results]
+            x_values = [res["params"] for res in vqe_results]
+            success = [res["success"] for res in vqe_results]
+            num_iters = [res["num_iters"] for res in vqe_results]
+            num_evaluations = [res["num_evaluations"] for res in vqe_results]
+            run_times = [str(res["run_time"]) for res in vqe_results]
+            total_run_time = sum([res["run_time"] for res in vqe_results], timedelta())
+
+
+            vqe_end = datetime.now()
+            vqe_time = vqe_end - vqe_starttime
+
+            # Save run
+            run = {
+                "starttime": starttime,
+                "endtime": vqe_end.strftime("%Y-%m-%d_%H-%M-%S"),
+                "potential": potential,
+                "cutoff": cutoff,
+                "num_qubits": num_qubits,
+                "num_paulis": len(paulis),
+                "num_params": num_params,
+                "exact_eigenvalues": [x.real.tolist() for x in eigenvalues],
+                "ansatz": ansatz_name,
+                "max_gate":max_gate,
+                "num_VQE": num_vqe_runs,
+                "device": device,
+                "shots": shots,
+                "Optimizer": {
+                    "name": "differential_evolution",
+                    "bounds": "[(0, 2 * np.pi)",
+                    "maxiter": max_iter,
+                    "tolerance": tol,
+                    "abs_tolerance": abs_tol,
+                    "strategy": strategy,
+                    "popsize": popsize,
+                    'init': 'scaled_samples',
+                },
+                "cost function":{
+                    "type": "small negatives",
+                    "p":p,
+                    "lam":lam,
+                    "eps":eps
+                },
+                "results": energies,
+                "params": x_values,
+                "num_iters": num_iters,
+                "num_evaluations": num_evaluations,
+                "success": np.array(success, dtype=bool).tolist(),
+                "run_times": run_times,
+                "parallel_run_time": str(vqe_time),
+                "total_VQE_time": str(total_run_time),
+                "seeds": seeds
+            }
+
+            # Save the variable to a JSON file
+            path = os.path.join(base_path, "{}_{}.json".format(potential, cutoff))
+            with open(path, "w") as json_file:
+                json.dump(run, json_file, indent=4)
+
+            print("Done")

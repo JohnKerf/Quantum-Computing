@@ -31,7 +31,8 @@ with open(path, encoding="utf-8") as f:
     api_key = json.load(f).get("apikey")
 
 NQCC_IBM_QUANTUM_API_KEY = api_key
-ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/d4f95db0515b47b7ba61dba8a424f873:55736fd5-c0a0-4f44-8180-ce6e81d6c9d0::"
+#ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/d4f95db0515b47b7ba61dba8a424f873:55736fd5-c0a0-4f44-8180-ce6e81d6c9d0::" #US
+ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:eu-de:a/d4f95db0515b47b7ba61dba8a424f873:34812b30-941c-4611-83f0-bac4efc541c3::" #Frankfurt
 service = QiskitRuntimeService(channel="ibm_quantum_platform", token=NQCC_IBM_QUANTUM_API_KEY, instance=ibm_instance_crn)
     
 def setup_logger(logfile_path, name, enabled=True):
@@ -62,7 +63,8 @@ def run_vqe(i, H, log_dir, log_enabled, ansatz, run_info):
     if backend_name == "Aer":
 
         if run_info['use_noise_model']:
-            real_backend = service.backend("ibm_kingston")
+            #real_backend = service.backend("ibm_kingston")
+            real_backend = service.backend("ibm_strasbourg")
             noise_model = NoiseModel.from_backend(real_backend)
             backend = AerSimulator(noise_model=noise_model)
            
@@ -96,8 +98,7 @@ def run_vqe(i, H, log_dir, log_enabled, ansatz, run_info):
     qc = ansatze.pl_to_qiskit(ansatz, num_qubits=num_qubits, reverse_bits=True)
 
 
-    if (backend_name == "ibm_kingston") or use_noise_model:
-        print("Hello")
+    if (backend_name in ["ibm_kingston", "ibm_strasbourg"]) or use_noise_model:
         target = backend.target
         pm = generate_preset_pass_manager(target=target, optimization_level=3)
         ansatz_isa = pm.run(qc)
@@ -240,14 +241,15 @@ if __name__ == "__main__":
 
     log_enabled = True
 
-    backend_name = 'ibm_kingston'
+    #backend_name = 'ibm_kingston'
+    backend_name = "ibm_strasbourg"
     #backend_name = "Aer"
     #backend_name = "SV-Estimator"
 
     use_noise_model = 0
-    shots = 10000
+    shots = 4096
 
-    potential = "AHO"
+    potential = "DW"
     cutoff = 8
 
     ansatze_type = 'exact' #exact, Reduced, CD3
@@ -265,7 +267,7 @@ if __name__ == "__main__":
     ansatz = ansatze.get(ansatz_name)
 
     num_vqe_runs = 1
-    max_iter = 100
+    max_iter = 500
     initial_tr_radius = 0.3
     final_tr_radius = 1e-8
 

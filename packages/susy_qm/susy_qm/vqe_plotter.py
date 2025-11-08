@@ -30,7 +30,6 @@ def _load_json(fp: Path) -> Dict[str, Any]:
         return json.load(f)
     
 
-
 def format_axis(
     ax, *,
     scale: str = "linear",
@@ -38,48 +37,52 @@ def format_axis(
     base: int = 10,
     show_zero: bool = True
 ):
-    # full border
-    #for s in ax.spines.values():
-    #    s.set_visible(True); s.set_linewidth(1.0)
-    ax.tick_params(axis='both', which='both', direction='out', width=1, labelsize=9)
+    ax.tick_params(axis='both', which='both', direction='out', width=1, labelsize=8)
 
-    # always hide offset text (the 5.5e-18 thing)
     ax.xaxis.get_offset_text().set_visible(False)
 
     if scale == "linear":
         ax.set_xscale("linear")
 
-        def fmt_linear(x, _):
-            if x == 0:
-                return "0"
-            # scientific only for very small/large values
-            if abs(x) >= 1e3 or abs(x) < 1e-2:
-                exp = int(np.floor(np.log10(abs(x))))
-                coeff = x / (10**exp)
-                sgn = "-" if x < 0 else ""
-                if np.isclose(abs(coeff), 1.0, atol=1e-8):
-                    return rf"${sgn}10^{{{exp}}}$"
-                c = f"{coeff:.1f}".rstrip("0").rstrip(".")
-                #return rf"${sgn}{c}\times10^{{{exp}}}$"
-                return rf"${c}\times10^{{{exp}}}$" #if x < 0 else rf"${c}\times10^{{{exp}}}$"
-            return f"{x:.4g}".rstrip("0").rstrip(".")
-        ax.xaxis.set_major_formatter(FuncFormatter(fmt_linear))
+        # def fmt_linear(x, _):
+
+        #     if x == 0:
+        #         return "0"
+            
+        #     if abs(x) >= 1e3 or abs(x) < 1e-2:
+        #         exp = int(np.floor(np.log10(abs(x))))
+        #         coeff = x / (10**exp)
+        #         sgn = "-" if x < 0 else ""
+
+        #         if np.isclose(abs(coeff), 1.0, atol=1e-8):
+        #             return rf"${sgn}10^{{{exp}}}$"
+                
+        #         c = f"{coeff:.1f}".rstrip("0").rstrip(".")
+
+        #         return rf"${c}\times10^{{{exp}}}$"
+            
+        #     return f"{x:.4g}".rstrip("0").rstrip(".")
+        
+        # ax.xaxis.set_major_formatter(FuncFormatter(fmt_linear))
 
     elif scale == "symlog":
+
         ax.set_xscale("symlog", linthresh=linthresh, base=base)
         ax.xaxis.set_major_locator(SymmetricalLogLocator(base=base, linthresh=linthresh))
 
         def fmt_symlog(x, _):
             if x == 0:
                 return "0" if show_zero else ""
+            
             a = abs(x)
             if a < linthresh:
                 s = f"{x:.3g}".rstrip("0").rstrip(".")
                 return s or "0"
+            
             exp = int(np.round(np.log10(a)))
-            #sgn = "-" if x < 0 else ""
-            #return rf"${sgn}10^{{{exp}}}$"
+
             return rf"$-10^{{{exp}}}$" if x < 0 else rf"$10^{{{exp}}}$"
+        
         ax.xaxis.set_major_formatter(FuncFormatter(fmt_symlog))
 
     elif scale == "log":
@@ -95,7 +98,6 @@ def format_axis(
 
 @dataclass(slots=True)
 class BoxPlotter:
-    data_path: str
     potentials: List[str]
     cutoffs: List[int]
     shots_list: list[int]
@@ -104,9 +106,9 @@ class BoxPlotter:
     debug: bool = False
 
     # ---------- loading ----------
-    def _load(self, potential: str, cutoff: int, shots: int) -> Tuple[np.ndarray, float]:
+    def _load(self, data_path: str, potential: str, cutoff: int, shots: int) -> Tuple[np.ndarray, float]:
         d_path = os.path.join(
-            repo_path, self.data_path, str(shots), potential, f"{potential}_{cutoff}.json"
+            repo_path, data_path, str(shots), potential, f"{potential}_{cutoff}.json"
         )
 
         # Always return (energies, min_eigenvalue)
@@ -192,6 +194,8 @@ class BoxPlotter:
     def plot_energy_boxplot(
         self,
         *,
+        data_paths: Optional[List[Tuple[str, str]]],
+        shots=None,
         axes=None,
         box_width: float = 0.6,
         showfliers: bool = False,
@@ -205,21 +209,33 @@ class BoxPlotter:
         - panels: one per potential × shots combination
         - COLORS: assigned by cutoff and kept consistent across subplots
         """
-        fig, axes_arr = self._ensure_axes_grid(existing_axes=axes, sharey=True, figsize=(12, 8))
+        by_dataset = False if type(data_paths)==str else True
+        ncols = len(data_paths) if by_dataset else len(self.shots_list)  
+        cols = data_paths if by_dataset else self.shots_list
+
+        fig, axes_arr = self._ensure_axes_grid(ncols=ncols, existing_axes=axes, sharey=True, figsize=(12, 8))
 
         # consistent colors per cutoff across ALL subplots
         palette = plt.rcParams["axes.prop_cycle"].by_key()["color"]
         cutoff_to_color = {c: palette[i % len(palette)] for i, c in enumerate(self.cutoffs)}
 
+
         for i, pot in enumerate(self.potentials):
-            for j, shots in enumerate(self.shots_list):
+            for j, col in enumerate(cols):
+
+                if by_dataset: 
+                    title, data_path = col
+                else:
+                    shots=col
+                    data_path = data_paths
+
                 ax = axes_arr[i, j]
 
                 # gather energy arrays per cutoff (ensure non-empty arrays so boxplot won't crash)
                 energies_per_cutoff = []
                 min_eigenvalues = []
                 for cutoff in self.cutoffs:
-                    vals, min_eigenvalue = self._load(pot, cutoff, shots)
+                    vals, min_eigenvalue = self._load(data_path, pot, cutoff, shots)
                     if vals.size == 0:
                         vals = np.array([np.nan])
 
@@ -238,6 +254,8 @@ class BoxPlotter:
                     scale = "log"
                 else:
                     scale = "symlog"
+
+                #scale="linear"
                     
                 # draw horizontal boxplots
                 bp = ax.boxplot(
@@ -293,10 +311,13 @@ class BoxPlotter:
                     ax.tick_params(axis="y", left=False, labelleft=False)
 
                 if i == 0:
-                    if shots is None:
-                        ax.set_title(f"Statevector")
+                    if by_dataset:
+                        ax.set_title(title)
                     else:
-                        ax.set_title(f"{shots} shots")
+                        if shots is None:
+                            ax.set_title(f"Statevector")
+                        else:
+                            ax.set_title(f"{shots} shots")
 
                 if i == (len(self.potentials)-1):
                     ax.set_xlabel("Energy")
@@ -306,7 +327,8 @@ class BoxPlotter:
 
         
         if show_legend:
-            axes_arr[0, 0].legend(loc="upper right", fontsize=8, ncol=len(self.cutoffs))
+            #axes_arr[0, 0].legend(loc="upper right", fontsize=8, ncol=len(self.cutoffs))
+            axes_arr[0, 0].legend(loc="upper left", fontsize=12, ncol=1)
 
         fig.tight_layout(pad=0.6)
         return fig, axes_arr
@@ -363,14 +385,17 @@ class VQEPlotter:
         ax.xaxis.set_minor_locator(ticker.NullLocator())
 
 
-    def plot_delta_e_vs_cutoff_line(self, *, figsize=(12, 4), axes=None, linewidth=1.0, marker="^", markersize=4.0, metric='median'):
+    def plot_delta_e_vs_cutoff_line(self, *, figsize=(12, 4), axes=None, linewidth=1.0, marker="^", markersize=4.0, metric='median', scale="symlog", linthresh=1.0, sharey=True):
 
         markers = ["o", "s", "^", "D", "v", "P", "*", "X"]
         #marker_cycle = itertools.cycle(markers)
-        fig, axes_arr = self._ensure_axes_grid(figsize=figsize, existing_axes=axes, sharey=True)
+        fig, axes_arr = self._ensure_axes_grid(figsize=figsize, existing_axes=axes, sharey=sharey)
 
         for ax in axes_arr:
-            ax.set_yscale("symlog", linthresh=1.0)
+            if scale == "symlog":
+                ax.set_yscale("symlog", linthresh=linthresh)
+            else:
+                ax.set_yscale(scale)
             #ax.yaxis.set_major_locator(LogLocator(base=10.0))        
             #ax.yaxis.set_major_formatter(LogFormatterMathtext(base=10))
 
@@ -390,7 +415,7 @@ class VQEPlotter:
             self._style_x_cutoffs(ax)
             if i == 0:
                 ax.set_ylabel(r"|$E_{\mathrm{exact}} - E_{\mathrm{median}}$|")
-            else:
+            elif sharey:
                 ax.tick_params(axis="y", left=False, labelleft=False)
 
         def fmt_sigfig(x, _):
@@ -404,7 +429,7 @@ class VQEPlotter:
        
 
         axes_arr[len(self.potentials) // 2].set_xlabel(r"$\Lambda$")
-        axes_arr[0].legend(loc="upper left", fontsize=8)
+        axes_arr[0].legend(loc="upper left", fontsize=12)
         fig.tight_layout(pad=0.6)
         return fig, axes_arr
     
@@ -486,7 +511,7 @@ class VQEPlotter:
             Patch(facecolor=label_to_color[lab], edgecolor=label_to_color[lab], alpha=alpha, label=lab)
             for lab in labels
         ]
-        if show_legend: axes_arr[0].legend(handles=legend_patches, loc="upper left", fontsize=8)
+        if show_legend: axes_arr[0].legend(handles=legend_patches, loc="upper left", fontsize=12)
 
         fig.tight_layout(pad=0.6)
         return fig, axes_arr
