@@ -178,7 +178,7 @@ def real_amplitudes(params, num_qubits, num_layers=1, circular=True):
         for i in range(n):
             qml.CNOT(wires=[wires[i], wires[i + 1]])
       
-        if circular and n > 2:
+        if circular and n >= 2:
             qml.CNOT(wires=[wires[-1], wires[0]])
 
         qml.Barrier()
