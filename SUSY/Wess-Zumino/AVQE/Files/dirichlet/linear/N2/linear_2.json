@@ -1,0 +1,109 @@
+{
+    "starttime": "2025-11-24_09-05-30",
+    "endtime": "2025-11-24_09-05-32",
+    "potential": "linear",
+    "cutoff": 2,
+    "N": 2,
+    "a": 1.0,
+    "c": null,
+    "exact_eigenvalues": [
+        0.006966011250105147,
+        0.0069660112501051495,
+        0.006966011250105159,
+        0.006966011250105171,
+        1.1249999999999993,
+        1.125,
+        1.125,
+        1.125
+    ],
+    "shots": null,
+    "Optimizer": {
+        "name": "COBYQA",
+        "optimizer_options": {
+            "maxiter": 10000,
+            "maxfev": 10000,
+            "initial_tr_radius": 1.0,
+            "final_tr_radius": 1e-08,
+            "scale": true
+        }
+    },
+    "num_VQE": 2,
+    "num_steps": 10,
+    "num_grad_checks": 1,
+    "phi": 0.0,
+    "basis_state": [
+        1,
+        0,
+        0,
+        0
+    ],
+    "operator_pool": [
+        "RZ(0.0, wires=[0])",
+        "RY(0.0, wires=[0])",
+        "RY(0.0, wires=[1])",
+        "RZ(0.0, wires=[1])",
+        "CRY(0.0, wires=[0, 1]))",
+        "CRY(0.0, wires=[1, 0]))",
+        "RZ(0.0, wires=[2])",
+        "RY(0.0, wires=[2])",
+        "RY(0.0, wires=[3])",
+        "RZ(0.0, wires=[3])",
+        "CRY(0.0, wires=[2, 3]))",
+        "CRY(0.0, wires=[3, 2]))",
+        "CRY(0.0, wires=[1, 3]))",
+        "FermionicSingleExcitation(0.0, wires=[0, 2])"
+    ],
+    "all_energies": [
+        [
+            0.006966011250105152
+        ],
+        [
+            0.00696601125010515
+        ]
+    ],
+    "min_energies": [
+        0.0069660112501053065,
+        0.006966011250105589
+    ],
+    "op_list": [
+        [
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 3.605240262590604,
+                "wires": [
+                    0,
+                    2
+                ]
+            }
+        ],
+        [
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 3.605240262585219,
+                "wires": [
+                    0,
+                    2
+                ]
+            }
+        ]
+    ],
+    "num_iters": [
+        2,
+        2
+    ],
+    "success": [
+        true,
+        true
+    ],
+    "run_times": [
+        "0:00:00.151544",
+        "0:00:00.144944"
+    ],
+    "seeds": [
+        95481479,
+        26101771
+    ],
+    "parallel_run_time": "0:00:02.150904",
+    "total_VQE_time": "0:00:00.296488",
+    "total_device_time": "0:00:00.004682"
+}

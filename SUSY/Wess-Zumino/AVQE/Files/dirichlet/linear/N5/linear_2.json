@@ -1,0 +1,553 @@
+{
+    "starttime": "2025-11-24_13-16-39",
+    "endtime": "2025-11-24_13-16-45",
+    "potential": "linear",
+    "cutoff": 2,
+    "N": 5,
+    "a": 1.0,
+    "c": null,
+    "exact_eigenvalues": [
+        -0.31590964428218754,
+        -0.31590964428218676,
+        -0.31590964428218526,
+        -0.31590964428218377,
+        -0.06590964428219068,
+        -0.06590964428219007,
+        -0.06590964428218975,
+        -0.06590964428218864
+    ],
+    "shots": null,
+    "Optimizer": {
+        "name": "COBYQA",
+        "optimizer_options": {
+            "maxiter": 10000,
+            "maxfev": 10000,
+            "initial_tr_radius": 1.0,
+            "final_tr_radius": 1e-08,
+            "scale": true
+        }
+    },
+    "num_VQE": 10,
+    "num_steps": 10,
+    "num_grad_checks": 1,
+    "phi": 0.0,
+    "basis_state": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+    ],
+    "operator_pool": [
+        "RZ(0.0, wires=[0])",
+        "RY(0.0, wires=[0])",
+        "RY(0.0, wires=[1])",
+        "RZ(0.0, wires=[1])",
+        "CRY(0.0, wires=[0, 1]))",
+        "CRY(0.0, wires=[1, 0]))",
+        "RZ(0.0, wires=[2])",
+        "RY(0.0, wires=[2])",
+        "RY(0.0, wires=[3])",
+        "RZ(0.0, wires=[3])",
+        "CRY(0.0, wires=[2, 3]))",
+        "CRY(0.0, wires=[3, 2]))",
+        "RZ(0.0, wires=[4])",
+        "RY(0.0, wires=[4])",
+        "RY(0.0, wires=[5])",
+        "RZ(0.0, wires=[5])",
+        "CRY(0.0, wires=[4, 5]))",
+        "CRY(0.0, wires=[5, 4]))",
+        "RZ(0.0, wires=[6])",
+        "RY(0.0, wires=[6])",
+        "RY(0.0, wires=[7])",
+        "RZ(0.0, wires=[7])",
+        "CRY(0.0, wires=[6, 7]))",
+        "CRY(0.0, wires=[7, 6]))",
+        "RZ(0.0, wires=[8])",
+        "RY(0.0, wires=[8])",
+        "RY(0.0, wires=[9])",
+        "RZ(0.0, wires=[9])",
+        "CRY(0.0, wires=[8, 9]))",
+        "CRY(0.0, wires=[9, 8]))",
+        "CRY(0.0, wires=[1, 3]))",
+        "FermionicSingleExcitation(0.0, wires=[0, 2])",
+        "CRY(0.0, wires=[3, 5]))",
+        "FermionicSingleExcitation(0.0, wires=[2, 4])",
+        "CRY(0.0, wires=[5, 7]))",
+        "FermionicSingleExcitation(0.0, wires=[4, 6])",
+        "CRY(0.0, wires=[7, 9]))",
+        "FermionicSingleExcitation(0.0, wires=[6, 8])"
+    ],
+    "all_energies": [
+        [
+            1.3819660112501042,
+            1.27525512860841,
+            1.2137230091510416,
+            1.1771243444677175
+        ],
+        [
+            1.3819660112501047,
+            1.2752551286084108,
+            1.2137230091510327,
+            1.177124344467705
+        ],
+        [
+            1.3819660112501047,
+            1.2752551286084102,
+            1.2137230091510323,
+            1.177124344467713
+        ],
+        [
+            1.3819660112501047,
+            1.2752551286084108,
+            1.2137230091510314,
+            1.1771243444677117
+        ],
+        [
+            1.3819660112501047,
+            1.27525512860841,
+            1.2137230091510416,
+            1.1771243444677038
+        ],
+        [
+            1.381966011250104,
+            1.275255128608411,
+            1.2137230091510325,
+            1.177124344467712
+        ],
+        [
+            1.3819660112501047,
+            1.2752551286084097,
+            1.2137230091510334,
+            1.17712434446771
+        ],
+        [
+            1.3819660112501049,
+            1.2752551286084102,
+            1.2137230091510327,
+            1.1771243444677035
+        ],
+        [
+            1.381966011250105,
+            1.2752551286084113,
+            1.213723009151033,
+            1.1771243444677095
+        ],
+        [
+            1.3819660112501047,
+            1.2752551286084097,
+            1.2137230091510331,
+            1.1771243444677069
+        ]
+    ],
+    "min_energies": [
+        1.1771243444677038,
+        1.17712434446772,
+        1.1771243444677086,
+        1.1771243444677262,
+        1.177124344467725,
+        1.1771243444677135,
+        1.177124344467709,
+        1.177124344467717,
+        1.177124344467722,
+        1.1771243444677493
+    ],
+    "op_list": [
+        [
+            {
+                "name": "FermionicSingleExcitation",
+                "param": -2.8553853580342,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": -1.6747918006981435,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": -2.3448727667306004,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": -0.4240310476365347,
+                "wires": [
+                    6,
+                    8
+                ]
+            }
+        ],
+        [
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 3.4278000265899755,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": -1.6747914209328871,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": -2.344872648107305,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": -0.42403104047816903,
+                "wires": [
+                    6,
+                    8
+                ]
+            }
+        ],
+        [
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 3.4277999143072195,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": -1.6747916760037143,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": -2.3448727531301863,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": -0.42403104578612516,
+                "wires": [
+                    6,
+                    8
+                ]
+            }
+        ],
+        [
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 2.8553852080863944,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 7.957976310206282,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 8.628057717214205,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 5.859154286598441,
+                "wires": [
+                    6,
+                    8
+                ]
+            }
+        ],
+        [
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 2.8553852961549713,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 7.957976617002266,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 8.628057898426327,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 5.859154263135551,
+                "wires": [
+                    6,
+                    8
+                ]
+            }
+        ],
+        [
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 2.855385376654489,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 7.957976877433745,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 8.628058011312547,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 5.859154366176158,
+                "wires": [
+                    6,
+                    8
+                ]
+            }
+        ],
+        [
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 2.8553851840699402,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 7.9579763557710805,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 8.628057859229335,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 5.859154293158493,
+                "wires": [
+                    6,
+                    8
+                ]
+            }
+        ],
+        [
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 2.8553852927268184,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 4.608394000944593,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": -2.3448726142233167,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": -0.42403102942117127,
+                "wires": [
+                    6,
+                    8
+                ]
+            }
+        ],
+        [
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 2.855385231713975,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 7.957976315251085,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 8.628057802353768,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 5.859154246908315,
+                "wires": [
+                    6,
+                    8
+                ]
+            }
+        ],
+        [
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 2.8553853147866133,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 7.95797650660666,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 8.628057874521163,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "FermionicSingleExcitation",
+                "param": 5.859154300878866,
+                "wires": [
+                    6,
+                    8
+                ]
+            }
+        ]
+    ],
+    "num_iters": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+    ],
+    "success": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+    ],
+    "run_times": [
+        "0:00:04.287759",
+        "0:00:04.921398",
+        "0:00:04.460460",
+        "0:00:04.546554",
+        "0:00:04.752911",
+        "0:00:04.490503",
+        "0:00:04.575071",
+        "0:00:04.849522",
+        "0:00:04.544567",
+        "0:00:04.487714"
+    ],
+    "seeds": [
+        17787229,
+        25643984,
+        38324556,
+        89351786,
+        21152831,
+        23975044,
+        58861883,
+        90383120,
+        7829033,
+        13223961
+    ],
+    "parallel_run_time": "0:00:06.922518",
+    "total_VQE_time": "0:00:45.916459",
+    "total_device_time": "0:00:20.451501"
+}

@@ -1,6 +1,49 @@
 import numpy as np
 import pennylane as qml
 from math import log2
+import ast
+import re
+
+
+
+def pauli_str_to_op(term: str):
+    term = term.strip()
+
+    # Global / multi-wire identity like "I([0, 2, 1, 3])"
+    if term.startswith("I("):
+        inside = term[term.find("(")+1:term.rfind(")")]
+        wires = ast.literal_eval(inside)  # works for [..] or a single int
+        return qml.Identity(wires=wires)
+
+    # Tensor products like "X(0) @ X(2)"
+    factors = [f.strip() for f in term.split("@")]
+    ops = []
+    for f in factors:
+        m = re.match(r"([IXYZ])\(([^)]+)\)", f)
+        if not m:
+            raise ValueError(f"Can't parse factor: {f}")
+        pauli, wstr = m.group(1), m.group(2).strip()
+
+        # wires could be "0" or "[0,2,...]"
+        wires = ast.literal_eval(wstr) if wstr[0] in "[(" else int(wstr)
+
+        if pauli == "I":
+            ops.append(qml.Identity(wires=wires))
+        elif pauli == "X":
+            ops.append(qml.PauliX(wires))
+        elif pauli == "Y":
+            ops.append(qml.PauliY(wires))
+        elif pauli == "Z":
+            ops.append(qml.PauliZ(wires))
+
+    # build the tensor product
+    op = ops[0]
+    for o in ops[1:]:
+        op = op @ o
+    return op
+
+
+
 
 ##############################################################################
 # 1. Single-site HO matrices (boson) and fermion operators

@@ -207,11 +207,11 @@ if __name__ == "__main__":
     device = 'default.qubit'
     num_processes=10
     
-    cutoff = 2
+    cutoff = 8
     shots = 1024
 
     # Parameters
-    N = 4
+    N = 3
     a = 1.0
     c = -0.8
 
@@ -222,7 +222,7 @@ if __name__ == "__main__":
 
 
     # Optimizer
-    num_steps = 30
+    num_steps = 10
     num_grad_checks = 1
     num_vqe_runs = 10
     max_iter = 10000
@@ -291,6 +291,7 @@ if __name__ == "__main__":
 
         # Fermion single-qubit gates:
         # RZ: phase (keeps number); RY: mixes |0>,|1> (changes number sector)
+        #operator_pool.append(qml.RX(phi, wires=f))
         operator_pool.append(qml.RZ(phi, wires=f))
         operator_pool.append(qml.RY(phi, wires=f))  # <-- adds/removes fermion
 
@@ -324,9 +325,9 @@ if __name__ == "__main__":
     # Choose basis state
     #basis_state = [0]*num_qubits
     #basis_state = [0]*(num_qubits-1) + [1]
-    #basis_state = [1] + [0]*(num_qubits-1) 
+    basis_state = [1] + [0]*(num_qubits-1) 
     #basis_state = [1,0,0,0,0,0]
-    basis_state = [0,0,1,0,1,0,0,0]      
+    #basis_state = [0,0,1,0,1,0,0,0]      
      
 
     combined_intital = []
