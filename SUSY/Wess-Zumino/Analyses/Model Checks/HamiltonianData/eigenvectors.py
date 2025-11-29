@@ -82,7 +82,7 @@ for cutoff in cutoffs:
             "c": None if potential == "linear" else c,
             "boundary_condition": boundary_condition,
             "num_qubits": num_qubits,
-            "eigenvalues": [x.real.tolist() for x in eigenvalues],
+            "eigenvalues": [x.real.tolist() for x in np.sort(eigenvalues)],
             "best_basis_state": basis_state0,
             "prob": probs[idx0]
             }

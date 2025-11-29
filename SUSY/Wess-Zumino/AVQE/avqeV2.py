@@ -80,7 +80,7 @@ def cost_function(params, H, paulis, coeffs, num_qubits, shots, op_list, basis_s
     return energy, device_time
 
 
-def run_adapt_vqe(i, H, run_info):
+def run_adapt_vqe(run_idx, H, run_info):
 
     num_qubits = run_info["num_qubits"] 
     shots = run_info["shots"]  
@@ -113,6 +113,8 @@ def run_adapt_vqe(i, H, run_info):
     success = False
 
     for i in range(run_info["num_steps"]):
+
+        print(f"Run {run_idx} step {i}")
 
         max_ops_list = []
         
@@ -159,7 +161,7 @@ def run_adapt_vqe(i, H, run_info):
 
 
         np.random.seed(seed)
-        x0 = np.concatenate((op_params, np.array([np.random.random()*2*np.pi])))
+        x0 = np.concatenate((op_params, np.array([0.0])))#[np.random.random()*2*np.pi]
         
         res = minimize(
             wrapped_cost_function,
@@ -219,11 +221,11 @@ if __name__ == "__main__":
     device = 'default.qubit'
     num_processes=10
     
-    cutoff = 2
+    cutoff = 8
     shots = None
 
     # Parameters
-    N = 4
+    N = 3
     a = 1.0
     c = -0.8
 
@@ -234,11 +236,11 @@ if __name__ == "__main__":
 
 
     # Optimizer
-    num_steps = 10
+    num_steps = 4
     num_grad_checks = 1
     num_vqe_runs = 10
     max_iter = 10000
-    initial_tr_radius = 1.0
+    initial_tr_radius = 0.1
     final_tr_radius = 1e-8
     scale=True
 
@@ -326,6 +328,7 @@ if __name__ == "__main__":
         f0 = site * n_site
         f1 = (site+1) * n_site
         operator_pool.append(qml.FermionicSingleExcitation(phi, wires=[f0, f1]))
+        #operator_pool.append(qml.CRY(phi, wires=[f0, f1]))
         
 
 
@@ -341,13 +344,11 @@ if __name__ == "__main__":
         initial_op_list.append(qml.FermionicSingleExcitation(phi,wires=pair))
 
     # Choose basis state
-    #basis_state = [0]*num_qubits
-    #basis_state = [0]*(num_qubits-1) + [1]
-    #basis_state = [1] + [0]*(num_qubits-1) 
-    #basis_state = [0]*n + [1]+[0]*nb + [1]+[0]*nb + [1]+[0]*nb + [0]*n
-    basis_state = [0]*n + [1]+[0]*nb + [1]+[0]*nb + [0]*n
-    #basis_state = [1,0,0,0,0,0]
-    #basis_state = [0,0,1,0,1,0,0,0]      
+    #Dirichlet-Linear
+    #basis_state = [0]*n + [1] + [0]*nb #N2
+    basis_state = [0]*n + [1] + [0]*nb + [0]*n #N3
+    #basis_state = [0]*n + [1] + [0]*nb + [0]*n + [1] + [0]*nb #N4
+    #basis_state = [0]*n + [1] + [0]*nb + [0]*n + [1] + [0]*nb + [0]*n #N5  
      
 
     combined_intital = []

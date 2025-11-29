@@ -3,6 +3,7 @@ import pennylane as qml
 from math import log2
 import ast
 import re
+from scipy.sparse import coo_matrix
 
 
 
@@ -45,6 +46,9 @@ def pauli_str_to_op(term: str):
 
 
 
+############################################################################################################################################################
+#  Create WZ Hamiltonian by pauli terms
+############################################################################################################################################################
 ##############################################################################
 # 1. Single-site HO matrices (boson) and fermion operators
 ##############################################################################
@@ -438,5 +442,144 @@ def build_wz_hamiltonian(
         H_total = strip_zero_terms(H_total)
 
     return H_total, n_total_qubits
+
+
+
+############################################################################################################################################################
+#  Create reduced sparse matrix from pauli terms and bitstrings
+############################################################################################################################################################
+def apply_pauli_to_bitstring(pauli_str, bitstring):
+    """
+    Apply a Pauli string (like "IXYZ...") to a computational basis bitstring.
+
+    Returns:
+        phase (complex), out_bitstring (str)
+    """
+    phase = 1.0 + 0.0j
+    out = list(bitstring)
+
+    for q, (p, b_char) in enumerate(zip(pauli_str.upper(), bitstring)):
+        b = 1 if b_char == "1" else 0
+
+        if p == "I":
+            continue
+        elif p == "X":
+            out[q] = "0" if b else "1"
+        elif p == "Z":
+            if b:
+                phase *= -1
+        elif p == "Y":
+            out[q] = "0" if b else "1"
+            phase *= (1j if b == 0 else -1j)  # i * (-1)^b
+        else:
+            raise ValueError(f"Bad Pauli char '{p}' at qubit {q}")
+
+    return phase, "".join(out)
+
+
+def reduced_sparse_matrix_from_pauli_terms(pauli_terms, basis_states):
+    """
+    Build reduced Hamiltonian as a sparse matrix from explicit Pauli terms.
+
+    pauli_terms: list of (coeff, pauli_str)
+        e.g. [(0.5, "ZIIII"), (-1.2, "XXIYZ"), ...]
+    basis_states: list of bitstrings, all same length n
+        e.g. top_states from counts
+
+    Returns
+    -------
+    H_red : scipy.sparse.csr_matrix (complex)
+        Reduced Hamiltonian in the basis given by basis_states
+    """
+    # Clean basis states
+    basis_states = [s.strip() for s in basis_states]
+    n = len(basis_states[0])
+    m = len(basis_states)
+
+    # Map bitstring -> basis index
+    idx = {s: i for i, s in enumerate(basis_states)}
+
+    # Lists for COO data
+    rows = []
+    cols = []
+    data = []
+
+    for coeff, pstr in pauli_terms:
+        pstr = pstr.strip().upper()
+        # Act on each basis state |ket>
+        for ket in basis_states:
+            phase, out_state = apply_pauli_to_bitstring(pstr, ket)
+            if out_state in idx:
+                i = idx[out_state]   # row index  (bra = out_state)
+                j = idx[ket]         # column index (ket)
+                value = coeff * phase
+
+                # Store non-zero contribution
+                if value != 0:
+                    rows.append(i)
+                    cols.append(j)
+                    data.append(value)
+
+    # Build sparse matrix in COO then convert to CSR
+    H_red_coo = coo_matrix((data, (rows, cols)),
+                           shape=(m, m),
+                           dtype=np.complex128)
+    H_red = H_red_coo.tocsr()  # sums duplicate (i,j) entries
+
+    return H_red
+
+
+
+############################################################################################################################################################
+#  Return pauli strings from operator
+############################################################################################################################################################
+def op_to_full_pauli_string(op, wire_order):
+    """
+    Convert a single PennyLane Pauli word into a full string over wire_order.
+    Example output: "IIXZY"
+    """
+    wire_pos = {w: i for i, w in enumerate(wire_order)}
+    n = len(wire_order)
+    chars = ["I"] * n
+
+    def walk(o):
+        # Products / tensors expose operands
+        if hasattr(o, "operands") and o.operands is not None:
+            for sub in o.operands:
+                walk(sub)
+            return
+
+        name = o.name
+        if name in ("PauliX", "X"):
+            c = "X"
+        elif name in ("PauliY", "Y"):
+            c = "Y"
+        elif name in ("PauliZ", "Z"):
+            c = "Z"
+        elif name in ("Identity", "I"):
+            c = "I"
+        else:
+            raise ValueError(f"Unexpected operator in Pauli word: {name}")
+
+        for w in o.wires:
+            chars[wire_pos[w]] = c
+
+    walk(op)
+    return "".join(chars)
+
+
+def pauli_terms_from_operator(H_pauli, wire_order):
+    """
+    Extract list of (coeff, pauli_str) from a PennyLane Hamiltonian / Sum.
+    """
+    if not hasattr(H_pauli, "terms"):
+        raise TypeError("H_pauli has no .terms(); pass explicit pauli_terms instead.")
+
+    coeffs, ops = H_pauli.terms()
+    terms = []
+    for c, o in zip(coeffs, ops):
+        pstr = op_to_full_pauli_string(o, wire_order)
+        terms.append((complex(c), pstr))
+    return terms
 
 
