@@ -220,6 +220,9 @@ def run_vqe(i, H, log_dir, log_enabled, ansatz, run_info):
     
     run_end = datetime.now()
 
+    session_info = session.details() if backend_name != "SV-Estimator" else None
+    logger.info(json.dumps(session_info, indent=4, default=str))
+
     results_data = {
         "seed": seed,
         "session_id": sesh_id,
@@ -227,7 +230,8 @@ def run_vqe(i, H, log_dir, log_enabled, ansatz, run_info):
         "params": res.x.tolist(),
         "success": res.success,
         "num_iters": int(res.nfev),
-        "run_time": run_end - run_start
+        "run_time": run_end - run_start,
+        "session_info": session_info
     }
 
 
@@ -241,9 +245,9 @@ if __name__ == "__main__":
 
     log_enabled = True
 
-    backend_name = 'ibm_kingston'
+    #backend_name = 'ibm_kingston'
     #backend_name = "ibm_strasbourg"
-    #backend_name = "Aer"
+    backend_name = "Aer"
     #backend_name = "SV-Estimator"
 
     use_noise_model = 0
@@ -340,6 +344,7 @@ if __name__ == "__main__":
     success = vqe_results["success"]
     num_iters = vqe_results["num_iters"]
     run_time = str(vqe_results["run_time"])
+    session_info = vqe_results["session_info"]
 
     vqe_end = datetime.now()
     vqe_time = vqe_end - vqe_starttime
@@ -379,6 +384,7 @@ if __name__ == "__main__":
         "run_time": run_time,
         "VQE_run_time": str(vqe_time),
         "seeds": seeds,
+        "session_info": session_info
     }
 
     # Save the variable to a JSON file
