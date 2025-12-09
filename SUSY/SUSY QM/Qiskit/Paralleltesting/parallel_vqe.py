@@ -115,21 +115,27 @@ def apply_relu(energy, eps, lam, p):
     neg = max(0.0, -(energy + eps))
     return energy + lam * (neg ** p)
 
-def evaluate_energies(full, Hs, estimator, param_flat, eps, lam, p):
+def evaluate_energies(full, Hs, estimator, param_flat, eps, lam, p, shots, backend_name):
 
-    print("Evaluating energies")
+    #print("Evaluating energies")
+
+    precision = 0.0 if shots is None else 1.0/np.sqrt(shots)
 
     """
     One Estimator call:
         (full, Hs, [param_flat]) → energies for each active block.
     """
     pubs = [(full, Hs, [param_flat])]
-    job = estimator.run(pubs)
+
+    if backend_name == "Aer":
+        job = estimator.run(pubs, precision=precision)
+    else:
+        job = estimator.run(pubs)
 
     job_id = job.job_id()
 
-    print("Estimator job id:", job_id)
-    print("Initial status:", job.status())
+    #print("Estimator job id:", job_id)
+    #print("Initial status:", job.status())
 
     result = job.result()
     Es = np.array(result[0].data.evs, dtype=float)
@@ -139,7 +145,7 @@ def evaluate_energies(full, Hs, estimator, param_flat, eps, lam, p):
     try:
         job_metrics = job.metrics()
     except AttributeError:
-        print("No usage/metrics available for this estimator type.")
+        #print("No usage/metrics available for this estimator type.")
         job_metrics = None
 
     return Es, job_id, job_metrics
@@ -157,12 +163,19 @@ def build_active_problem(H_single_sp, best_params, num_qubits_single, active_ids
     for cid in active_ids:
         x0_k = best_params[cid]
         low, high = 0.0, 2.0*np.pi
-        parametrization = ng.p.Array(init=x0_k).set_bounds(low, high)
-        opt = ng.optimizers.NGOpt(
+        parametrization = ng.p.Array(init=x0_k)#.set_bounds(low, high)
+
+
+        opt = ng.optimizers.MultiCobyla(
             parametrization=parametrization,
-            budget=ng_budget,  # upper bound on total tell() calls
+            budget=ng_budget,
             num_workers=1,
         )
+        # opt = ng.optimizers.NGOpt(
+        #     parametrization=parametrization,
+        #     budget=ng_budget,  # upper bound on total tell() calls
+        #     num_workers=1,
+        # )
         optimizers.append(opt)
 
     return full, Hs_active, optimizers, num_params
@@ -186,15 +199,24 @@ def create_isas(backend, full, Hs_active, optimization_level):
     return ansatz_isa, hamiltonian_isa
 
 
-def get_backend(backend_name, use_noise_model, resilience_level, seed, shots, tags):
+def get_backend(backend_name, use_noise_model, noise_model_options, resilience_level, seed, shots, tags):
 
     noise_model = None
 
     if backend_name == "Aer":
         if use_noise_model:
-            real_backend = service.backend("ibm_kingston")
-            noise_model = NoiseModel.from_backend(real_backend)
+            #real_backend = service.backend("ibm_kingston")
+            real_backend = service.backend("ibm_torino")
+            noise_model = NoiseModel.from_backend(
+                real_backend,
+                gate_error=noise_model_options["gate_error"],
+                readout_error=noise_model_options["readout_error"],   
+                thermal_relaxation=noise_model_options["thermal_relaxation"],
+            )
             backend = AerSimulator(noise_model=noise_model)
+
+            print(noise_model.noise_instructions)
+
 
         else:
             backend = AerSimulator(method="statevector")
@@ -228,6 +250,7 @@ def get_backend(backend_name, use_noise_model, resilience_level, seed, shots, ta
 def run_vqe(*,
             backend_name, 
             use_noise_model, 
+            noise_model_options,
             H_single_sp, 
             resilience_level, 
             optimization_level, 
@@ -239,8 +262,10 @@ def run_vqe(*,
             optimizer_info,
             tags
             ):
+    
 
-    min_iter, max_iter, ng_budget, improve_tol_abs, improve_tol_rel = (optimizer_info[k]for k in ("min_iter", "max_iter", "ng_budget", "improve_tol_abs", "improve_tol_rel"))
+
+    min_iter, max_iter, ng_budget, improve_tol_abs, improve_tol_rel, patience = (optimizer_info[k]for k in ("min_iter", "max_iter", "ng_budget", "improve_tol_abs", "improve_tol_rel", "patience"))
     p, lam, eps = (cost_function[k]for k in ("p", "lam", "eps"))
     
     seed = (os.getpid() * int(time.time())) % 123456789
@@ -256,20 +281,21 @@ def run_vqe(*,
     stale_iters = np.zeros(num_copies, dtype=int)  # per-copy counters
 
     active_ids = list(range(num_copies))             # global indices of active copies
-    converged_iters = [None] * num_copies
+    iters_per_copy = np.zeros(num_copies, dtype=int)
+    converged_flags = np.zeros(num_copies, dtype=bool)
 
     full, Hs_active, optimizers_active, num_params = build_active_problem(H_single_sp, best_params, num_qubits_single, active_ids, ng_budget)
 
     logger.info("Initial active copies: %s", active_ids)
     logger.info("Params per copy: %d", num_params)
 
-    backend, estimator = get_backend(backend_name, use_noise_model, resilience_level, seed, shots, tags)
+    backend, estimator = get_backend(backend_name, use_noise_model, noise_model_options, resilience_level, seed, shots, tags)
     full_isa, Hs_active_isa = create_isas(backend, full, Hs_active, optimization_level)
 
     print(full_isa.draw("text"))
 
-
-    if log_enabled: logger.info(json.dumps(dataclasses.asdict(estimator.options), indent=4, default=str))
+    estimator_options = dataclasses.asdict(estimator.options)
+    if log_enabled: logger.info(json.dumps(estimator_options, indent=4, default=str))
 
     # ---------------- Optimization loop with shrinking ----------------
     print("Starting VQE")
@@ -283,11 +309,12 @@ def run_vqe(*,
 
         iter_start = datetime.now()
 
-        print(f"iter {iter_idx} started")
+        if iter_idx % 50 == 0:
+            print(f"iter {iter_idx} started")
 
         num_active = len(active_ids)
-        print(f"  num_active = {num_active}")
-        print(f"  optimizers_active length = {len(optimizers_active)}")
+        #print(f"  num_active = {num_active}")
+        #print(f"  optimizers_active length = {len(optimizers_active)}")
 
         xs = []
         params = []
@@ -300,12 +327,12 @@ def run_vqe(*,
             #print(f"  [iter {iter_idx}] param_j shape={param_j.shape}")
             params.append(param_j)
 
-        print(f"  [iter {iter_idx}] finished all asks, len(params)={len(params)}")
+        #print(f"  [iter {iter_idx}] finished all asks, len(params)={len(params)}")
 
         param_active = np.concatenate(params, axis=0)
-        print(f"  [iter {iter_idx}] param_active shape={param_active.shape}")
+        #print(f"  [iter {iter_idx}] param_active shape={param_active.shape}")
 
-        Es_active, job_id, job_metrics = evaluate_energies(full_isa, Hs_active_isa, estimator, param_active, eps, lam, p)
+        Es_active, job_id, job_metrics = evaluate_energies(full_isa, Hs_active_isa, estimator, param_active, eps, lam, p, shots, backend_name)
 
         job_info[job_id] = job_metrics
 
@@ -319,6 +346,7 @@ def run_vqe(*,
 
         for j, cid in enumerate(active_ids):
             E_k = float(Es_active[j])
+            iters_per_copy[cid] += 1
 
             # --- first-time initialization for this copy ---
             if not np.isfinite(best_E[cid]):
@@ -349,7 +377,7 @@ def run_vqe(*,
             # --- convergence test for this copy ---
             if (iter_idx >= min_iter) and (stale_iters[cid] >= patience):
                 newly_converged_global.append(cid)
-                converged_iters[cid] = iter_idx + 1
+                converged_flags[cid] = True
                 logger.info(
                     f"  -> copy {cid} converged: "
                     f"best_E={best_E[cid]:.12f}, "
@@ -394,6 +422,7 @@ def run_vqe(*,
     for cid in range(num_copies):
         logger.info(f"Copy {cid}: best_E={best_E[cid]}, best_param={best_params[cid]}")
 
+
     vqe_results = {
         "vqe_start": str(vqe_start),
         "vqe_end": str(vqe_end),
@@ -401,9 +430,11 @@ def run_vqe(*,
         "results": best_E.tolist(),
         "params": best_params.tolist(),
         "active_ids": active_ids,
-        "converged_iters": converged_iters,
+        "iters": iters_per_copy.tolist(),
         "iter_times": [str(t) for t in iter_times],
-        "job_info": job_info
+        "converged": converged_flags.tolist(),
+        "job_info": job_info,
+        "estimator_options": estimator_options
     }
 
     return vqe_results
@@ -418,9 +449,9 @@ if __name__ == "__main__":
     log_enabled=True
 
     # ---------------- Problem setup ----------------
-    potential = "QHO"
-    cutoff = 2
-    num_copies = 2   # total copies (optimizers) you want initially
+    potential = "AHO"
+    cutoff = 8
+    num_copies = 3   # total copies (optimizers) you want initially
 
     #backend_name = 'ibm_kingston'
     #backend_name = 'ibm_fez'
@@ -428,7 +459,12 @@ if __name__ == "__main__":
     #backend_name = "ibm_strasbourg"
     backend_name = "Aer"
 
+    # Noise model options
     use_noise_model = 0
+    gate_error=False
+    readout_error=False  
+    thermal_relaxation=False
+
     shots = 4096
     optimization_level = 3
     resilience_level = 0
@@ -437,10 +473,10 @@ if __name__ == "__main__":
     # Convergence hyperparameters
     improve_tol_abs = 1e-8      # absolute improvement threshold
     improve_tol_rel = 1e-3      # relative threshold (0.1% of |best_E|)
-    patience        = 50        # how many iters of no improvement before freezing
-    min_iter      = 30        # don't even consider convergence before this
-    max_iter = 200
-    ng_budget = 200
+    patience        = 100        # how many iters of no improvement before freezing
+    min_iter      = 100        # don't even consider convergence before this
+    max_iter = 500
+    ng_budget = 10000
 
 
     lam = 15
@@ -453,7 +489,7 @@ if __name__ == "__main__":
     else:
         eps = 0
 
-    base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\Paralleltesting", backend_name, potential, str(starttime))
+    base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\Paralleltesting\NoiseModel-RE", backend_name, potential, str(starttime))
     os.makedirs(base_path, exist_ok=True)
 
     log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
@@ -493,6 +529,7 @@ if __name__ == "__main__":
             "ng_budget": ng_budget,
             "improve_tol_abs": improve_tol_abs,
             "improve_tol_rel": improve_tol_rel,
+            "patience": patience
         }
     
     cost_function = {
@@ -501,9 +538,16 @@ if __name__ == "__main__":
             "lam":lam,
             "eps":eps
         }
+    
+    noise_model_options = {
+        "gate_error":gate_error,
+        "readout_error":readout_error,   
+        "thermal_relaxation":thermal_relaxation
+        }
 
     run_info = {"backend_name":backend_name,
                 "use_noise_model": use_noise_model,
+                "noise_model_options": noise_model_options if use_noise_model else None,
                 "H_single_sp": H_single_sp,
                 "num_qubits_single": num_qubits_single,
                 "num_params_single": num_params_single,
