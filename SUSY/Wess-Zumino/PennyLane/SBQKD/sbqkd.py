@@ -16,7 +16,7 @@ repo_path = git.Repo('.', search_parent_directories=True).working_tree_dir
 
 if __name__ == "__main__":
 
-    N = 4
+    N = 3
     a = 1.0
     c = -0.2
 
@@ -25,15 +25,17 @@ if __name__ == "__main__":
     boundary_condition = 'dirichlet'
     #boundary_condition = 'periodic'
 
-    cutoff = 8
-    shots=500
+    cutoff = 16
+    shots=4096
+
+    #for shots in [500, 1000, 2000, 4000, 10000]:
 
     if potential == 'quadratic':
         folder = 'C' + str(abs(c)) + '/' + 'N'+ str(N)
     else:
         folder = 'N'+ str(N)
 
-    H_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\Analyses\Model Checks\HamiltonianData", boundary_condition, potential, folder, f"{potential}_{cutoff}.json")
+    H_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\PennyLane\Analyses\Model Checks\HamiltonianData4", boundary_condition, potential, folder, f"{potential}_{cutoff}.json")
     with open(H_path, 'r') as file:
         H_data = json.load(file)
 
@@ -61,8 +63,8 @@ if __name__ == "__main__":
 
     #Dirichlet-Linear
     #basis = [0]*n + [1] + [0]*nb #N2
-    #basis = [0]*n + [1] + [0]*nb + [0]*n #N3
-    basis = [0]*n + [1] + [0]*nb + [0]*n + [1] + [0]*nb #N4
+    basis = [0]*n + [1] + [0]*nb + [0]*n #N3
+    #basis = [0]*n + [1] + [0]*nb + [0]*n + [1] + [0]*nb #N4
     #basis = [0]*n + [1] + [0]*nb + [0]*n + [1] + [0]*nb + [0]*n #N5
 
 
@@ -72,25 +74,29 @@ if __name__ == "__main__":
 
         qml.BasisState(basis, wires=list(range(num_qubits)))
 
-        for pair in pairs:
-            qml.FermionicSingleExcitation(np.pi/2, wires=pair)
+        #for pair in pairs:
+            #qml.FermionicSingleExcitation(np.pi/2, wires=pair)
+            #qml.CNOT(wires=pair)
+            #qml.CRY(np.pi/2, wires=pair)
 
         qml.ApproxTimeEvolution(H_pauli, t, n_steps)
 
         return qml.counts(wires=list(range(num_qubits)))
 
     
-    dt=1.0
-    n_steps=1
-    k=1
-    max_k = 10
-    tol = 1e-12
-    converged=False
-
-    samples = Counter()
-
-    prev_energy = np.inf
     
+
+
+    k=1
+    n_steps=1
+    dt=1.0
+    max_k = 15
+    tol = 1e-10
+
+    converged=False
+    samples = Counter()
+    prev_energy = np.inf
+
     all_data = []
     all_energies = []
 
@@ -172,10 +178,10 @@ if __name__ == "__main__":
     }
 
 
-    folder_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\SBQKD\Files2", boundary_condition, potential, folder)
+    folder_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\PennyLane\SBQKD\Basis", boundary_condition, potential, folder)
     os.makedirs(folder_path, exist_ok=True)
 
     with open(os.path.join(folder_path, f"{potential}_{cutoff}.json"), "w") as json_file:
         json.dump(final_data, json_file, indent=4)
-    
+        
         

@@ -4,6 +4,19 @@ from math import log2
 import ast
 import re
 from scipy.sparse import coo_matrix
+from pennylane.pauli import pauli_word_to_string
+from qiskit.quantum_info import SparsePauliOp
+
+def pl_to_qk_hamiltonian(paulis, coeffs, num_qubits):
+
+    qiskit_terms = []
+   
+    for op in paulis:
+        wire_map = {i: i for i in range(num_qubits)}
+        pl_str = pauli_word_to_string(op, wire_map=wire_map)
+        qiskit_terms.append(pl_str[::-1])
+
+    return SparsePauliOp(qiskit_terms, coeffs)
 
 
 
