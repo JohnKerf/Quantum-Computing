@@ -13,40 +13,47 @@ from multiprocessing import Pool
 
 from collections import Counter
 
-from wesszumino import build_wz_hamiltonian
+from wesszumino import build_wz_hamiltonian, pauli_str_to_op
 
 import git
 repo_path = git.Repo('.', search_parent_directories=True).working_tree_dir
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 
 
-def compute_grad(param, H, num_qubits, operator_ham, op_list, op_params, basis_state, dev):
 
-    @qml.qnode(dev)
-    def grad_circuit(param, operator_ham, op_list, op_params):
 
-        qml.BasisState(basis_state, wires=range(num_qubits))
+def compute_grad(param, H, paulis, coeffs, num_qubits, operator_ham, op_list, op_params, basis_state, dev):
 
-        param_index = 0
-        for op in op_list:
-            o = type(op)
-            o(op_params[param_index], wires=op.wires)
-            param_index +=1
+    coeffs_p = pnp.array(coeffs, dtype=float)
+    basis_state_p = pnp.array(basis_state, dtype=int)
 
-        oph = type(operator_ham)
-        oph(param, wires=operator_ham.wires)
+    @qml.qnode(dev, interface="autograd")
+    def expval_circuit(p):
 
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-    
-    params = pnp.tensor(param, requires_grad=True)
-    grad_fn = qml.grad(grad_circuit)
-    grad = grad_fn(params, operator_ham, op_list, op_params)
-    
+        qml.BasisState(basis_state_p, wires=range(num_qubits))
+
+        for theta, op in zip(op_params, op_list):
+            type(op)(theta, wires=op.wires)
+
+        type(operator_ham)(p, wires=operator_ham.wires)
+
+        return [qml.expval(op) for op in paulis]
+
+    def cost_fn(p):
+        expvals = expval_circuit(p)          
+        return pnp.dot(coeffs_p, expvals)    
+
+    p = pnp.tensor(param, requires_grad=True)
+    grad = qml.grad(cost_fn)(p)
+
     return grad
 
 
 
-def cost_function(params, H, num_qubits, shots, op_list, basis_state, dev):
+def cost_function(params, H, paulis, coeffs, num_qubits, shots, op_list, basis_state, dev):
    
     start = datetime.now()
   
@@ -61,21 +68,26 @@ def cost_function(params, H, num_qubits, shots, op_list, basis_state, dev):
             o(params[param_index], wires=op.wires)
             param_index +=1
 
-        return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
+        #return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
+        return [qml.expval(op) for op in paulis]
+    
+    expvals = circuit(params)                 
+    energy = float(np.dot(coeffs, expvals)) 
 
-     
     end = datetime.now()
     device_time = (end - start)
 
-    return circuit(params), device_time
+    return energy, device_time
 
 
-def run_adapt_vqe(i, H, run_info):
+def run_adapt_vqe(run_idx, H, run_info):
 
     num_qubits = run_info["num_qubits"] 
     shots = run_info["shots"]  
     basis_state = run_info["basis_state"]
     phi = run_info["phi"]
+    paulis = run_info['pauli_terms']
+    coeffs = run_info['pauli_coeffs']
 
 
     # We need to generate a random seed for each process otherwise each parallelised run will have the same result
@@ -86,7 +98,7 @@ def run_adapt_vqe(i, H, run_info):
     device_time = timedelta()
 
     def wrapped_cost_function(params):
-        result, dt = cost_function(params, H, num_qubits, shots, op_list, basis_state, dev)
+        result, dt = cost_function(params, H, paulis, coeffs, num_qubits, shots, op_list, basis_state, dev)
         nonlocal device_time
         device_time += dt
         return result
@@ -101,6 +113,8 @@ def run_adapt_vqe(i, H, run_info):
     success = False
 
     for i in range(run_info["num_steps"]):
+
+        print(f"Run {run_idx} step {i}")
 
         max_ops_list = []
         
@@ -128,7 +142,7 @@ def run_adapt_vqe(i, H, run_info):
         for param in np.random.uniform(phi, phi, size=run_info["num_grad_checks"]):
             grad_list = []
             for op in pool:
-                grad = compute_grad(param, H, num_qubits, op, op_list, op_params, basis_state, dev)
+                grad = compute_grad(param, H, paulis, coeffs, num_qubits, op, op_list, op_params, basis_state, dev)
                 o=type(op)
 
                 if (o == qml.CNOT) or (o == qml.CZ):
@@ -147,7 +161,7 @@ def run_adapt_vqe(i, H, run_info):
 
 
         np.random.seed(seed)
-        x0 = np.concatenate((op_params, np.array([np.random.random()*2*np.pi])))
+        x0 = np.concatenate((op_params, np.array([0.0])))#[np.random.random()*2*np.pi]
         
         res = minimize(
             wrapped_cost_function,
@@ -207,11 +221,11 @@ if __name__ == "__main__":
     device = 'default.qubit'
     num_processes=10
     
-    cutoff = 8
-    shots = 1024
+    cutoff = 2
+    shots = None
 
     # Parameters
-    N = 3
+    N = 4
     a = 1.0
     c = -0.8
 
@@ -222,11 +236,11 @@ if __name__ == "__main__":
 
 
     # Optimizer
-    num_steps = 10
+    num_steps = 30
     num_grad_checks = 1
     num_vqe_runs = 10
     max_iter = 10000
-    initial_tr_radius = 1.0
+    initial_tr_radius = 0.1
     final_tr_radius = 1e-8
     scale=True
 
@@ -244,42 +258,38 @@ if __name__ == "__main__":
     starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     if potential == 'quadratic':
-        folder = 'C' + str(abs(c)) + '/' + 'N'+ str(N) + '/' + str(starttime)
+        folder = 'C' + str(abs(c)) + '/' + 'N'+ str(N)
     else:
-        folder = 'N'+ str(N) + '/' + str(starttime)
+        folder = 'N'+ str(N)
 
-    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\AVQE\Files", boundary_condition, potential, folder)
+    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\PennyLane\AVQE\Files2", boundary_condition, potential, folder)
     os.makedirs(base_path, exist_ok=True)
 
-    print("Creating Hamiltonian")
+    print("Loading Hamiltonian")
+    H_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\PennyLane\Analyses\Model Checks\HamiltonianData2", boundary_condition, potential, folder, f"{potential}_{cutoff}.json")
+    with open(H_path, 'r') as file:
+        H_data = json.load(file)
 
-    # Calculate Hamiltonian and expected eigenvalues
-    pauli_H, num_qubits = build_wz_hamiltonian(
-        cutoff,
-        N,
-        a,
-        c=c,
-        m=1.0,
-        potential=potential,
-        boundary_condition=boundary_condition,
-        remove_zero_terms=True
-    )
+    pauli_coeffs = H_data['pauli_coeffs']
+    pauli_strings = H_data['pauli_terms']
+    pauli_terms = [pauli_str_to_op(t) for t in pauli_strings]
 
-    print("Converting Hamiltonian to dense")
+    num_qubits = H_data['num_qubits']
 
-    dense_H = qml.matrix(pauli_H, wire_order=range(num_qubits))
-
-    print("Finding eigenvalues")
-
-    eigenvalues = np.sort(np.linalg.eig(dense_H)[0])[:4]
+    eigenvalues = H_data['eigenvalues']
     min_eigenvalue = np.min(eigenvalues)
 
-    print(f"Found min eignvalue: {min_eigenvalue.real}")
+    print(f"Min eignvalue: {min_eigenvalue.real}")
+
+    print("Making dense H")
+    pauli_H = qml.Hamiltonian(pauli_coeffs, pauli_terms)
+    #dense_H = qml.matrix(pauli_H, wire_order=list(range(num_qubits)))
+    dense_H = None
+    print("Finished making dense H")
+
 
     #Create operator pool
     operator_pool = []
-    initial_op_list = []
-    initial_params = [np.pi/4]*N
     phi = 0.0
 
     n_site = int(1 + np.log2(cutoff))
@@ -317,17 +327,31 @@ if __name__ == "__main__":
         # Fermion hopping / mixing between sites (still useful even if RY present)
         f0 = site * n_site
         f1 = (site+1) * n_site
-        operator_pool.append(qml.FermionicSingleExcitation(phi, wires=[f0, f1]))
-        initial_op_list.append(qml.FermionicSingleExcitation(phi,wires=[f0, f1]))
+        #operator_pool.append(qml.FermionicSingleExcitation(phi, wires=[f0, f1]))
+        #operator_pool.append(qml.CRY(phi, wires=[f0, f1]))
+        operator_pool.append(qml.SingleExcitation(phi, wires=[f0, f1]))
+        
 
 
+    nb = int(np.log2(cutoff))
+    n = 1 + nb
+    fw = [i * n for i in range(N)]
+
+    pairs = [(fw[i], fw[i+1]) for i in range(len(fw)-1)]
+
+    initial_op_list = []
+    initial_params = [np.pi/2]*N
+    for pair in pairs:
+        initial_op_list.append(qml.FermionicSingleExcitation(phi,wires=pair))
 
     # Choose basis state
-    #basis_state = [0]*num_qubits
-    #basis_state = [0]*(num_qubits-1) + [1]
-    basis_state = [1] + [0]*(num_qubits-1) 
-    #basis_state = [1,0,0,0,0,0]
-    #basis_state = [0,0,1,0,1,0,0,0]      
+    #Dirichlet-Linear
+    #basis_state = [0]*n + [1] + [0]*nb #N2
+    #basis_state = [0]*n + [1] + [0]*nb + [0]*n #N3
+    basis_state = [0]*n + [1] + [0]*nb + [0]*n + [1] + [0]*nb #N4
+    #basis_state = [0]*n + [1] + [0]*nb + [0]*n + [1] + [0]*nb + [0]*n #N5  
+
+    #basis_state = H_data['best_basis_state']
      
 
     combined_intital = []
@@ -356,7 +380,9 @@ if __name__ == "__main__":
                 "initial_op_list":initial_op_list, 
                 "initial_params":initial_params,
                 "operator_pool":operator_pool,
-                "path": base_path
+                "path": base_path,
+                "pauli_coeffs": pauli_coeffs,
+                "pauli_terms": pauli_terms
                 }
     
 
@@ -397,7 +423,7 @@ if __name__ == "__main__":
         "N": N,
         "a": a,
         "c": None if potential == "linear" else c,
-        "exact_eigenvalues": [x.real.tolist() for x in eigenvalues],
+        "exact_eigenvalues": eigenvalues,
         "shots": shots,
         "Optimizer": {
                 "name": "COBYQA",

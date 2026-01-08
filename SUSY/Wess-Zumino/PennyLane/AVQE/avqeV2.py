@@ -3,6 +3,9 @@ from pennylane import numpy as pnp
 
 from scipy.optimize import minimize
 
+from scipy.optimize import differential_evolution
+from scipy.stats.qmc import Halton
+
 import os
 import json
 import numpy as np
@@ -11,7 +14,7 @@ import time
 
 from multiprocessing import Pool
 
-from collections import Counter
+from collections import Counter, defaultdict
 
 from wesszumino import build_wz_hamiltonian, pauli_str_to_op
 
@@ -23,14 +26,12 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 
 
-
-
-def compute_grad(param, H, paulis, coeffs, num_qubits, operator_ham, op_list, op_params, basis_state, dev):
+def compute_grad(param, H, paulis, coeffs, num_qubits, operator_ham, op_list, op_params, basis_state, grad_dev):
 
     coeffs_p = pnp.array(coeffs, dtype=float)
     basis_state_p = pnp.array(basis_state, dtype=int)
 
-    @qml.qnode(dev, interface="autograd")
+    @qml.qnode(grad_dev, interface="autograd")
     def expval_circuit(p):
 
         qml.BasisState(basis_state_p, wires=range(num_qubits))
@@ -40,11 +41,12 @@ def compute_grad(param, H, paulis, coeffs, num_qubits, operator_ham, op_list, op
 
         type(operator_ham)(p, wires=operator_ham.wires)
 
-        return [qml.expval(op) for op in paulis]
+        return qml.expval(H)
+        #return [qml.expval(op) for op in paulis]
 
     def cost_fn(p):
         expvals = expval_circuit(p)          
-        return pnp.dot(coeffs_p, expvals)    
+        return expvals #pnp.dot(coeffs_p, expvals)    
 
     p = pnp.tensor(param, requires_grad=True)
     grad = qml.grad(cost_fn)(p)
@@ -53,10 +55,8 @@ def compute_grad(param, H, paulis, coeffs, num_qubits, operator_ham, op_list, op
 
 
 
-def cost_function(params, H, paulis, coeffs, num_qubits, shots, op_list, basis_state, dev):
-   
-    start = datetime.now()
-  
+def cost_function(params, H, paulis, coeffs, num_qubits, op_list, basis_state, dev):
+     
     @qml.qnode(dev)
     def circuit(params):
 
@@ -69,115 +69,198 @@ def cost_function(params, H, paulis, coeffs, num_qubits, shots, op_list, basis_s
             param_index +=1
 
         #return qml.expval(qml.Hermitian(H, wires=range(num_qubits)))
-        return [qml.expval(op) for op in paulis]
+        #return [qml.expval(op) for op in paulis]
+        return qml.expval(H)
     
-    expvals = circuit(params)                 
-    energy = float(np.dot(coeffs, expvals)) 
+    #expvals = circuit(params) 
+    energy = circuit(params)               
+    #energy = float(np.dot(coeffs, expvals)) 
 
-    end = datetime.now()
-    device_time = (end - start)
 
-    return energy, device_time
+    return energy
+
+
+def op_key(op):
+    # ignore parameter values; use just (gate-type, wires)
+    return (type(op), tuple(int(w) for w in op.wires.tolist()))
+
+def pool_add(pool, pool_keys, op):
+    k = op_key(op)
+    if k not in pool_keys:
+        pool.append(op)
+        pool_keys.add(k)
+
+def pool_remove(pool, pool_keys, op):
+    k = op_key(op)
+    if k in pool_keys:
+        pool_keys.remove(k)
+        # remove the first matching key (robust to parameter differences)
+        for j, existing in enumerate(pool):
+            if op_key(existing) == k:
+                pool.pop(j)
+                break
+
+def is_1q(op): return len(op.wires) == 1
+def is_2q(op): return len(op.wires) == 2
 
 
 def run_adapt_vqe(run_idx, H, run_info):
 
-    num_qubits = run_info["num_qubits"] 
-    shots = run_info["shots"]  
+    num_qubits = run_info["num_qubits"]
+    shots = run_info["shots"]
     basis_state = run_info["basis_state"]
     phi = run_info["phi"]
     paulis = run_info['pauli_terms']
     coeffs = run_info['pauli_coeffs']
 
-
-    # We need to generate a random seed for each process otherwise each parallelised run will have the same result
     seed = (os.getpid() * int(time.time())) % 123456789
-    dev = qml.device(run_info["device"], wires=num_qubits, shots=run_info["shots"], seed=seed)
+    dev = qml.device(run_info["device"], wires=num_qubits, shots=shots, seed=seed)
+    grad_dev = qml.device(run_info["device"], wires=num_qubits, shots=None, seed=seed)
+
     run_start = datetime.now()
 
-    device_time = timedelta()
+    # --- pool setup (master + active + fast membership) ---
+    master_pool = run_info["operator_pool"].copy()
+    pool = master_pool.copy()
+    pool_keys = {op_key(op) for op in pool}
 
-    def wrapped_cost_function(params):
-        result, dt = cost_function(params, H, paulis, coeffs, num_qubits, shots, op_list, basis_state, dev)
-        nonlocal device_time
-        device_time += dt
-        return result
-    
+    # 2-qubit ops incident on each wire (for quick re-add)
+    incident_2q = defaultdict(list)
+    for op in master_pool:
+        if is_2q(op):
+            w0, w1 = (int(w) for w in op.wires.tolist())
+            incident_2q[w0].append(op)
+            incident_2q[w1].append(op)
 
-    # Main ADAPT-VQE script
-    op_list = []#run_info["initial_op_list"]
-    op_params = []#run_info["initial_params"]
+    # track which wires have had *selected* 1q gates
+    wires_with_1q = set()
+
+    op_list = []
+    op_params = []
     energies = []
-
-    pool = run_info["operator_pool"].copy()
     success = False
+
+    eps=1e-1
+    g_tol = 1e-6
 
     for i in range(run_info["num_steps"]):
 
         print(f"Run {run_idx} step {i}")
 
         max_ops_list = []
-        
-        if i != 0:
-            
-            pool.remove(most_common_gate)
 
-            if (type(most_common_gate) == qml.FermionicSingleExcitation) or (type(most_common_gate) == qml.CRY):
-                cq = most_common_gate.wires[0]
-                tq = most_common_gate.wires[1]
-
-                if (qml.RY(phi, wires=cq) not in pool):
-                    pool.append(qml.RY(phi, wires=cq))
-
-                if (qml.RZ(phi, wires=cq) not in pool):
-                    pool.append(qml.RZ(phi, wires=cq))
-
-                if (qml.RY(phi, wires=tq) not in pool):
-                    pool.append(qml.RY(phi, wires=tq))
-
-                if (qml.RZ(phi, wires=tq) not in pool):
-                    pool.append(qml.RZ(phi, wires=tq))
-
-        
-        for param in np.random.uniform(phi, phi, size=run_info["num_grad_checks"]):
+        print(f"Run {i}: copmuting gradient")
+        # --- gradient checks over CURRENT pool ---
+        #for param in np.random.uniform(phi, phi, size=run_info["num_grad_checks"]):
+        for param in np.random.uniform(-eps, eps, size=run_info["num_grad_checks"]):
             grad_list = []
             for op in pool:
                 grad = compute_grad(param, H, paulis, coeffs, num_qubits, op, op_list, op_params, basis_state, dev)
-                o=type(op)
+                o = type(op)
+                grad_op = o(param, wires=op.wires)  # all your pool ops are parametric
+                grad_list.append((grad_op, abs(grad)))
 
-                if (o == qml.CNOT) or (o == qml.CZ):
-                    grad_op = o(wires=op.wires)
-                else:
-                    grad_op = o(param, wires=op.wires)
-
-                grad_list.append((grad_op,abs(grad)))
+            print(grad_list)
 
             max_op, max_grad = max(grad_list, key=lambda x: x[1])
             max_ops_list.append(max_op)
+
 
         counter = Counter(max_ops_list)
         most_common_gate, count = counter.most_common(1)[0]
         op_list.append(most_common_gate)
 
+        print(f"Run {i}: finished calculating gradients - selected {most_common_gate}")
 
+        # --- NEW: update the pool based on what was just selected ---
+        # 1) remove the selected op from the active pool (so it can’t be immediately re-picked)
+
+        #print(f"Removing {most_common_gate} from pool")
+
+        pool_remove(pool, pool_keys, most_common_gate)
+
+        if is_2q(most_common_gate):
+            # add local 1q gates on both qubits of this 2q gate
+            w0, w1 = (int(w) for w in most_common_gate.wires.tolist())
+            pool_add(pool, pool_keys, qml.RY(phi, wires=w0))
+            pool_add(pool, pool_keys, qml.RZ(phi, wires=w0))
+            pool_add(pool, pool_keys, qml.RY(phi, wires=w1))
+            pool_add(pool, pool_keys, qml.RZ(phi, wires=w1))
+
+        elif is_1q(most_common_gate):
+            # if we’ve now applied 1q gates on BOTH ends of a 2q op, re-enable that 2q op
+            w = int(most_common_gate.wires.tolist()[0])
+            wires_with_1q.add(w)
+
+            # only check 2q ops touching this wire
+            for op2 in incident_2q[w]:
+                a, b = (int(x) for x in op2.wires.tolist())
+                other = b if a == w else a
+                if other in wires_with_1q:
+                    pool_add(pool, pool_keys, op2)
+                    #print(f"Adding 2q gate {op2} to pool")
+
+        # --- optimize parameters as before ---
         np.random.seed(seed)
-        x0 = np.concatenate((op_params, np.array([0.0])))#[np.random.random()*2*np.pi]
+        x0 = np.concatenate((op_params, np.array([0.0])))
+
+
+        # Generate Halton sequence
+        popsize=5
+
+        num_dimensions = len(op_list)
+        num_samples = popsize*num_dimensions
+        halton_sampler = Halton(d=num_dimensions, seed=seed)
+        halton_samples = halton_sampler.random(n=num_samples)
+        scaled_samples = 2 * np.pi * halton_samples
+
+        bounds = [(0, 2 * np.pi) for _ in range(num_dimensions)]
+        x0 = np.concatenate((op_params, np.array([0])))
+
+        max_iter = 200
+        strategy = "randtobest1bin"
+        tol = 1e-3
+        abs_tol = 1e-3
+
+        optimizer_options = {
+                        'maxiter':max_iter, 
+                        'tol':tol, 
+                        'atol':abs_tol, 
+                        'strategy':strategy, 
+                        'popsize':popsize
+                        }
         
-        res = minimize(
-            wrapped_cost_function,
-            x0,
-            method= "COBYQA",
-            options= run_info["optimizer_options"]
-        )
         
-        if i!=0: pre_min_e = min_e
+        print(f"Run {i}: running VQE")
+
+        res = differential_evolution(
+            cost_function,
+            args=(H, paulis, coeffs, num_qubits, op_list, basis_state, dev),    
+            bounds=bounds,
+            x0=x0,                  
+            **optimizer_options,
+            init=scaled_samples,
+            seed=seed
+            )
+
+        # res = minimize(
+        #     wrapped_cost_function,
+        #     x0,
+        #     method="COBYQA",
+        #     options=run_info["optimizer_options"]
+        # )
+
+        if i != 0:
+            pre_min_e = min_e
+
         min_e = res.fun
         pre_op_params = op_params.copy()
         op_params = res.x
-
         energies.append(min_e)
 
-        if i!=0:
+        print(res.success)
+
+        if i >=5:
             if abs(pre_min_e - min_e) < 1e-8:
                 print("Energy converged")
                 energies.pop()
@@ -185,7 +268,7 @@ def run_adapt_vqe(run_idx, H, run_info):
                 final_params = pre_op_params
                 success = True
                 break
-            if abs(run_info["min_eigenvalue"]-min_e) < 1e-12:
+            if abs(run_info["min_eigenvalue"] - min_e) < 1e-8:
                 print("Energy close to min eigenvalue")
                 success = True
                 final_params = op_params
@@ -211,17 +294,16 @@ def run_adapt_vqe(run_idx, H, run_info):
         "op_list": final_ops,
         "success": success,
         "num_iters": i+1,
-        "run_time": run_time,
-        "device_time": device_time
+        "run_time": run_time
     }
 
 
 if __name__ == "__main__":
 
-    device = 'default.qubit'
+    device = 'lightning.qubit'
     num_processes=10
     
-    cutoff = 8
+    cutoff = 4
     shots = None
 
     # Parameters
@@ -236,9 +318,9 @@ if __name__ == "__main__":
 
 
     # Optimizer
-    num_steps = 4
-    num_grad_checks = 1
-    num_vqe_runs = 10
+    num_steps = 10
+    num_grad_checks = 5
+    num_vqe_runs = 1
     max_iter = 10000
     initial_tr_radius = 0.1
     final_tr_radius = 1e-8
@@ -262,7 +344,7 @@ if __name__ == "__main__":
     else:
         folder = 'N'+ str(N)
 
-    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\AVQE\Files", boundary_condition, potential, folder)
+    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\PennyLane\AVQE\Files3", boundary_condition, potential, folder)
     os.makedirs(base_path, exist_ok=True)
 
     print("Loading Hamiltonian")
@@ -302,13 +384,13 @@ if __name__ == "__main__":
         # Fermion single-qubit gates:
         # RZ: phase (keeps number); RY: mixes |0>,|1> (changes number sector)
         #operator_pool.append(qml.RX(phi, wires=f))
-        operator_pool.append(qml.RZ(phi, wires=f))
+        #operator_pool.append(qml.RZ(phi, wires=f))
         operator_pool.append(qml.RY(phi, wires=f))  # <-- adds/removes fermion
 
         # Boson local gates (change boson number in cutoff-2 truncation)
         for w in b:
             operator_pool.append(qml.RY(phi, wires=w))  # add/remove boson
-            operator_pool.append(qml.RZ(phi, wires=w))
+            #operator_pool.append(qml.RZ(phi, wires=w))
 
             # Local fermion-boson entanglers
             operator_pool.append(qml.CRY(phi, wires=[f, w]))
@@ -327,8 +409,9 @@ if __name__ == "__main__":
         # Fermion hopping / mixing between sites (still useful even if RY present)
         f0 = site * n_site
         f1 = (site+1) * n_site
-        operator_pool.append(qml.FermionicSingleExcitation(phi, wires=[f0, f1]))
+        #operator_pool.append(qml.FermionicSingleExcitation(phi, wires=[f0, f1]))
         #operator_pool.append(qml.CRY(phi, wires=[f0, f1]))
+        operator_pool.append(qml.SingleExcitation(phi, wires=[f0, f1]))
         
 
 
@@ -346,9 +429,12 @@ if __name__ == "__main__":
     # Choose basis state
     #Dirichlet-Linear
     #basis_state = [0]*n + [1] + [0]*nb #N2
-    basis_state = [0]*n + [1] + [0]*nb + [0]*n #N3
+    #basis_state = [0]*n + [1] + [0]*nb + [0]*n #N3
     #basis_state = [0]*n + [1] + [0]*nb + [0]*n + [1] + [0]*nb #N4
     #basis_state = [0]*n + [1] + [0]*nb + [0]*n + [1] + [0]*nb + [0]*n #N5  
+
+    #basis_state = H_data['best_basis_state']
+    basis_state = [0, 0, 0, 1, 0, 0, 0, 0, 0]
      
 
     combined_intital = []
@@ -391,7 +477,7 @@ if __name__ == "__main__":
         vqe_results = pool.starmap(
             run_adapt_vqe,
             [
-                (i, dense_H, run_info)
+                (i, pauli_H, run_info)
                 for i in range(num_vqe_runs)
             ],
         )
@@ -406,7 +492,6 @@ if __name__ == "__main__":
     num_iters = [res["num_iters"] for res in vqe_results]
     run_times = [str(res["run_time"]) for res in vqe_results]
     total_run_time = sum([res["run_time"] for res in vqe_results], timedelta())
-    total_device_time = sum([res['device_time'] for res in vqe_results], timedelta())
 
     vqe_end = datetime.now()
     vqe_time = vqe_end - vqe_starttime
@@ -441,8 +526,7 @@ if __name__ == "__main__":
         "run_times": run_times,
         "seeds": seeds,
         "parallel_run_time": str(vqe_time),
-        "total_VQE_time": str(total_run_time),
-        "total_device_time": str(total_device_time)
+        "total_VQE_time": str(total_run_time)
     }
 
     # Save the variable to a JSON file

@@ -1,0 +1,657 @@
+{
+    "starttime": "2026-01-06_09-59-49",
+    "endtime": "2026-01-06_09-59-56",
+    "potential": "linear",
+    "cutoff": 8,
+    "N": 2,
+    "a": 1.0,
+    "c": null,
+    "exact_eigenvalues": [
+        4.5407264151404357e-10,
+        1.1180331119095206,
+        1.1180331119095213,
+        1.118033989203958,
+        1.118033989203959,
+        2.236066223364967,
+        2.2360671006594055,
+        2.236067100659415
+    ],
+    "shots": null,
+    "Optimizer": {
+        "name": "COBYQA",
+        "optimizer_options": {
+            "maxiter": 10000,
+            "maxfev": 10000,
+            "initial_tr_radius": 0.1,
+            "final_tr_radius": 1e-12,
+            "scale": true
+        }
+    },
+    "num_VQE": 1,
+    "num_steps": 50,
+    "num_grad_checks": 1,
+    "basis_state": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+    ],
+    "all_energies": [
+        [
+            0.00696601125010371,
+            0.0034991309208662336,
+            3.225059162764721e-05,
+            1.612862702377038e-05,
+            6.6624162298190015e-09,
+            6.6624162298190015e-09,
+            6.6624162298190015e-09,
+            6.6624162298190015e-09,
+            6.6624162298190015e-09
+        ]
+    ],
+    "min_energies": [
+        6.6624162298190015e-09
+    ],
+    "op_list": [
+        [
+            {
+                "gate_id": 5,
+                "name": "RY",
+                "param": 0.0038028118560174498,
+                "qubits": [
+                    6
+                ],
+                "beta": null,
+                "pos": 0
+            },
+            {
+                "gate_id": 4,
+                "name": "RY",
+                "param": 0.0038028311814147326,
+                "qubits": [
+                    2
+                ],
+                "beta": null,
+                "pos": 1
+            },
+            {
+                "gate_id": 9,
+                "name": "RY",
+                "param": 0.0,
+                "qubits": [
+                    2
+                ],
+                "beta": null,
+                "pos": 2
+            },
+            {
+                "gate_id": 3,
+                "name": "RY",
+                "param": -0.07877084913497694,
+                "qubits": [
+                    1
+                ],
+                "beta": null,
+                "pos": 3
+            },
+            {
+                "gate_id": 7,
+                "name": "RY",
+                "param": 0.0,
+                "qubits": [
+                    6
+                ],
+                "beta": null,
+                "pos": 4
+            },
+            {
+                "gate_id": 6,
+                "name": "CRY",
+                "param": 0.0,
+                "qubits": [
+                    7,
+                    6
+                ],
+                "beta": null,
+                "pos": 5
+            },
+            {
+                "gate_id": 2,
+                "name": "RY",
+                "param": -0.07877083687130511,
+                "qubits": [
+                    5
+                ],
+                "beta": null,
+                "pos": 6
+            },
+            {
+                "gate_id": 1,
+                "name": "XXPlusYY",
+                "param": -0.46364760776403685,
+                "qubits": [
+                    3,
+                    7
+                ],
+                "beta": -1.5707963267948966,
+                "pos": 7
+            },
+            {
+                "gate_id": 8,
+                "name": "CRY",
+                "param": 0.0,
+                "qubits": [
+                    3,
+                    2
+                ],
+                "beta": null,
+                "pos": 8
+            }
+        ]
+    ],
+    "grad_history": [
+        [
+            {
+                "step": 0,
+                "L_before": 0,
+                "pool_size": 38,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": 0.49916708323413994,
+                        "abs_grad": 0.49916708323413994,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                3,
+                                7
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    },
+                    {
+                        "pos": 0,
+                        "grad": 0.0882411073749978,
+                        "abs_grad": 0.0882411073749978,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                5
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 0,
+                        "grad": 0.0882411073749978,
+                        "abs_grad": 0.0882411073749978,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                7,
+                                5
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": null
+            },
+            {
+                "step": 1,
+                "L_before": 1,
+                "pool_size": 37,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": 0.0882411073749978,
+                        "abs_grad": 0.0882411073749978,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                5
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 0,
+                        "grad": 0.0882411073749978,
+                        "abs_grad": 0.0882411073749978,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                7,
+                                5
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 1,
+                        "grad": 0.0882411073749978,
+                        "abs_grad": 0.0882411073749978,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                5
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 0.00696601125010371
+            },
+            {
+                "step": 2,
+                "L_before": 2,
+                "pool_size": 36,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": 0.08824110737498891,
+                        "abs_grad": 0.08824110737498891,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                1
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 2,
+                        "grad": 0.08824110737498891,
+                        "abs_grad": 0.08824110737498891,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                1
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 1,
+                        "grad": 0.08824110737498891,
+                        "abs_grad": 0.08824110737498891,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                1
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 0.0034991309208662336
+            },
+            {
+                "step": 3,
+                "L_before": 3,
+                "pool_size": 35,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": -0.008464919081623279,
+                        "abs_grad": 0.008464919081623279,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                2
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 2,
+                        "grad": -0.008464919081623279,
+                        "abs_grad": 0.008464919081623279,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                2
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 1,
+                        "grad": -0.008464919081623279,
+                        "abs_grad": 0.008464919081623279,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                2
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 3.225059162764721e-05
+            },
+            {
+                "step": 4,
+                "L_before": 4,
+                "pool_size": 34,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": -0.008464917833497232,
+                        "abs_grad": 0.008464917833497232,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                6
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 0,
+                        "grad": -0.008464917833497232,
+                        "abs_grad": 0.008464917833497232,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                7,
+                                6
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 1,
+                        "grad": -0.008464917833497232,
+                        "abs_grad": 0.008464917833497232,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                6
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 1.612862702377038e-05
+            },
+            {
+                "step": 5,
+                "L_before": 5,
+                "pool_size": 33,
+                "top3": [
+                    {
+                        "pos": 3,
+                        "grad": -4.264283093302623e-09,
+                        "abs_grad": 4.264283093302623e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                7,
+                                6
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 2,
+                        "grad": -4.264268937959059e-09,
+                        "abs_grad": 4.264268937959059e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                7,
+                                6
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 1,
+                        "grad": -4.264265607289985e-09,
+                        "abs_grad": 4.264265607289985e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                7,
+                                6
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 6.6624162298190015e-09
+            },
+            {
+                "step": 6,
+                "L_before": 6,
+                "pool_size": 33,
+                "top3": [
+                    {
+                        "pos": 3,
+                        "grad": -4.264283093302623e-09,
+                        "abs_grad": 4.264283093302623e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                6
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 4,
+                        "grad": -4.264283093302623e-09,
+                        "abs_grad": 4.264283093302623e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                6
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 2,
+                        "grad": -4.264268937959059e-09,
+                        "abs_grad": 4.264268937959059e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                6
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 6.6624162298190015e-09
+            },
+            {
+                "step": 7,
+                "L_before": 7,
+                "pool_size": 32,
+                "top3": [
+                    {
+                        "pos": 7,
+                        "grad": 1.986135977904979e-09,
+                        "abs_grad": 1.986135977904979e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                3,
+                                2
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 3,
+                        "grad": -1.6369475219768503e-09,
+                        "abs_grad": 1.6369475219768503e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                7,
+                                5
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 4,
+                        "grad": -1.6369475219768503e-09,
+                        "abs_grad": 1.6369475219768503e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                7,
+                                5
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 6.6624162298190015e-09
+            },
+            {
+                "step": 8,
+                "L_before": 8,
+                "pool_size": 32,
+                "top3": [
+                    {
+                        "pos": 2,
+                        "grad": 3.7625864923729324e-08,
+                        "abs_grad": 3.7625864923729324e-08,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                2
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 3,
+                        "grad": 3.7625864923729324e-08,
+                        "abs_grad": 3.7625864923729324e-08,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                2
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 4,
+                        "grad": 3.7625864923729324e-08,
+                        "abs_grad": 3.7625864923729324e-08,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                2
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 6.6624162298190015e-09
+            },
+            {
+                "step": 9,
+                "L_before": 9,
+                "pool_size": 31,
+                "top3": [
+                    {
+                        "pos": 2,
+                        "grad": -1.6369475219768503e-09,
+                        "abs_grad": 1.6369475219768503e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                7,
+                                5
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 4,
+                        "grad": -1.6369475219768503e-09,
+                        "abs_grad": 1.6369475219768503e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                7,
+                                5
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 3,
+                        "grad": -1.6369475219768503e-09,
+                        "abs_grad": 1.6369475219768503e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                7,
+                                5
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 6.6624162298190015e-09
+            }
+        ]
+    ],
+    "num_iters": [
+        10
+    ],
+    "success": [
+        true
+    ],
+    "run_times": [
+        "0:00:06.525390"
+    ],
+    "seeds": [
+        89232425
+    ],
+    "parallel_run_time": "0:00:07.088708",
+    "total_VQE_time": "0:00:06.525390"
+}

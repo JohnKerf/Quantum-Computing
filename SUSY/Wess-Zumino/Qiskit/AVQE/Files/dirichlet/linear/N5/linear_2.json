@@ -1,0 +1,671 @@
+{
+    "starttime": "2026-01-06_10-31-50",
+    "endtime": "2026-01-06_10-31-59",
+    "potential": "linear",
+    "cutoff": 2,
+    "N": 5,
+    "a": 1.0,
+    "c": null,
+    "exact_eigenvalues": [
+        -0.31590964428218754,
+        -0.31590964428218676,
+        -0.31590964428218526,
+        -0.31590964428218377,
+        -0.06590964428219068,
+        -0.06590964428219007,
+        -0.06590964428218975,
+        -0.06590964428218864
+    ],
+    "shots": null,
+    "Optimizer": {
+        "name": "COBYQA",
+        "optimizer_options": {
+            "maxiter": 10000,
+            "maxfev": 10000,
+            "initial_tr_radius": 0.1,
+            "final_tr_radius": 1e-12,
+            "scale": true
+        }
+    },
+    "num_VQE": 1,
+    "num_steps": 50,
+    "num_grad_checks": 1,
+    "eps_screen": 0.1,
+    "fd_eps": 0.001,
+    "energy_conv_tol": 1e-09,
+    "energy_conv_patience": 5,
+    "basis_state": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0
+    ],
+    "all_energies": [
+        [
+            0.38196601125010454,
+            0.26393202250020953,
+            0.1572211398585154,
+            0.06014715782167042,
+            0.06014715782167031,
+            0.06014715782167031,
+            0.06014715782167028,
+            0.060147157821669975,
+            0.060147157821669975
+        ]
+    ],
+    "min_energies": [
+        0.060147157821669975
+    ],
+    "op_list": [
+        [
+            {
+                "gate_id": 7,
+                "name": "RY",
+                "param": 2.8069318679073575e-11,
+                "qubits": [
+                    1
+                ],
+                "beta": null,
+                "pos": 0
+            },
+            {
+                "gate_id": 6,
+                "name": "CRY",
+                "param": 1.0433711327109369e-10,
+                "qubits": [
+                    0,
+                    1
+                ],
+                "beta": null,
+                "pos": 1
+            },
+            {
+                "gate_id": 5,
+                "name": "RY",
+                "param": 1.8408877203001494e-10,
+                "qubits": [
+                    1
+                ],
+                "beta": null,
+                "pos": 2
+            },
+            {
+                "gate_id": 4,
+                "name": "XXPlusYY",
+                "param": 0.403365260722154,
+                "qubits": [
+                    3,
+                    5
+                ],
+                "beta": -1.5707963267948966,
+                "pos": 3
+            },
+            {
+                "gate_id": 9,
+                "name": "XXPlusYY",
+                "param": 0.0,
+                "qubits": [
+                    1,
+                    3
+                ],
+                "beta": -1.5707963267948966,
+                "pos": 4
+            },
+            {
+                "gate_id": 3,
+                "name": "XXPlusYY",
+                "param": 0.4326627448385452,
+                "qubits": [
+                    7,
+                    9
+                ],
+                "beta": -1.5707963267948966,
+                "pos": 5
+            },
+            {
+                "gate_id": 2,
+                "name": "XXPlusYY",
+                "param": -0.4224790022557247,
+                "qubits": [
+                    5,
+                    7
+                ],
+                "beta": -1.5707963267948966,
+                "pos": 6
+            },
+            {
+                "gate_id": 1,
+                "name": "XXPlusYY",
+                "param": -0.4439625099279907,
+                "qubits": [
+                    1,
+                    3
+                ],
+                "beta": -1.5707963267948966,
+                "pos": 7
+            },
+            {
+                "gate_id": 8,
+                "name": "RY",
+                "param": 3.093415202837127e-11,
+                "qubits": [
+                    3
+                ],
+                "beta": null,
+                "pos": 8
+            }
+        ]
+    ],
+    "grad_history": [
+        [
+            {
+                "step": 0,
+                "L_before": 0,
+                "pool_size": 38,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": 0.4999999166666602,
+                        "abs_grad": 0.4999999166666602,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                1,
+                                3
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    },
+                    {
+                        "pos": 0,
+                        "grad": 0.4999999166666602,
+                        "abs_grad": 0.4999999166666602,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                5,
+                                7
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    },
+                    {
+                        "pos": 0,
+                        "grad": -0.4999999166666602,
+                        "abs_grad": 0.4999999166666602,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                3,
+                                5
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    }
+                ],
+                "energy_prev": null
+            },
+            {
+                "step": 1,
+                "L_before": 1,
+                "pool_size": 37,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": 0.4999999166667157,
+                        "abs_grad": 0.4999999166667157,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                5,
+                                7
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    },
+                    {
+                        "pos": 0,
+                        "grad": -0.4999999166667157,
+                        "abs_grad": 0.4999999166667157,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                7,
+                                9
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    },
+                    {
+                        "pos": 1,
+                        "grad": 0.4999999166667157,
+                        "abs_grad": 0.4999999166667157,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                5,
+                                7
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    }
+                ],
+                "energy_prev": 0.38196601125010454
+            },
+            {
+                "step": 2,
+                "L_before": 2,
+                "pool_size": 36,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": -0.48662441483260377,
+                        "abs_grad": 0.48662441483260377,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                7,
+                                9
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    },
+                    {
+                        "pos": 1,
+                        "grad": -0.47360672115681623,
+                        "abs_grad": 0.47360672115681623,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                7,
+                                9
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    },
+                    {
+                        "pos": 2,
+                        "grad": -0.47360672115681623,
+                        "abs_grad": 0.47360672115681623,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                7,
+                                9
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    }
+                ],
+                "energy_prev": 0.26393202250020953
+            },
+            {
+                "step": 3,
+                "L_before": 3,
+                "pool_size": 35,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": -0.4747814537129358,
+                        "abs_grad": 0.4747814537129358,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                3,
+                                5
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    },
+                    {
+                        "pos": 1,
+                        "grad": -0.4747814537129358,
+                        "abs_grad": 0.4747814537129358,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                3,
+                                5
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    },
+                    {
+                        "pos": 2,
+                        "grad": -0.46430010461073756,
+                        "abs_grad": 0.46430010461073756,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                3,
+                                5
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    }
+                ],
+                "energy_prev": 0.1572211398585154
+            },
+            {
+                "step": 4,
+                "L_before": 4,
+                "pool_size": 34,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": 0.0,
+                        "abs_grad": 0.0,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                1
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 0,
+                        "grad": 0.0,
+                        "abs_grad": 0.0,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RZ",
+                            "qubits": [
+                                1
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 0,
+                        "grad": 0.0,
+                        "abs_grad": 0.0,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                0
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 0.06014715782167042
+            },
+            {
+                "step": 5,
+                "L_before": 5,
+                "pool_size": 33,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": 1.0034334474440243e-10,
+                        "abs_grad": 1.0034334474440243e-10,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                0,
+                                1
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 1,
+                        "grad": 1.0034334474440243e-10,
+                        "abs_grad": 1.0034334474440243e-10,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                0,
+                                1
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 2,
+                        "grad": 1.0032946695659462e-10,
+                        "abs_grad": 1.0032946695659462e-10,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "CRY",
+                            "qubits": [
+                                0,
+                                1
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 0.06014715782167031
+            },
+            {
+                "step": 6,
+                "L_before": 6,
+                "pool_size": 33,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": 1.0034334474440243e-10,
+                        "abs_grad": 1.0034334474440243e-10,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                1
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 2,
+                        "grad": 1.0034334474440243e-10,
+                        "abs_grad": 1.0034334474440243e-10,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                1
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 1,
+                        "grad": 1.0034334474440243e-10,
+                        "abs_grad": 1.0034334474440243e-10,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                1
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 0.06014715782167031
+            },
+            {
+                "step": 7,
+                "L_before": 7,
+                "pool_size": 32,
+                "top3": [
+                    {
+                        "pos": 7,
+                        "grad": -3.2286673334880334e-11,
+                        "abs_grad": 3.2286673334880334e-11,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                3
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 4,
+                        "grad": -1.73749903353837e-11,
+                        "abs_grad": 1.73749903353837e-11,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                5
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 5,
+                        "grad": -1.73749903353837e-11,
+                        "abs_grad": 1.73749903353837e-11,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                5
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 0.06014715782167028
+            },
+            {
+                "step": 8,
+                "L_before": 8,
+                "pool_size": 32,
+                "top3": [
+                    {
+                        "pos": 4,
+                        "grad": -9.49823553142437e-09,
+                        "abs_grad": 9.49823553142437e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                1,
+                                3
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    },
+                    {
+                        "pos": 6,
+                        "grad": -9.49823553142437e-09,
+                        "abs_grad": 9.49823553142437e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                1,
+                                3
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    },
+                    {
+                        "pos": 5,
+                        "grad": -9.49823553142437e-09,
+                        "abs_grad": 9.49823553142437e-09,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "XXPlusYY",
+                            "qubits": [
+                                1,
+                                3
+                            ],
+                            "beta": -1.5707963267948966
+                        }
+                    }
+                ],
+                "energy_prev": 0.060147157821669975
+            },
+            {
+                "step": 9,
+                "L_before": 9,
+                "pool_size": 33,
+                "top3": [
+                    {
+                        "pos": 7,
+                        "grad": 1.7380541450506826e-10,
+                        "abs_grad": 1.7380541450506826e-10,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                1
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 6,
+                        "grad": 1.7372214777822137e-10,
+                        "abs_grad": 1.7372214777822137e-10,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                1
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 2,
+                        "grad": 1.7370133109650965e-10,
+                        "abs_grad": 1.7370133109650965e-10,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                1
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": 0.060147157821669975
+            }
+        ]
+    ],
+    "num_iters": [
+        10
+    ],
+    "success": [
+        true
+    ],
+    "run_times": [
+        "0:00:08.929204"
+    ],
+    "seeds": [
+        99124917
+    ],
+    "parallel_run_time": "0:00:08.941928",
+    "total_VQE_time": "0:00:08.929204"
+}

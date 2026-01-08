@@ -25,7 +25,7 @@ if __name__ == "__main__":
     boundary_condition = 'dirichlet'
     #boundary_condition = 'periodic'
 
-    cutoff = 16
+    cutoff = 8
     shots=4096
 
     #for shots in [500, 1000, 2000, 4000, 10000]:
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     else:
         folder = 'N'+ str(N)
 
-    H_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\PennyLane\Analyses\Model Checks\HamiltonianData4", boundary_condition, potential, folder, f"{potential}_{cutoff}.json")
+    H_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\Analyses\Model Checks\HamiltonianData", boundary_condition, potential, folder, f"{potential}_{cutoff}.json")
     with open(H_path, 'r') as file:
         H_data = json.load(file)
 
@@ -74,6 +74,12 @@ if __name__ == "__main__":
 
         qml.BasisState(basis, wires=list(range(num_qubits)))
 
+        qml.SingleExcitation(-0.44214317580171686, wires=[0,4])
+        qml.SingleExcitation( 0.43171778953114925, wires=[4,8])
+        qml.RY(-0.07876791939033408, wires=[2])
+        qml.RY(-0.14272180107841284, wires=[6])
+        qml.RY(-0.07877077330649465, wires =[10])
+
         #for pair in pairs:
             #qml.FermionicSingleExcitation(np.pi/2, wires=pair)
             #qml.CNOT(wires=pair)
@@ -82,9 +88,10 @@ if __name__ == "__main__":
         qml.ApproxTimeEvolution(H_pauli, t, n_steps)
 
         return qml.counts(wires=list(range(num_qubits)))
+    
 
-    
-    
+    print(qml.draw(circuit)(1.0, 1))
+
 
 
     k=1
@@ -178,7 +185,7 @@ if __name__ == "__main__":
     }
 
 
-    folder_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\PennyLane\SBQKD\Basis", boundary_condition, potential, folder)
+    folder_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\PennyLane\SBQKD\basis", boundary_condition, potential, folder)
     os.makedirs(folder_path, exist_ok=True)
 
     with open(os.path.join(folder_path, f"{potential}_{cutoff}.json"), "w") as json_file:

@@ -1,0 +1,477 @@
+{
+    "starttime": "2025-12-17_19-44-50",
+    "endtime": "2025-12-17_19-45-04",
+    "potential": "linear",
+    "cutoff": 2,
+    "N": 4,
+    "a": 1.0,
+    "c": null,
+    "exact_eigenvalues": [
+        -0.207934290452101,
+        -0.20793429045210096,
+        -0.2079342904521007,
+        -0.20793429045210002,
+        0.04206570954789784,
+        0.04206570954789813,
+        0.042065709547898136,
+        0.04206570954789815
+    ],
+    "shots": null,
+    "Optimizer": {
+        "name": "COBYQA",
+        "optimizer_options": {
+            "maxiter": 10000,
+            "maxfev": 10000,
+            "initial_tr_radius": 1.0,
+            "final_tr_radius": 1e-08,
+            "scale": true
+        }
+    },
+    "num_VQE": 10,
+    "num_steps": 10,
+    "num_grad_checks": 100,
+    "phi": 0.0,
+    "basis_state": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0
+    ],
+    "operator_pool": [
+        "RY(0.0, wires=[0])",
+        "RZ(0.0, wires=[0])",
+        "RY(0.0, wires=[1])",
+        "RZ(0.0, wires=[1])",
+        "RY(0.0, wires=[2])",
+        "RZ(0.0, wires=[2])",
+        "RY(0.0, wires=[3])",
+        "RZ(0.0, wires=[3])",
+        "RY(0.0, wires=[4])",
+        "RZ(0.0, wires=[4])",
+        "RY(0.0, wires=[5])",
+        "RZ(0.0, wires=[5])",
+        "RY(0.0, wires=[6])",
+        "RZ(0.0, wires=[6])",
+        "RY(0.0, wires=[7])",
+        "RZ(0.0, wires=[7])",
+        "CRY(0.0, wires=[0, 1]))",
+        "CRY(0.0, wires=[1, 0]))",
+        "SingleExcitation(0.0, wires=[0, 1])",
+        "CRY(0.0, wires=[2, 3]))",
+        "CRY(0.0, wires=[3, 2]))",
+        "SingleExcitation(0.0, wires=[2, 3])",
+        "CRY(0.0, wires=[4, 5]))",
+        "CRY(0.0, wires=[5, 4]))",
+        "SingleExcitation(0.0, wires=[4, 5])",
+        "CRY(0.0, wires=[6, 7]))",
+        "CRY(0.0, wires=[7, 6]))",
+        "SingleExcitation(0.0, wires=[6, 7])",
+        "SingleExcitation(0.0, wires=[0, 2])",
+        "CRY(0.0, wires=[0, 2]))",
+        "CRY(0.0, wires=[2, 0]))",
+        "CRY(0.0, wires=[1, 3]))",
+        "CRY(0.0, wires=[3, 1]))",
+        "SingleExcitation(0.0, wires=[1, 3])",
+        "SingleExcitation(0.0, wires=[2, 4])",
+        "CRY(0.0, wires=[2, 4]))",
+        "CRY(0.0, wires=[4, 2]))",
+        "CRY(0.0, wires=[3, 5]))",
+        "CRY(0.0, wires=[5, 3]))",
+        "SingleExcitation(0.0, wires=[3, 5])",
+        "SingleExcitation(0.0, wires=[4, 6])",
+        "CRY(0.0, wires=[4, 6]))",
+        "CRY(0.0, wires=[6, 4]))",
+        "CRY(0.0, wires=[5, 7]))",
+        "CRY(0.0, wires=[7, 5]))",
+        "SingleExcitation(0.0, wires=[5, 7])"
+    ],
+    "all_energies": [
+        [
+            0.2569660112501053,
+            0.13893202250021033,
+            0.04302581261724512
+        ],
+        [
+            0.2569660112501048,
+            0.13893202250021022,
+            0.04302581261724328
+        ],
+        [
+            0.256966011250105,
+            0.13893202250021008,
+            0.04302581261724401
+        ],
+        [
+            0.2569660112501051,
+            0.1389320225002101,
+            0.043025812617243274
+        ],
+        [
+            0.2569660112501049,
+            0.15025512860841125,
+            0.04232984614632663
+        ],
+        [
+            0.2569660112501052,
+            0.15025512860841087,
+            0.042329846146325664
+        ],
+        [
+            0.2569660112501053,
+            0.13893202250021017,
+            0.043025812617243225
+        ],
+        [
+            0.2569660112501049,
+            0.13893202250021028,
+            0.04302581261724388
+        ],
+        [
+            0.25696601125010504,
+            0.1389320225002103,
+            0.043025812617243364
+        ],
+        [
+            0.2569660112501053,
+            0.1502551286084108,
+            0.042329846146325914,
+            0.042065709548494194
+        ]
+    ],
+    "min_energies": [
+        0.04302581261724512,
+        0.04302581261724328,
+        0.04302581261724401,
+        0.043025812617243274,
+        0.04232984614632663,
+        0.042329846146325664,
+        0.043025812617243225,
+        0.04302581261724388,
+        0.043025812617243364,
+        0.042065709548494194
+    ],
+    "op_list": [
+        [
+            {
+                "name": "SingleExcitation",
+                "param": -0.4327593517916649,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.4327593040796557,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": 0.42051500019920157,
+                "wires": [
+                    2,
+                    4
+                ]
+            }
+        ],
+        [
+            {
+                "name": "SingleExcitation",
+                "param": -0.4327593506500917,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.432759357924168,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": 0.4205150109558092,
+                "wires": [
+                    2,
+                    4
+                ]
+            }
+        ],
+        [
+            {
+                "name": "SingleExcitation",
+                "param": -0.43275937798708175,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.43275933452310134,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": 0.42051499173685214,
+                "wires": [
+                    2,
+                    4
+                ]
+            }
+        ],
+        [
+            {
+                "name": "SingleExcitation",
+                "param": -0.4327593516812372,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.4327593461375098,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": 0.42051500770077016,
+                "wires": [
+                    2,
+                    4
+                ]
+            }
+        ],
+        [
+            {
+                "name": "SingleExcitation",
+                "param": 0.4023866343521808,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.4440542171871766,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.44405416994617436,
+                "wires": [
+                    4,
+                    6
+                ]
+            }
+        ],
+        [
+            {
+                "name": "SingleExcitation",
+                "param": 0.4023866233119575,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.4440541864846343,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.44405417318201895,
+                "wires": [
+                    4,
+                    6
+                ]
+            }
+        ],
+        [
+            {
+                "name": "SingleExcitation",
+                "param": -0.43275934765970914,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.4327593609473024,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": 0.42051500454185964,
+                "wires": [
+                    2,
+                    4
+                ]
+            }
+        ],
+        [
+            {
+                "name": "SingleExcitation",
+                "param": -0.4327593751777823,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.43275938113883494,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": 0.42051501675662417,
+                "wires": [
+                    2,
+                    4
+                ]
+            }
+        ],
+        [
+            {
+                "name": "SingleExcitation",
+                "param": -0.43275935787916275,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.4327593726242152,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": 0.42051501152210297,
+                "wires": [
+                    2,
+                    4
+                ]
+            }
+        ],
+        [
+            {
+                "name": "SingleExcitation",
+                "param": 0.8027807072758775,
+                "wires": [
+                    2,
+                    4
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.4749045329444208,
+                "wires": [
+                    0,
+                    2
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.4749044987841813,
+                "wires": [
+                    4,
+                    6
+                ]
+            },
+            {
+                "name": "SingleExcitation",
+                "param": -0.4222753392771785,
+                "wires": [
+                    2,
+                    4
+                ]
+            }
+        ]
+    ],
+    "num_iters": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        5
+    ],
+    "success": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+    ],
+    "run_times": [
+        "0:00:09.779517",
+        "0:00:09.765974",
+        "0:00:09.840289",
+        "0:00:09.860737",
+        "0:00:09.730225",
+        "0:00:09.622782",
+        "0:00:10.004372",
+        "0:00:09.769170",
+        "0:00:09.730867",
+        "0:00:11.864807"
+    ],
+    "seeds": [
+        40185768,
+        58738740,
+        7661451,
+        250158220,
+        539841695,
+        32268636,
+        606031454,
+        687079024,
+        266217561,
+        965961330
+    ],
+    "parallel_run_time": "0:00:14.270086",
+    "total_VQE_time": "0:01:39.968740"
+}
