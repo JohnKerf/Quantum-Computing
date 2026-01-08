@@ -105,11 +105,19 @@ class BoxPlotter:
     on_missing: str = "skip"  # "skip" | "nan"
     debug: bool = False
 
+    import numpy as np
+
+    
     # ---------- loading ----------
     def _load(self, data_path: str, potential: str, cutoff: int, shots: int) -> Tuple[np.ndarray, float]:
-        d_path = os.path.join(
-            repo_path, data_path, str(shots), potential, f"{potential}_{cutoff}.json"
-        )
+        if shots == -1:
+            d_path = os.path.join(
+            repo_path, data_path, potential, f"{potential}_{cutoff}.json"
+            )
+        else:
+            d_path = os.path.join(
+                repo_path, data_path, str(shots), potential, f"{potential}_{cutoff}.json"
+            )
 
         # Always return (energies, min_eigenvalue)
         if not os.path.exists(d_path):
@@ -131,8 +139,14 @@ class BoxPlotter:
             # use nanmin in case any NaNs are present
             min_eigenvalue = float(np.nanmin(exact_eigenvalues))
 
-        results = np.asarray(data.get("results", []), dtype=float)
-        success = np.asarray(data.get("success", []), dtype=bool)
+        #results = np.asarray(data.get("energies") or data.get("results") or [], dtype=float)
+        try:
+            res = data.get("results")
+            results = np.asarray(res.get("energies"), dtype=float)
+            success = np.asarray(res.get("converged", []), dtype=bool)
+        except:
+            results = np.asarray(data.get("energies") or data.get("results") or [], dtype=float)
+            success = np.asarray(data.get("success", []), dtype=bool)
 
         if results.size:
             if self.converged_only:

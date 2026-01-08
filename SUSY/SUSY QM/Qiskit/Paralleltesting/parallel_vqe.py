@@ -18,12 +18,14 @@ import git
 repo_path = git.Repo('.', search_parent_directories=True).working_tree_dir
 
 
-path = r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\open-apikey.json"
+#path = r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\open-apikey.json"
+path = r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\apikey.json"
 with open(path, encoding="utf-8") as f:
     api_key = json.load(f).get("apikey")
 
 IBM_QUANTUM_API_KEY = api_key
-ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/3ff62345f67c45e48e47a7f57d2f39f5:83214c75-88ab-4e55-8a87-6502ecc7cc9b::" #US
+#ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/3ff62345f67c45e48e47a7f57d2f39f5:83214c75-88ab-4e55-8a87-6502ecc7cc9b::" #US
+ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/d4f95db0515b47b7ba61dba8a424f873:ed0704ac-ad7d-4366-9bcc-4217fb64abd1::"
 service = QiskitRuntimeService(channel="ibm_quantum_platform", token=IBM_QUANTUM_API_KEY, instance=ibm_instance_crn)
 
 
@@ -129,10 +131,17 @@ def evaluate_energies(full, Hs, estimator, param_flat, eps, lam, p, shots, backe
 
     if backend_name == "Aer":
         job = estimator.run(pubs, precision=precision)
+        job_id = job.job_id()
     else:
         job = estimator.run(pubs)
+        job_status = job.status()
+        job_id = job.job_id()
 
-    job_id = job.job_id()
+        if job_status == 'ERROR':
+            logger.info(f"Job Id: {job_id} failes with status {job_status}, retrying")
+            job = estimator.run(pubs)    
+            job_id = job.job_id()
+            job_status = job.status()
 
     #print("Estimator job id:", job_id)
     #print("Initial status:", job.status())
@@ -144,6 +153,9 @@ def evaluate_energies(full, Hs, estimator, param_flat, eps, lam, p, shots, backe
 
     try:
         job_metrics = job.metrics()
+        usage = job_metrics.get("usage")
+        QPU_usage = float(usage["seconds"])
+        logger.info(f"Job Id: {job_id} used {QPU_usage}s QPU time")
     except AttributeError:
         #print("No usage/metrics available for this estimator type.")
         job_metrics = None
@@ -163,19 +175,19 @@ def build_active_problem(H_single_sp, best_params, num_qubits_single, active_ids
     for cid in active_ids:
         x0_k = best_params[cid]
         low, high = 0.0, 2.0*np.pi
-        parametrization = ng.p.Array(init=x0_k)#.set_bounds(low, high)
+        parametrization = ng.p.Array(init=x0_k).set_bounds(low, high)
 
 
-        opt = ng.optimizers.MultiCobyla(
-            parametrization=parametrization,
-            budget=ng_budget,
-            num_workers=1,
-        )
-        # opt = ng.optimizers.NGOpt(
+        # opt = ng.optimizers.MultiCobyla(
         #     parametrization=parametrization,
-        #     budget=ng_budget,  # upper bound on total tell() calls
+        #     budget=ng_budget,
         #     num_workers=1,
         # )
+        opt = ng.optimizers.NGOpt(
+            parametrization=parametrization,
+            budget=ng_budget,  # upper bound on total tell() calls
+            num_workers=1,
+        )
         optimizers.append(opt)
 
     return full, Hs_active, optimizers, num_params
@@ -191,7 +203,7 @@ def create_isas(backend, full, Hs_active, optimization_level):
         layout = getattr(ansatz_isa, "layout", None)
         hamiltonian_isa = [H.apply_layout(layout) for H in Hs_active] if layout else Hs_active
 
-        if log_enabled: logger.info(f"Hamiltonian: {hamiltonian_isa}")
+        #if log_enabled: logger.info(f"Hamiltonian: {hamiltonian_isa}")
     else:
         ansatz_isa = full
         hamiltonian_isa = Hs_active
@@ -422,17 +434,28 @@ def run_vqe(*,
     for cid in range(num_copies):
         logger.info(f"Copy {cid}: best_E={best_E[cid]}, best_param={best_params[cid]}")
 
+    # Total QPU usage
+    if backend_name != "Aer":
+        jobs = job_info.values()
+        QPU_usage = 0.0
+        for job in jobs:
+            usage = job.get("usage")
+            QPU_usage += float(usage["seconds"])
+
+    logger.info(f"Job ID: {job_id} - QPU usage: {QPU_usage}")
 
     vqe_results = {
         "vqe_start": str(vqe_start),
         "vqe_end": str(vqe_end),
         "vqe_time": str(vqe_time),
-        "results": best_E.tolist(),
+        "energies": best_E.tolist(),
         "params": best_params.tolist(),
         "active_ids": active_ids,
         "iters": iters_per_copy.tolist(),
         "iter_times": [str(t) for t in iter_times],
         "converged": converged_flags.tolist(),
+        "num_jobs": len(jobs) if backend_name != "Aer" else None,
+        "QPU_usage": QPU_usage if backend_name != "Aer" else None,
         "job_info": job_info,
         "estimator_options": estimator_options
     }
@@ -449,15 +472,15 @@ if __name__ == "__main__":
     log_enabled=True
 
     # ---------------- Problem setup ----------------
-    potential = "AHO"
-    cutoff = 8
-    num_copies = 3   # total copies (optimizers) you want initially
+    potential = "DW"
+    cutoff = 4
+    num_copies = 30   # total copies (optimizers) you want initially
 
     #backend_name = 'ibm_kingston'
     #backend_name = 'ibm_fez'
-    #backend_name = 'ibm_torino'
+    backend_name = 'ibm_torino'
     #backend_name = "ibm_strasbourg"
-    backend_name = "Aer"
+    #backend_name = "Aer"
 
     # Noise model options
     use_noise_model = 0
@@ -467,15 +490,15 @@ if __name__ == "__main__":
 
     shots = 4096
     optimization_level = 3
-    resilience_level = 0
+    resilience_level = 2
 
     # ---------------- Global trackers per copy ----------------
     # Convergence hyperparameters
     improve_tol_abs = 1e-8      # absolute improvement threshold
     improve_tol_rel = 1e-3      # relative threshold (0.1% of |best_E|)
-    patience        = 100        # how many iters of no improvement before freezing
-    min_iter      = 100        # don't even consider convergence before this
-    max_iter = 500
+    patience        = 50        # how many iters of no improvement before freezing
+    min_iter      = 50        # don't even consider convergence before this
+    max_iter = 100
     ng_budget = 10000
 
 
@@ -489,7 +512,7 @@ if __name__ == "__main__":
     else:
         eps = 0
 
-    base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\Paralleltesting\NoiseModel-RE", backend_name, potential, str(starttime))
+    base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\NQCC Access\Q4_2025\Files\ResilienceLevelTesting\DW4\Level2", f"{potential}{cutoff}")
     os.makedirs(base_path, exist_ok=True)
 
     log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
@@ -520,7 +543,8 @@ if __name__ == "__main__":
     ansatz = ansatze.get(ansatz_name)
     num_params_single = ansatz.n_params
 
-    tags=["Open-access", ansatz_name, f"shots:{shots}", "Parallel Test", f"{num_copies} copies"]
+    #tags=["Open-access", ansatz_name, f"shots:{shots}", "Parallel Test", f"{num_copies} copies"]
+    tags=["NQCC-Q4", ansatz_name, f"shots:{shots}", "Resilience Test", f"Resilience={resilience_level}", f"{num_copies} copies"]
 
     optimizer_info = {
             "name": "NGOpt",

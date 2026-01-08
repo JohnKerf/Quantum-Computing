@@ -109,7 +109,8 @@ class VQESummary:
                     mean_t = lstd = ustd = 0.0
 
                 # --- evals distribution (always num_evaluations)
-                evals_d = np.asarray(data.get("num_evaluations", []), dtype=float)
+                evals_d = np.asarray(data.get("num_evaluations") or data.get("num_iters") or [], dtype=float)
+
                 if evals_d.size:
                     mean_evals = float(np.mean(evals_d))
                     min_evals = float(np.min(evals_d))
@@ -123,7 +124,8 @@ class VQESummary:
                 exact_vals = np.asarray(data.get("exact_eigenvalues", []), dtype=float)
                 exact_min = float(np.min(exact_vals)) if exact_vals.size else float("nan")
 
-                results = np.asarray(data.get("results", []), dtype=float)
+                results = np.asarray(data.get("energies") or data.get("results") or [], dtype=float)
+
                 if results.size:
                     if converged_only and n_conv > 0:
                         sel = results[converged_idx]
