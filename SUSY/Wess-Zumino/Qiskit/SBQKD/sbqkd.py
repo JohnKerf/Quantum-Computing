@@ -5,7 +5,7 @@ from datetime import datetime
 
 from qiskit import QuantumCircuit
 from qiskit.circuit import QuantumRegister
-from qiskit.circuit.library import PauliEvolutionGate
+from qiskit.circuit.library import PauliEvolutionGate, XXPlusYYGate
 from qiskit.synthesis import LieTrotter
 from qiskit_aer import AerSimulator
 from qiskit_aer.primitives import SamplerV2 as AerSampler
@@ -92,7 +92,15 @@ def get_backend(backend_name, use_noise_model, noise_model_options, resilience_l
         sampler = Sampler(mode=backend)
         sampler.options.environment.job_tags = tags
         sampler.options.default_shots = shots
-        sampler.options.resilience_level = resilience_level
+        if resilience_level == 1:
+            sampler.options.twirling.enable_measure = True
+            sampler.options.twirling.enable_gates = False
+        elif resilience_level == 2:
+            sampler.options.twirling.enable_measure = True
+            sampler.options.twirling.enable_gates = True
+        else:
+            sampler.options.twirling.enable_measure = False
+            sampler.options.twirling.enable_gates = False
 
     return backend, sampler
 
@@ -104,7 +112,13 @@ def create_circuit(backend, optimization_level, num_qubits, basis, H_pauli, t, n
 
     for q, bit in enumerate(basis):
         if bit == 1:
-            qc.x(q)        
+            qc.x(q)    
+
+    qc.append(XXPlusYYGate(-0.44214317580171686/2.0, beta=-np.pi/2.0), [7,11])
+    qc.append(XXPlusYYGate(0.43171778953114925/2.0, beta=-np.pi/2.0), [3,7])
+    qc.ry(-0.07876791939033408, 9)
+    qc.ry(-0.14272180107841284, 5)
+    qc.ry(-0.07877077330649465, 1)    
     
     evol_gate = PauliEvolutionGate(H_pauli,time=t,synthesis=LieTrotter(reps=num_trotter_steps))
     qc.append(evol_gate, qr)
@@ -160,10 +174,10 @@ if __name__ == "__main__":
     backend_name = "Aer"
 
     # Noise model options
-    use_noise_model = 0
-    gate_error=False
-    readout_error=False  
-    thermal_relaxation=False
+    use_noise_model = 1
+    gate_error=True
+    readout_error=True  
+    thermal_relaxation=True
 
     noise_model_options = {
         "gate_error":gate_error,
@@ -171,9 +185,9 @@ if __name__ == "__main__":
         "thermal_relaxation":thermal_relaxation
         }
 
-    shots = 2000
+    shots = 4096
     optimization_level = 3
-    resilience_level = 0
+    resilience_level = 1 # 1 = readout , 2 = readout + gate
 
     #for shots in [200,500,1000,2000,4000,10000]:
 
@@ -181,7 +195,7 @@ if __name__ == "__main__":
     n_steps=1
     dt=1.0
     max_k = 10
-    tol = 1e-10
+    tol = 1e-9
 
     tags=["Open-access", "SBQKD", f"shots:{shots}", f"{boundary_condition}", f"{potential}", f"N={N}", f"cutoff={cutoff}"]
 
@@ -202,7 +216,7 @@ if __name__ == "__main__":
 
     if log_enabled: logger.info(f"Running VQE for {potential} potential and cutoff {cutoff}")
 
-    H_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\PennyLane\Analyses\Model Checks\HamiltonianData4", boundary_condition, potential, folder, f"{potential}_{cutoff}.json")
+    H_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\Analyses\Model Checks\HamiltonianData", boundary_condition, potential, folder, f"{potential}_{cutoff}.json")
     with open(H_path, 'r') as file:
         H_data = json.load(file)
 
@@ -238,6 +252,7 @@ if __name__ == "__main__":
     prev_energy = np.inf
 
     all_data = []
+    all_counts = []
     all_energies = []
     job_info = {}
 
@@ -260,12 +275,15 @@ if __name__ == "__main__":
         Ct = datetime.now() - t1
 
         job_info[job_id] = job_metrics
+
+        
         samples.update(counts)
-
-
+ 
         sorted_states = sorted(samples.items(), key=lambda x: x[1], reverse=True)
         top_states = [s for s, c in sorted_states]
         idx = [int(s, 2) for s in top_states]
+
+        all_counts.append(dict(sorted_states))
 
         H_reduced = wz.reduced_sparse_matrix_from_pauli_terms(pauli_terms, top_states)
     
@@ -341,7 +359,8 @@ if __name__ == "__main__":
         "all_energies": all_energies,
         "all_run_data": all_data,
         "job_info": job_info,
-        "sampler_options": sampler_options
+        "sampler_options": sampler_options,
+        "all_counts": all_counts
     }
 
 
