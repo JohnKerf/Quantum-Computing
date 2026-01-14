@@ -248,5 +248,93 @@ def calculate_wz_hamiltonian(cutoff, N, a, potential, boundary_condition, c=0, t
     if to_dense: H = H.todense()
     
     return H
+
+
+
+############################################################################################################################################################
+#  Create reduced sparse matrix from pauli terms and bitstrings
+############################################################################################################################################################
+def apply_pauli_to_bitstring(pauli_str, bitstring):
+    """
+    Qiskit convention:
+      - rightmost char of pauli_str acts on qubit 0
+      - rightmost bit of bitstring is qubit 0
+    Returns:
+        phase (complex), out_bitstring (str)
+    """
+
+    phase = 1.0 + 0.0j
+    out = list(bitstring)
+    n = len(bitstring)
+
+    # qubit q corresponds to index -(q+1)
+    for q in range(n):
+        idx = n - 1 - q
+        p = pauli_str[idx]
+        b = 1 if bitstring[idx] == "1" else 0
+
+        if p == "I":
+            continue
+        elif p == "X":
+            out[idx] = "0" if b else "1"
+        elif p == "Z":
+            if b:
+                phase *= -1
+        elif p == "Y":
+            out[idx] = "0" if b else "1"
+            phase *= (1j if b == 0 else -1j)  # Y|0>=i|1>, Y|1>=-i|0>
+        else:
+            raise ValueError(f"Bad Pauli char '{p}' at qubit {q}")
+
+    return phase, "".join(out)
+
+
+
+def reduced_sparse_matrix_from_pauli_terms(pauli_terms, basis_states):
+    """
+    Build reduced Hamiltonian as a sparse matrix from explicit Pauli terms.
+
+    pauli_terms: list of (coeff, pauli_str)
+        e.g. [(0.5, "ZIIII"), (-1.2, "XXIYZ"), ...]
+    basis_states: list of bitstrings, all same length n
+        e.g. top_states from counts
+
+    Returns
+    -------
+    H_red : scipy.sparse.csr_matrix (complex)
+        Reduced Hamiltonian in the basis given by basis_states
+    """
+    # Clean basis states
+    m = len(basis_states)
+
+    # Map bitstring -> basis index
+    idx = {s: i for i, s in enumerate(basis_states)}
+
+    # Lists for COO data
+    rows = []
+    cols = []
+    data = []
+
+    for coeff, pstr in pauli_terms:
+        for ket in basis_states:
+            phase, out_state = apply_pauli_to_bitstring(pstr, ket)
+            if out_state in idx:
+                i = idx[out_state]   # row index  (bra = out_state)
+                j = idx[ket]         # column index (ket)
+                value = coeff * phase
+
+                # Store non-zero contribution
+                if value != 0:
+                    rows.append(i)
+                    cols.append(j)
+                    data.append(value)
+
+    # Build sparse matrix
+    H_red_coo = coo_matrix((data, (rows, cols)),
+                           shape=(m, m),
+                           dtype=np.complex128)
+    H_red = H_red_coo.tocsr()
+
+    return H_red
    
    
