@@ -1,0 +1,101 @@
+[2026-01-15 20:15:30,860][INFO] === build_wz_hamiltonian start ===
+[2026-01-15 20:15:30,860][INFO] N=3, cutoff=2, a=1.0, c=0.0, m=1.0, potential=linear, bc=dirichlet
+[2026-01-15 20:15:30,860][DEBUG] H_bos_onsite (Pauli decomposition): 1 terms
+0.5 * II
+[2026-01-15 20:15:30,860][DEBUG] H_bf_loc (Pauli decomposition): 1 terms
+-0.5 * ZI
+[2026-01-15 20:15:30,861][DEBUG] H_hop (2-site Pauli decomposition): 2 terms
+0.25 * XIXI
+0.25 * YIYI
+[2026-01-15 20:15:30,861][DEBUG] H_q2 (Pauli decomposition): 1 terms
+0.5 * II
+[2026-01-15 20:15:30,861][DEBUG] H_qq (2-site Pauli decomposition): 1 terms
+0.5 * IXIX
+[2026-01-15 20:15:30,861][DEBUG] H_Wp_q (2-site Pauli decomposition): 1 terms
+0.5 * IXIX
+[2026-01-15 20:15:30,861][INFO] [ADD] H_bos_onsite: sites=[0], scale=+1
+[2026-01-15 20:15:30,861][DEBUG] Embedded H_bos_onsite -> sites=[0]: 1 terms
+0.5 * IIIIII
+[2026-01-15 20:15:30,861][INFO] [ADD] H_bf_loc * (-1)^n: sites=[0], scale=+1
+[2026-01-15 20:15:30,861][DEBUG] Embedded H_bf_loc * (-1)^n -> sites=[0]: 1 terms
+-0.5 * IIIIZI
+[2026-01-15 20:15:30,862][INFO] [ADD] H_bos_onsite: sites=[1], scale=+1
+[2026-01-15 20:15:30,862][DEBUG] Embedded H_bos_onsite -> sites=[1]: 1 terms
+0.5 * IIIIII
+[2026-01-15 20:15:30,862][INFO] [ADD] H_bf_loc * (-1)^n: sites=[1], scale=-1
+[2026-01-15 20:15:30,862][DEBUG] Embedded H_bf_loc * (-1)^n -> sites=[1]: 1 terms
+-0.5 * IIZIII
+[2026-01-15 20:15:30,862][INFO] [ADD] H_bos_onsite: sites=[2], scale=+1
+[2026-01-15 20:15:30,862][DEBUG] Embedded H_bos_onsite -> sites=[2]: 1 terms
+0.5 * IIIIII
+[2026-01-15 20:15:30,862][INFO] [ADD] H_bf_loc * (-1)^n: sites=[2], scale=+1
+[2026-01-15 20:15:30,862][DEBUG] Embedded H_bf_loc * (-1)^n -> sites=[2]: 1 terms
+-0.5 * ZIIIII
+[2026-01-15 20:15:30,862][INFO] [ADD] H_hop: sites=[0, 1], scale=+1
+[2026-01-15 20:15:30,862][DEBUG] Embedded H_hop -> sites=[0, 1]: 2 terms
+0.25 * IIXIXI
+0.25 * IIYIYI
+[2026-01-15 20:15:30,862][INFO] [ADD] H_hop: sites=[1, 2], scale=+1
+[2026-01-15 20:15:30,862][DEBUG] Embedded H_hop -> sites=[1, 2]: 2 terms
+0.25 * XIXIII
+0.25 * YIYIII
+[2026-01-15 20:15:30,863][INFO] [ADD] g^2: + q^2(np1): sites=[1], scale=+0.125
+[2026-01-15 20:15:30,863][DEBUG] Embedded g^2: + q^2(np1) -> sites=[1]: 1 terms
+0.5 * IIIIII
+[2026-01-15 20:15:30,863][INFO] [ADD] Wp*g: + Wp(n) q(np1): sites=[0, 1], scale=+0.5
+[2026-01-15 20:15:30,863][DEBUG] Embedded Wp*g: + Wp(n) q(np1) -> sites=[0, 1]: 1 terms
+0.5 * IIIXIX
+[2026-01-15 20:15:30,863][INFO] [ADD] g^2: + q^2(np1): sites=[2], scale=+0.125
+[2026-01-15 20:15:30,863][DEBUG] Embedded g^2: + q^2(np1) -> sites=[2]: 1 terms
+0.5 * IIIIII
+[2026-01-15 20:15:30,863][INFO] [ADD] g^2: + q^2(nm1): sites=[0], scale=+0.125
+[2026-01-15 20:15:30,863][DEBUG] Embedded g^2: + q^2(nm1) -> sites=[0]: 1 terms
+0.5 * IIIIII
+[2026-01-15 20:15:30,863][INFO] [ADD] g^2: - 2 q(nm1)q(np1): sites=[0, 2], scale=-0.25
+[2026-01-15 20:15:30,863][DEBUG] Embedded g^2: - 2 q(nm1)q(np1) -> sites=[0, 2]: 1 terms
+0.5 * IXIIIX
+[2026-01-15 20:15:30,863][INFO] [ADD] Wp*g: + Wp(n) q(np1): sites=[1, 2], scale=+0.5
+[2026-01-15 20:15:30,863][DEBUG] Embedded Wp*g: + Wp(n) q(np1) -> sites=[1, 2]: 1 terms
+0.5 * IXIXII
+[2026-01-15 20:15:30,863][INFO] [ADD] Wp*g: - Wp(n) q(nm1): sites=[1, 0], scale=-0.5
+[2026-01-15 20:15:30,863][DEBUG] Embedded Wp*g: - Wp(n) q(nm1) -> sites=[1, 0]: 1 terms
+0.5 * IIIXIX
+[2026-01-15 20:15:30,864][INFO] [ADD] g^2: + q^2(nm1): sites=[1], scale=+0.125
+[2026-01-15 20:15:30,864][DEBUG] Embedded g^2: + q^2(nm1) -> sites=[1]: 1 terms
+0.5 * IIIIII
+[2026-01-15 20:15:30,864][INFO] [ADD] Wp*g: - Wp(n) q(nm1): sites=[2, 1], scale=-0.5
+[2026-01-15 20:15:30,864][DEBUG] Embedded Wp*g: - Wp(n) q(nm1) -> sites=[2, 1]: 1 terms
+0.5 * IXIXII
+[2026-01-15 20:15:30,864][DEBUG] H before simplify: 20 terms
+0.0 * IIIIII
+0.5 * IIIIII
+-0.5 * IIIIZI
+0.5 * IIIIII
+0.5 * IIZIII
+0.5 * IIIIII
+-0.5 * ZIIIII
+0.25 * IIXIXI
+0.25 * IIYIYI
+0.25 * XIXIII
+0.25 * YIYIII
+0.0625 * IIIIII
+0.25 * IIIXIX
+0.0625 * IIIIII
+0.0625 * IIIIII
+-0.125 * IXIIIX
+0.25 * IXIXII
+-0.25 * IIIXIX
+0.0625 * IIIIII
+-0.25 * IXIXII
+[2026-01-15 20:15:30,864][INFO] [SIMPLIFY] simplifying H_total
+[2026-01-15 20:15:30,864][DEBUG] Final H: 9 terms
+1.75 * IIIIII
+-0.5 * IIIIZI
+0.5 * IIZIII
+-0.5 * ZIIIII
+0.25 * IIXIXI
+0.25 * IIYIYI
+0.25 * XIXIII
+0.25 * YIYIII
+-0.125 * IXIIIX
+[2026-01-15 20:15:30,864][INFO] === build_wz_hamiltonian end ===

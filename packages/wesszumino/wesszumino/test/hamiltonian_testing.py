@@ -1,9 +1,11 @@
 from __future__ import annotations
-
+import logging
 import numpy as np
 from typing import Tuple
 from scipy.sparse import coo_matrix
 from qiskit.quantum_info import Operator, SparsePauliOp, PauliList
+
+from hamiltonian_logging import get_file_logger, log_matrix, log_paulis
 
 # create a 0 sparse pauli op
 def zero_sparse_pauliop(n_qubits):
@@ -164,13 +166,22 @@ def embed_sparse_pauliop_on_sites(H_block, sites,n_site,N):
 # 4) WZ Hamiltonian (periodic/dirichlet BC)
 # =============================================================================
 
-def build_wz_hamiltonian(cutoff, N, a, c=0.0, m=1.0, 
+def build_wz_hamiltonian(
+                         cutoff, N, a, c=0.0, m=1.0, 
                          potential="linear", boundary_condition="periodic", 
-                         atol_decompose=1e-12, atol_simplify=1e-12, remove_zero_terms=True):
+                         atol_decompose=1e-12, atol_simplify=1e-12, remove_zero_terms=True, 
+                         log_path=None, log_pauli_terms=True,  log_level= logging.INFO, log_mode="w", pauli_max_terms=120, pauli_sort_by_abs = False, log_running_total = False
+                         ):
     """
     Build the Wess–Zumino Hamiltonian as a Qiskit SparsePauliOp using
     only local blocks (1-site and 2-site).
     """
+
+    logger = None
+    if log_path is not None:
+        logger = get_file_logger(log_path, level=log_level, mode=log_mode)
+        logger.info("=== build_wz_hamiltonian start ===")
+        logger.info(f"N={N}, cutoff={cutoff}, a={a}, c={c}, m={m}, potential={potential}, bc={boundary_condition}")
 
     # single-site blocks
     H_bos_onsite_dense, H_bf_loc_dense = build_onsite_blocks(cutoff, a, potential=potential, c=c, m=m)
@@ -178,15 +189,34 @@ def build_wz_hamiltonian(cutoff, N, a, c=0.0, m=1.0,
     n_site = int(np.log2(D_site))
     n_total_qubits = N * n_site
 
+    # if logger is not None:
+    #     q_site, p_site, chi_site, chi_dag_site = single_site_operators(cutoff, m=m)
+    #     log_matrix(logger, "q_site", q_site)
+    #     log_matrix(logger, "p_site", p_site)
+    #     log_matrix(logger, "chi_site", chi_site)
+    #     log_matrix(logger, "chi_dag_site", chi_dag_site)
+
+    #     log_matrix(logger, "H_bos_onsite_dense", H_bos_onsite_dense)
+    #     log_matrix(logger, "H_bf_loc_dense", H_bf_loc_dense)
+
     H_bos_onsite = dense_to_sparse_pauliop(H_bos_onsite_dense, atol=atol_decompose)
-    #print(H_bos_onsite)
     H_bf_loc = dense_to_sparse_pauliop(H_bf_loc_dense, atol=atol_decompose)
-    #print(H_bf_loc)
+
+    if logger is not None and logger.isEnabledFor(logging.DEBUG) and log_pauli_terms:
+        log_paulis(logger, "H_bos_onsite (Pauli decomposition)", H_bos_onsite,
+                    max_terms=pauli_max_terms, sort_by_abs=pauli_sort_by_abs)
+        log_paulis(logger, "H_bf_loc (Pauli decomposition)", H_bf_loc,
+                    max_terms=pauli_max_terms, sort_by_abs=pauli_sort_by_abs)
 
     # two-site hopping
     H_hop_dense = build_hopping_block(cutoff, a=a, m=m)
     H_hop = dense_to_sparse_pauliop(H_hop_dense, atol=atol_decompose)
-    #print(H_hop)
+    
+    # if logger is not None:
+    #     log_matrix(logger, "H_hop_dense (2-site)", H_hop_dense)
+    if logger is not None and logger.isEnabledFor(logging.DEBUG) and log_pauli_terms:
+        log_paulis(logger, "H_hop (2-site Pauli decomposition)", H_hop,
+                    max_terms=pauli_max_terms, sort_by_abs=pauli_sort_by_abs)
 
     # bosonic gradient + potential-gradient building blocks
     q_site, _, _, _ = single_site_operators(cutoff, m=m)
@@ -201,39 +231,58 @@ def build_wz_hamiltonian(cutoff, N, a, c=0.0, m=1.0,
     qq_dense = np.kron(q_site, q_site)              # q X q
     Wp_q_dense = np.kron(W_prime_site, q_site)      # W'(q) X q
 
+    # if logger is not None:
+    #     log_matrix(logger, "q2_site (dense)", q2_site)
+    #     log_matrix(logger, "qq_dense (2-site)", qq_dense)
+    #     log_matrix(logger, "Wp_q_dense (2-site)", Wp_q_dense)
+
     H_q2 = dense_to_sparse_pauliop(q2_site, atol=atol_decompose)
-    #print(H_q2)
     H_qq = dense_to_sparse_pauliop(qq_dense, atol=atol_decompose)
-    #print(H_qq)
     H_Wp_q = dense_to_sparse_pauliop(Wp_q_dense, atol=atol_decompose)
-    #print(H_Wp_q)
+    
+    if logger is not None and logger.isEnabledFor(logging.DEBUG) and log_pauli_terms:
+        log_paulis(logger, "H_q2 (Pauli decomposition)", H_q2,
+                    max_terms=pauli_max_terms, sort_by_abs=pauli_sort_by_abs)
+        log_paulis(logger, "H_qq (2-site Pauli decomposition)", H_qq,
+                    max_terms=pauli_max_terms, sort_by_abs=pauli_sort_by_abs)
+        log_paulis(logger, "H_Wp_q (2-site Pauli decomposition)", H_Wp_q,
+                    max_terms=pauli_max_terms, sort_by_abs=pauli_sort_by_abs)
 
     # assemble for all sites
     H_total = zero_sparse_pauliop(n_total_qubits) # initiate full H as 0.0 x III...I
-    #print(H_total)
+
+    def add_embedded(step_name: str, local_op: SparsePauliOp, sites: list[int], scale: float):
+        nonlocal H_total
+        embedded = embed_sparse_pauliop_on_sites(local_op, sites, n_site, N)
+
+        if logger is not None:
+            logger.info(f"[ADD] {step_name}: sites={sites}, scale={scale:+g}")
+            if logger.isEnabledFor(logging.DEBUG) and log_pauli_terms:
+                log_paulis(logger, f"Embedded {step_name} -> sites={sites}", embedded,
+                            max_terms=pauli_max_terms, sort_by_abs=pauli_sort_by_abs)
+
+        H_total = H_total + (scale * embedded)
+
+        if logger is not None and log_running_total and logger.isEnabledFor(logging.DEBUG) and log_pauli_terms:
+            log_paulis(logger, f"Running H_total after {step_name} sites={sites}", H_total,
+                        max_terms=pauli_max_terms, sort_by_abs=pauli_sort_by_abs)
 
     # On-site: sum_n [ H_bos_onsite(n) + (-1)^n H_bf(n) ]
     for n in range(N):
-        #print(n)
-        H_total = H_total + embed_sparse_pauliop_on_sites(H_bos_onsite, [n], n_site, N)
-        #print(H_total)
-        H_total = H_total + ((-1) ** n) * embed_sparse_pauliop_on_sites(H_bf_loc, [n], n_site, N)
-        #print(H_total)
+        add_embedded("H_bos_onsite", H_bos_onsite, [n], scale=1.0)
+        add_embedded("H_bf_loc * (-1)^n", H_bf_loc, [n], scale=float((-1) ** n))
 
     # Hopping
     if boundary_condition == "periodic":
         min_N_for_grad = 1
         for n in range(N):
             n_next = (n + 1) % N
-            sign = -1.0 if (n == N - 1) else 1.0
-            H_total = H_total + sign * embed_sparse_pauliop_on_sites(H_hop, [n, n_next], n_site, N)
+            sign = -1.0 if (n == N - 1) else 1.0  # anti-periodic on the wrap link only
+            add_embedded("H_hop", H_hop, [n, n_next], scale=float(sign))
     else:  # dirichlet
         min_N_for_grad = 2
-        #print(H_total)
         for n in range(N - 1):
-            #print(n)
-            H_total = H_total + embed_sparse_pauliop_on_sites(H_hop, [n, n + 1], n_site, N)
-            #print(H_total)
+            add_embedded("H_hop", H_hop, [n, n + 1], scale=1.0)
 
     # Gradient + potential-gradient
     if N >= min_N_for_grad:
@@ -250,102 +299,32 @@ def build_wz_hamiltonian(cutoff, N, a, c=0.0, m=1.0,
 
             # (a/2) g_n^2 = 1/(8a)(q_{n+1}^2 + q_{n-1}^2 - 2 q_{n+1} q_{n-1})
             if np1 is not None:
-                H_total = H_total + (1.0 / (8.0 * a)) * embed_sparse_pauliop_on_sites(H_q2, [np1], n_site, N)
+                add_embedded("g^2: + q^2(np1)", H_q2, [np1], scale=float(1.0 / (8.0 * a)))
             if nm1 is not None:
-                H_total = H_total + (1.0 / (8.0 * a)) * embed_sparse_pauliop_on_sites(H_q2, [nm1], n_site, N)
+                add_embedded("g^2: + q^2(nm1)", H_q2, [nm1], scale=float(1.0 / (8.0 * a)))
             if (np1 is not None) and (nm1 is not None):
-                H_total = H_total + (-1.0 / (4.0 * a)) * embed_sparse_pauliop_on_sites(H_qq, [nm1, np1], n_site, N)
+                add_embedded("g^2: - 2 q(nm1)q(np1)", H_qq, [nm1, np1], scale=float(-1.0 / (4.0 * a)))
 
             # a W'(q_n) g_n = 0.5( W'(q_n) q_{n+1} - W'(q_n) q_{n-1} )
             if np1 is not None:
-                H_total = H_total + 0.5 * embed_sparse_pauliop_on_sites(H_Wp_q, [n, np1], n_site, N)
+                add_embedded("Wp*g: + Wp(n) q(np1)", H_Wp_q, [n, np1], scale=0.5)
             if nm1 is not None:
-                H_total = H_total + (-0.5) * embed_sparse_pauliop_on_sites(H_Wp_q, [n, nm1], n_site, N)
+                add_embedded("Wp*g: - Wp(n) q(nm1)", H_Wp_q, [n, nm1], scale=-0.5)
 
     # Simplify
+    if logger is not None:
+        log_paulis(logger, "H before simplify", H_total,
+                        max_terms=pauli_max_terms, sort_by_abs=pauli_sort_by_abs)
+        logger.info("[SIMPLIFY] simplifying H_total")
+
     H_total = H_total.simplify(atol=atol_simplify)
 
+    if logger is not None:
+        log_paulis(logger, "Final H", H_total,
+                        max_terms=pauli_max_terms, sort_by_abs=pauli_sort_by_abs)
+
+    if logger is not None:
+        logger.info("=== build_wz_hamiltonian end ===")
+
     return H_total, n_total_qubits
-
-
-
-
-############################################################################################################################################################
-#  Create reduced sparse matrix from pauli terms and bitstrings
-############################################################################################################################################################
-def apply_pauli_to_bitstring(pauli_str, bitstring):
-    """
-    Qiskit convention:
-      - rightmost char of pauli_str acts on qubit 0
-      - rightmost bit of bitstring is qubit 0
-    """
-
-    phase = 1.0 + 0.0j
-    out = list(bitstring)
-    n = len(bitstring)
-
-    # qubit q corresponds to index -(q+1)
-    for q in range(n):
-        idx = n - 1 - q
-        p = pauli_str[idx]
-        b = 1 if bitstring[idx] == "1" else 0
-
-        if p == "I":
-            continue
-        elif p == "X":
-            out[idx] = "0" if b else "1"
-        elif p == "Z":
-            if b:
-                phase *= -1
-        elif p == "Y":
-            out[idx] = "0" if b else "1"
-            phase *= (1j if b == 0 else -1j)  # Y|0>=i|1>, Y|1>=-i|0>
-        else:
-            raise ValueError(f"Bad Pauli char '{p}' at qubit {q}")
-
-    return phase, "".join(out)
-
-
-
-def reduced_sparse_matrix_from_pauli_terms(pauli_terms, basis_states):
-    """
-    Build reduced Hamiltonian as a sparse matrix from Pauli terms.
-
-    pauli_terms: list of (coeff, pauli_str)
-        e.g. [(0.5, "ZIIII"), (-1.2, "XXIYZ"), ...]
-    basis_states: list of bitstrings, all same length n
-        e.g. ["10001","00001"]
-    """
-
-    m = len(basis_states)
-
-    # Map bitstring -> basis index
-    idx = {s: i for i, s in enumerate(basis_states)}
-
-    # Lists for COO data
-    rows = []
-    cols = []
-    data = []
-
-    for coeff, pstr in pauli_terms:
-        for ket in basis_states:
-            phase, out_state = apply_pauli_to_bitstring(pstr, ket)
-            if out_state in idx:
-                i = idx[out_state]   # row index  (bra = out_state)
-                j = idx[ket]         # column index (ket)
-                value = coeff * phase
-
-                # Store non-zero contribution
-                if value != 0:
-                    rows.append(i)
-                    cols.append(j)
-                    data.append(value)
-
-    # Build sparse matrix
-    H_red_coo = coo_matrix((data, (rows, cols)),
-                           shape=(m, m),
-                           dtype=np.complex128)
-    H_red = H_red_coo.tocsr()
-
-    return H_red
 
