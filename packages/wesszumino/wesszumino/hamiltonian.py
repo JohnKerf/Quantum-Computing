@@ -1,26 +1,13 @@
-"""
-Qiskit-only Wess–Zumino Hamiltonian construction.
-
-This module is a drop-in replacement for the *Hamiltonian creation* parts of
-`hamiltonian.py`, eliminating any PennyLane dependency.
-
-Key output:
-    build_wz_hamiltonian_qiskit(...) -> (SparsePauliOp, n_total_qubits)
-
-Notes on Pauli string conventions:
-- Qiskit Pauli labels are big-endian: the *rightmost* character acts on qubit 0.
-- If you have bitstrings where the *leftmost* bit is qubit 0, reverse labels.
-"""
-
 from __future__ import annotations
 
 import numpy as np
 from math import log2
-from typing import Iterable, Tuple, List
+from typing import Tuple
 from scipy.sparse import coo_matrix
 from qiskit.quantum_info import Operator, SparsePauliOp, PauliList
 
-def zero_sparse_pauliop(n_qubits: int) -> SparsePauliOp:
+# create a 0 sparse pauli op
+def zero_sparse_pauliop(n_qubits):
     return SparsePauliOp(PauliList(["I" * n_qubits]), [0.0], ignore_pauli_phase=True)
 
 
@@ -28,8 +15,8 @@ def zero_sparse_pauliop(n_qubits: int) -> SparsePauliOp:
 # 1) Single-site HO matrices (boson) and fermion operators
 # =============================================================================
 
-def create_matrix(cutoff: int, kind: str, m: float = 1.0) -> np.ndarray:
-    """Return q or p in the HO Fock basis up to 'cutoff'."""
+def create_matrix(cutoff, kind, m = 1.0):
+    """ q & p in the HO Fock basis up to cutoff."""
     mat = np.zeros((cutoff, cutoff), dtype=np.complex128)
     for i in range(cutoff):
         if i > 0:
@@ -45,8 +32,8 @@ def create_matrix(cutoff: int, kind: str, m: float = 1.0) -> np.ndarray:
     return mat
 
 
-def single_site_operators(cutoff: int, m: float = 1.0) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Return q_site, p_site, chi_site, chi_dag_site on H_site = H_f ⊗ H_b."""
+def single_site_operators(cutoff, m = 1.0):
+    
     q_b = create_matrix(cutoff, "q", m=m)
     p_b = create_matrix(cutoff, "p", m=m)
     I_b = np.eye(cutoff, dtype=np.complex128)
@@ -68,18 +55,12 @@ def single_site_operators(cutoff: int, m: float = 1.0) -> Tuple[np.ndarray, np.n
 # 2) Local dense blocks (1-site, 2-site)
 # =============================================================================
 
-def build_onsite_blocks(
-    cutoff: int,
-    a: float,
-    potential: str = "linear",
-    c: float = 0.0,
-    m: float = 1.0,
-) -> Tuple[np.ndarray, np.ndarray]:
+def build_onsite_blocks(cutoff, a, potential="linear", c=0.0, m=1.0):
     """
-    Build single-site dense blocks (acting on H_site):
+    Build single-site dense blocks:
 
-      H_bos_onsite = p^2/(2a) + (a/2) W'(q)^2
-      H_bf_loc     = (n_f - 1/2 I) W''(q)   (WITHOUT (-1)^n)
+    H_bos_onsite = p^2/(2a) + (a/2) W'(q)^2
+    H_bf_loc     = (n_f - 1/2 I) W''(q)
     """
     q_site, p_site, chi_site, chi_dag_site = single_site_operators(cutoff, m=m)
     D = q_site.shape[0]
@@ -108,13 +89,13 @@ def build_onsite_blocks(
     return H_bos_onsite, H_bf_loc
 
 
-def build_hopping_block(cutoff: int, a: float = 1.0, m: float = 1.0) -> np.ndarray:
+def build_hopping_block(cutoff, a=1.0, m=1.0):
     """
     Two-site fermion hopping block on H_site⊗H_site:
 
-      H_hop = 0.5 (chi_n^† chi_{n+1} + chi_{n+1}^† chi_n)
+    H_hop = 0.5 (chi_ndag chi_{n+1} + chi_{n+1}dag chi_n)
 
-    (No periodic sign here; apply -1 on the wrap link during assembly.)
+    No anti-periodic sign here apply -1 later.
     """
     q_site, p_site, chi_site, chi_dag_site = single_site_operators(cutoff, m=m)
     D = q_site.shape[0]
@@ -130,41 +111,30 @@ def build_hopping_block(cutoff: int, a: float = 1.0, m: float = 1.0) -> np.ndarr
 
 
 # =============================================================================
-# 3) Dense -> SparsePauliOp + embedding on lattice sites (Qiskit-only)
+# 3) Dense -> SparsePauliOp + embedding on lattice sites
 # =============================================================================
 
-def dense_to_sparse_pauliop(H_dense: np.ndarray, atol: float = 1e-12) -> SparsePauliOp:
-    """
-    Convert dense block into a Qiskit SparsePauliOp.
-    """
+def dense_to_sparse_pauliop(H_dense, atol = 1e-12):
     op = Operator(H_dense)
     sp = SparsePauliOp.from_operator(op, atol=atol)
     return sp
 
 
-def embed_sparse_pauliop_on_sites(
-    H_block: SparsePauliOp,
-    sites: List[int],
-    n_site: int,
-    N: int,
-) -> SparsePauliOp:
+def embed_sparse_pauliop_on_sites(H_block, sites,n_site,N):
     """
-    Embed a local SparsePauliOp (defined on len(sites)*n_site qubits) onto a
-    full lattice with N sites and n_site qubits per site.
+    Embed a local SparsePauliOp onto a full lattice with N sites and n_site qubits per site.
 
     qiskit qubit ordering means rightmost char acts on q0 and leftmost qn
     e.g. ZIX, q2=Z, q1=I and q0=X
 
     sites examples:
-      [n] (1-site), [n, n+1] (2-site)
+    [n] (1-site), [n, n+1] (2-site)
 
     Global qubit index convention:
-      global_qubit = site*n_site + local_in_site
+    global_qubit = site*n_site + local_in_site
     """
     n_total = N * n_site
     n_block = len(sites) * n_site
-    if H_block.num_qubits != n_block:
-        raise ValueError(f"H_block has {H_block.num_qubits} qubits, expected {n_block}.")
 
     labels = H_block.paulis.to_labels()
     coeffs = H_block.coeffs
@@ -190,46 +160,21 @@ def embed_sparse_pauliop_on_sites(
     return SparsePauliOp(PauliList(out_labels), out_coeffs, ignore_pauli_phase=True)
 
 
-def strip_zero_terms_sparse(op: SparsePauliOp, tol: float = 1e-12) -> SparsePauliOp:
-    """Drop (near-)zero coefficients from a SparsePauliOp."""
-    keep = np.abs(op.coeffs) > tol
-    if not np.any(keep):
-        return SparsePauliOp(["I" * op.num_qubits], [0.0])
-    return SparsePauliOp(op.paulis[keep], op.coeffs[keep], ignore_pauli_phase=True)
-
 
 # =============================================================================
 # 4) WZ Hamiltonian (periodic/dirichlet BC)
 # =============================================================================
 
-def build_wz_hamiltonian(
-    cutoff: int,
-    N: int,
-    a: float,
-    c: float = 0.0,
-    m: float = 1.0,
-    potential: str = "linear",
-    boundary_condition: str = "periodic",
-    remove_zero_terms: bool = True,
-    atol_decompose: float = 1e-12,
-    atol_simplify: float = 1e-12,
-) -> Tuple[SparsePauliOp, int]:
+def build_wz_hamiltonian(cutoff, N, a, c=0.0, m=1.0, 
+                         potential="linear", boundary_condition="periodic", 
+                         atol_decompose=1e-12, atol_simplify=1e-12, remove_zero_terms=True):
     """
     Build the Wess–Zumino Hamiltonian as a Qiskit SparsePauliOp using
     only local blocks (1-site and 2-site).
-
-    Returns
-    -------
-    H_total : SparsePauliOp
-    n_total_qubits : int
     """
-    if boundary_condition not in ("periodic", "dirichlet"):
-        raise ValueError("boundary_condition must be 'periodic' or 'dirichlet'.")
 
-    # ---- single-site blocks ----
-    H_bos_onsite_dense, H_bf_loc_dense = build_onsite_blocks(
-        cutoff, a, potential=potential, c=c, m=m
-    )
+    # single-site blocks
+    H_bos_onsite_dense, H_bf_loc_dense = build_onsite_blocks(cutoff, a, potential=potential, c=c, m=m)
     D_site = H_bos_onsite_dense.shape[0]
     n_site = int(log2(D_site))
     n_total_qubits = N * n_site
@@ -239,12 +184,12 @@ def build_wz_hamiltonian(
     H_bf_loc = dense_to_sparse_pauliop(H_bf_loc_dense, atol=atol_decompose)
     #print(H_bf_loc)
 
-    # ---- two-site hopping ----
+    # two-site hopping
     H_hop_dense = build_hopping_block(cutoff, a=a, m=m)
     H_hop = dense_to_sparse_pauliop(H_hop_dense, atol=atol_decompose)
     #print(H_hop)
 
-    # ---- bosonic gradient + potential-gradient building blocks ----
+    # bosonic gradient + potential-gradient building blocks
     q_site, _, _, _ = single_site_operators(cutoff, m=m)
     I_site = np.eye(D_site, dtype=np.complex128)
 
@@ -256,8 +201,8 @@ def build_wz_hamiltonian(
         raise ValueError("potential must be 'linear' or 'quadratic'")
 
     q2_site = q_site @ q_site
-    qq_dense = np.kron(q_site, q_site)              # q ⊗ q
-    Wp_q_dense = np.kron(W_prime_site, q_site)      # W'(q) ⊗ q
+    qq_dense = np.kron(q_site, q_site)              # q X q
+    Wp_q_dense = np.kron(W_prime_site, q_site)      # W'(q) X q
 
     H_q2 = dense_to_sparse_pauliop(q2_site, atol=atol_decompose)
     #print(H_q2)
@@ -266,8 +211,8 @@ def build_wz_hamiltonian(
     H_Wp_q = dense_to_sparse_pauliop(Wp_q_dense, atol=atol_decompose)
     #print(H_Wp_q)
 
-    # ---- assemble ----
-    H_total = zero_sparse_pauliop(n_total_qubits)
+    # assemble for all sites
+    H_total = zero_sparse_pauliop(n_total_qubits) # initiate full H as 0.0 x III...I
     #print(H_total)
 
     # On-site: sum_n [ H_bos_onsite(n) + (-1)^n H_bf(n) ]
@@ -287,11 +232,11 @@ def build_wz_hamiltonian(
             H_total = H_total + sign * embed_sparse_pauliop_on_sites(H_hop, [n, n_next], n_site, N)
     else:  # dirichlet
         min_N_for_grad = 2
-        print(H_total)
+        #print(H_total)
         for n in range(N - 1):
-            print(n)
+            #print(n)
             H_total = H_total + embed_sparse_pauliop_on_sites(H_hop, [n, n + 1], n_site, N)
-            print(H_total)
+            #print(H_total)
 
     # Gradient + potential-gradient
     if N >= min_N_for_grad:
@@ -320,10 +265,8 @@ def build_wz_hamiltonian(
             if nm1 is not None:
                 H_total = H_total + (-0.5) * embed_sparse_pauliop_on_sites(H_Wp_q, [n, nm1], n_site, N)
 
-    # Simplify + drop zeros
+    # Simplify
     H_total = H_total.simplify(atol=atol_simplify)
-    if remove_zero_terms:
-        H_total = strip_zero_terms_sparse(H_total, tol=atol_simplify)
 
     return H_total, n_total_qubits
 
@@ -338,8 +281,6 @@ def apply_pauli_to_bitstring(pauli_str, bitstring):
     Qiskit convention:
       - rightmost char of pauli_str acts on qubit 0
       - rightmost bit of bitstring is qubit 0
-    Returns:
-        phase (complex), out_bitstring (str)
     """
 
     phase = 1.0 + 0.0j
@@ -371,19 +312,14 @@ def apply_pauli_to_bitstring(pauli_str, bitstring):
 
 def reduced_sparse_matrix_from_pauli_terms(pauli_terms, basis_states):
     """
-    Build reduced Hamiltonian as a sparse matrix from explicit Pauli terms.
+    Build reduced Hamiltonian as a sparse matrix from Pauli terms.
 
     pauli_terms: list of (coeff, pauli_str)
         e.g. [(0.5, "ZIIII"), (-1.2, "XXIYZ"), ...]
     basis_states: list of bitstrings, all same length n
-        e.g. top_states from counts
-
-    Returns
-    -------
-    H_red : scipy.sparse.csr_matrix (complex)
-        Reduced Hamiltonian in the basis given by basis_states
+        e.g. ["10001","00001"]
     """
-    # Clean basis states
+
     m = len(basis_states)
 
     # Map bitstring -> basis index
