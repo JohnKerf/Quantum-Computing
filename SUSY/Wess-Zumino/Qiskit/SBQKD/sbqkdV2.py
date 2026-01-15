@@ -13,15 +13,11 @@ from qiskit_aer.noise import NoiseModel
 from qiskit_ibm_runtime import SamplerV2 as Sampler, QiskitRuntimeService
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 from qiskit.quantum_info import PauliList, SparsePauliOp
-
 from scipy.sparse.linalg import eigsh
 
 import wesszumino as wz
 
-import git
-repo_path = git.Repo('.', search_parent_directories=True).working_tree_dir
-
-path = os.path.join(repo_path, r"open-apikey.json")
+path = os.path.join( r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\open-apikey.json")
 #path = r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\apikey.json"
 with open(path, encoding="utf-8") as f:
     api_key = json.load(f).get("apikey")
@@ -51,6 +47,7 @@ def setup_logger(logfile_path, name, enabled=True):
         handler.setFormatter(formatter)
         logger.addHandler(handler)
     return logger
+
 
 
 
@@ -144,9 +141,15 @@ def create_circuit(backend, avqe_circuit, optimization_level, basis_state, num_q
 
     target = backend.target
     pm = generate_preset_pass_manager(target=target, optimization_level=optimization_level)
-    circuit_isa = pm.run(qc)
+    try:
+        circuit_isa = pm.run(qc)
+    except:
+        pm = generate_preset_pass_manager(target=target, optimization_level=optimization_level, translation_method="synthesis")
+        circuit_isa = pm.run(qc)
 
-    return circuit_isa
+    
+
+    return circuit_isa, circuit_cost_metrics(circuit_isa)
 
 
 def get_counts(sampler, qc, shots):
@@ -187,6 +190,61 @@ def filter_counts_by_fermion_number(
 
 
 
+
+def circuit_cost_metrics(qc):
+
+    ops = qc.count_ops()
+    ops_str = {str(k): int(v) for k, v in ops.items()}
+    n2q = sum(1 for ci in qc.data if ci.operation.num_qubits == 2 and ci.operation.name not in {"barrier", "measure"})
+
+    return {
+        "depth": qc.depth(),
+        "size": qc.size(),
+        "num_2q_ops": n2q,
+        "count_ops": ops_str,
+    }
+
+
+
+def truncate_by_mass(pauli_coeffs, pauli_labels, keep_mass=0.999, norm="l1", min_keep=64):
+    c = np.asarray(pauli_coeffs, dtype=np.complex128)
+    lab = np.asarray(pauli_labels)
+
+    abs_c = np.abs(c)
+    order = np.argsort(abs_c)[::-1]
+    abs_sorted = abs_c[order]
+
+    if norm == "l1":
+        w = abs_sorted
+    elif norm == "l2":
+        w = abs_sorted**2
+    else:
+        raise ValueError("norm must be 'l1' or 'l2'")
+
+    cum = np.cumsum(w)
+    total = float(cum[-1])
+    target = keep_mass * total
+
+    m = int(np.searchsorted(cum, target, side="left") + 1)
+    m = max(m, int(min_keep))
+    m = min(m, len(c))
+
+    keep_idx = order[:m]
+    tail = float(total - cum[m-1])
+
+    info = {
+        "m": m,
+        "n": len(c),
+        "keep_frac_terms": m / len(c),
+        "keep_mass": keep_mass,
+        "tail_mass": tail,
+        "total_mass": total,
+        "norm": norm,
+    }
+    return c[keep_idx], lab[keep_idx], info
+
+
+
 if __name__ == "__main__":
     starttime = datetime.now()
 
@@ -194,15 +252,15 @@ if __name__ == "__main__":
     seed = (os.getpid() * int(time.time())) % 123456789
 
         
-    N = 6
+    N = 3
     a = 1.0
     c = -0.2
     potential = "linear"
     boundary_condition = 'dirichlet'
-    cutoff = 2 
+    #cutoff = 16
 
     # trimming
-    CONSERVE_FERMIONS = False
+    CONSERVE_FERMIONS = True
     TRIM_STATES = False
     P_KEEP = 0.995
 
@@ -226,12 +284,18 @@ if __name__ == "__main__":
     optimization_level = 3
     resilience_level = 2 # 1 = readout , 2 = readout + gate
 
-    n_steps=2
     dt=3.0
+    dt_slice_max=1.0
     max_k = 40
-    tol = 1e-12
+    tol = 1e-8
 
-    for cutoff in [2,4]:
+    keep_mass = 0.999 #l2 #l1 = 0.85
+    min_keep = 64
+    norm="l2"
+
+    for cutoff in [8]:
+
+        print(f"Running for {potential} and cutoff {cutoff}")
 
         #tags=["Open-access", "SBQKD", f"shots:{shots}", f"{boundary_condition}", f"{potential}", f"N={N}", f"cutoff={cutoff}"]
         tags=["NQCC-Q4", "SBQKD", f"shots:{shots}", f"{boundary_condition}", f"{potential}", f"N={N}", f"cutoff={cutoff}"]
@@ -242,8 +306,8 @@ if __name__ == "__main__":
         else:
             folder = 'N'+ str(N)
 
-        #base_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\Qiskit\SBQKD", backend_name, boundary_condition, potential, folder, starttime.strftime("%Y-%m-%d_%H-%M-%S"))
-        base_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\Qiskit\SBQKD\AnsatzComp\Full",boundary_condition, potential, folder)
+        #base_path = os.path.join(r"/users/johnkerf/fastscratch/Data/WessZumino/SBQKD/Files", backend_name, boundary_condition, potential, folder, starttime.strftime("%Y-%m-%d_%H-%M-%S"))
+        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\Qiskit\SBQKD\test", boundary_condition, potential, folder)#, starttime.strftime("%Y-%m-%d_%H-%M-%S"))
         os.makedirs(base_path, exist_ok=True)
         log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
 
@@ -254,13 +318,20 @@ if __name__ == "__main__":
 
         if log_enabled: logger.info(f"Running VQE for {potential} potential and cutoff {cutoff}")
 
-        H_path = os.path.join(repo_path, r"SUSY\Wess-Zumino\Analyses\Model Checks\HamiltonianData", boundary_condition, potential, folder, f"{potential}_{cutoff}.json")
+        H_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\Analyses\Model Checks\HamiltonianData", boundary_condition, potential, folder, f"{potential}_{cutoff}.json")
         with open(H_path, 'r') as file:
             H_data = json.load(file)
 
         pauli_coeffs = H_data["pauli_coeffs"]
         pauli_labels = H_data["pauli_labels"]
-        H_pauli = SparsePauliOp(PauliList(pauli_labels), pauli_coeffs)
+
+        kept_coeffs, kept_labels, trunc_info = truncate_by_mass(pauli_coeffs, pauli_labels, keep_mass=keep_mass, norm=norm, min_keep=min_keep)
+
+        H_pauli = SparsePauliOp(PauliList(kept_labels.tolist()), kept_coeffs.tolist())
+
+        if log_enabled:
+            logger.info(f"Truncation: {trunc_info}")
+
         pauli_terms = list(zip(pauli_coeffs, pauli_labels))
 
         num_qubits = H_data['num_qubits']
@@ -275,9 +346,7 @@ if __name__ == "__main__":
         fermion_qubits = [(s + 1) * qps - 1 for s in range(N)]
         num_fermions = sum(basis_state[q] for q in fermion_qubits)
 
-        converged=False
         samples = Counter()
-        prev_energy = np.inf
 
         all_data = []
         all_counts = []
@@ -289,17 +358,32 @@ if __name__ == "__main__":
         sampler_options = dataclasses.asdict(sampler.options)
         if log_enabled: logger.info(json.dumps(sampler_options, indent=4, default=str))
 
-        avqe_circuit = wz.build_avqe_pattern_ansatz(N=N, cutoff=cutoff, include_basis=True, include_rys=True, include_xxyys=True)
+        include_basis=True
+        include_rys=True
+        include_xxyys=True
+        avqe_circuit = wz.build_avqe_pattern_ansatz(N=N, cutoff=cutoff, include_basis=include_basis, include_rys=include_rys, include_xxyys=include_xxyys)
 
         k=1
+        n_steps = 1
+
+
+        trotter_patience = 2
+        energy_patience = 3        
+        max_n_steps = 3
+        patience_count = 0  
+        trotter_patience_count = 0         
+        prev_energy = None           
+        converged = False
+
+
         while not converged and k <= max_k:
 
             if log_enabled: logger.info(f"Running for Krylov dimension {k}")
             print(f"Running for Krylov dimension {k}")
 
             t = dt*k
-
-            qc = create_circuit(backend, avqe_circuit, optimization_level, basis_state, num_qubits, H_pauli, t, n_steps)
+            
+            qc, circuit_cost = create_circuit(backend, avqe_circuit, optimization_level, basis_state, num_qubits, H_pauli, t, n_steps)
 
             t1 = datetime.now()
             counts, job_id, job_metrics = get_counts(sampler, qc, shots) #counts are returned in binary notation i.e. q0q1...qn and not standard qiskit noation
@@ -345,16 +429,16 @@ if __name__ == "__main__":
             kept_unique = len(counts)
             kept_shots = sum(counts.values())
 
-            if log_enabled:
-                logger.info(json.dumps({
-                    "D": k,
-                    "raw_unique": raw_unique,
-                    "raw_shots": raw_shots,
-                    "postselect_rejected_shots": post_rejected,
-                    "trim_rejected_shots": trim_rejected,
-                    "kept_unique": kept_unique,
-                    "kept_shots": kept_shots,
-                }, indent=4, default=str))
+            shot_processing = {
+                "raw_unique": raw_unique,
+                "raw_shots": raw_shots,
+                "postselect_rejected_shots": post_rejected,
+                "trim_rejected_shots": trim_rejected,
+                "kept_unique": kept_unique,
+                "kept_shots": kept_shots,
+            }
+
+            if log_enabled: logger.info(json.dumps(shot_processing, indent=4, default=str))
 
             # Update global samples with the trimmed counts
             samples.update(counts)
@@ -367,40 +451,77 @@ if __name__ == "__main__":
             H_reduced = wz.reduced_sparse_matrix_from_pauli_terms(pauli_terms, top_states)
             
             t1 = datetime.now()
-            me = eigsh(H_reduced, k=1, which="SA", return_eigenvectors=False)[0].real
+            if H_reduced.shape[0] < 2000:
+                H_dense = H_reduced.todense()
+                me = np.min(np.linalg.eigvals(H_dense)).real
+                used_dense = True
+            else:
+                me = eigsh(H_reduced, k=1, which="SA", return_eigenvectors=False)[0].real
+                used_dense = False
             HRt = datetime.now() - t1
 
-            diff_prev = np.abs(prev_energy-me)
+ 
+            if prev_energy is None:
+                diff_prev = None
+            else:
+                diff_prev = float(np.abs(prev_energy - me))
+                
+            prev_energy = me
 
-            row = { "D": k,
-                    "t":t,
-                    "circuit_time": str(Ct),
-                    "num_samples": len(samples),
-                    "H_reduced_size": H_reduced.shape,
-                    "reduction": (1 - (H_reduced.shape[0] / dense_H_size[0]))*100,
-                    "H_reduced_e": me,
-                    "eigenvalue_time": str(HRt),
-                    "diff": np.abs(min_eigenvalue-me),
-                    "change_from_prev": None if diff_prev == np.inf else diff_prev
-                    }
+            row = { 
+                "D": k,
+                "t":t,
+                "num_trotter_steps": n_steps,
+                "circuit_time": str(Ct),
+                "num_samples": len(samples),
+                "shot_processing": shot_processing,
+                "H_reduced_size": H_reduced.shape,
+                "reduction": (1 - (H_reduced.shape[0] / dense_H_size[0]))*100,
+                "H_reduced_e": me,
+                "used_dense": used_dense,
+                "eigenvalue_time": str(HRt),
+                "diff": np.abs(min_eigenvalue-me),
+                "change_from_prev": diff_prev,
+                "circuit_cost": circuit_cost
+                }
             
             if log_enabled: logger.info(json.dumps(row, indent=4, default=str))
             
             all_data.append(row)
             all_energies.append(me)
 
-            converged = True if diff_prev < tol else False
-
-            if converged == False and k == max_k: 
-                if log_enabled: logger.info("max_k reached")
-                print("max_k reached")
-                break
-            elif converged == False:
-                prev_energy = me
+            if diff_prev is None:
                 k+=1
+                continue
+
+            if diff_prev < tol:
+                patience_count += 1
+                trotter_patience_count+=1
+                print(f"Energy patience {patience_count}/{energy_patience}")
             else:
-                if log_enabled: logger.info(f"Converged")
-                print("Converged")
+                patience_count = 0
+
+            if patience_count >= energy_patience:
+                converged = True
+                print("Energy converged")
+                break
+            elif k == max_k:
+                print("Max k reached")
+                break
+            else:
+                k+=1
+  
+            if trotter_patience_count >= trotter_patience:
+                n_steps +=1
+                trotter_patience_count=0
+                if n_steps > max_n_steps:
+                    print("Max trotter steps reached exiting...")
+                    break
+                else:
+                    print(f"Trotter patience reached - increasing trotter steps to {n_steps}")
+                    k+=1
+            
+            
 
         endtime = datetime.now()
 
@@ -413,6 +534,11 @@ if __name__ == "__main__":
             "noise_model_options": noise_model_options if use_noise_model else None,
             "optimization_level": optimization_level,
             "resilience_level": resilience_level,
+            "Ansatz" : {
+                        "include_basis": include_basis,
+                        "include_rys": include_rys,
+                        "include_xxyys": include_xxyys
+                        },
             "CONSERVE_FERMIONS": CONSERVE_FERMIONS,
             "TRIM_STATES": TRIM_STATES,
             "P_KEEP": P_KEEP,
@@ -431,7 +557,13 @@ if __name__ == "__main__":
             "basis": basis_state,
             "tol":tol,
             "dt":dt,
-            "n_trotter_steps":n_steps,
+            #"dt_slice_max": dt_slice_max,
+            "keep_mass": keep_mass,
+            "norm": norm,
+            "min_keep": min_keep,
+            "trunc_info": trunc_info,
+            "trotter_patience": trotter_patience,
+            #"n_trotter_steps":n_steps,
             "max_k":max_k,
             "final_k": k,
             "converged": converged,
@@ -441,7 +573,7 @@ if __name__ == "__main__":
             "QPU_usage": QPU_usage if backend_name != "Aer" else None,
             "job_info": job_info,
             "sampler_options": sampler_options,
-            "all_counts": all_counts
+            #"all_counts": all_counts
         }
 
 
@@ -450,5 +582,5 @@ if __name__ == "__main__":
 
         if log_enabled: logger.info("Done")
         print("Done")
+    
         
-            

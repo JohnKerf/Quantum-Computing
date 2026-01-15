@@ -1,0 +1,1773 @@
+{
+    "starttime": "2026-01-14_17-12-40",
+    "endtime": "2026-01-14_17-39-35",
+    "time_taken": "0:26:54.122386",
+    "backend": "Aer",
+    "use_noise_model": 0,
+    "noise_model_options": null,
+    "optimization_level": 3,
+    "resilience_level": 2,
+    "Ansatz": {
+        "include_basis": true,
+        "include_rys": true,
+        "include_xxyys": true
+    },
+    "CONSERVE_FERMIONS": true,
+    "TRIM_STATES": false,
+    "P_KEEP": 0.995,
+    "shots": 10000,
+    "tags": [
+        "NQCC-Q4",
+        "SBQKD",
+        "shots:10000",
+        "dirichlet",
+        "linear",
+        "N=5",
+        "cutoff=8"
+    ],
+    "potential": "linear",
+    "boundary_condition": "dirichlet",
+    "cutoff": 8,
+    "N": 5,
+    "a": 1.0,
+    "c": null,
+    "num_qubits": 20,
+    "num_paulis": 516,
+    "dense_H_size": [
+        1048576,
+        1048576
+    ],
+    "eigenvalues": [
+        -7.037942320404527e-08,
+        0.9999933625430827,
+        0.9999999296205625,
+        1.1180075663647582,
+        1.1180333924412273,
+        1.1180339183704402,
+        1.1180339183704657,
+        1.3228477353722976
+    ],
+    "basis": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+    ],
+    "tol": 1e-08,
+    "dt": 3.0,
+    "keep_mass": 0.999,
+    "norm": "l2",
+    "min_keep": 64,
+    "trunc_info": {
+        "m": 121,
+        "n": 516,
+        "keep_frac_terms": 0.23449612403100775,
+        "keep_mass": 0.999,
+        "tail_mass": 0.46783263635518324,
+        "total_mass": 471.84374999999943,
+        "norm": "l2"
+    },
+    "trotter_patience": 2,
+    "max_k": 40,
+    "final_k": 34,
+    "converged": false,
+    "all_energies": [
+        4.691904277469949,
+        4.691904277451342,
+        2.4543093919240495,
+        0.040278735450557705,
+        0.04026083790402633,
+        0.037739673718831336,
+        0.03773967369399818,
+        0.022427186090275004,
+        0.00032774220138345636,
+        0.0002986075390380909,
+        0.00029538418579415517,
+        0.0002828297061976511,
+        0.00024263188758936931,
+        0.0001752020224897417,
+        0.00017506155441952882,
+        0.0001621209344217878,
+        0.0001611134306374374,
+        6.353902488938305e-06,
+        6.150452305655059e-06,
+        5.929840501665117e-06,
+        2.5715502440248503e-06,
+        2.175995146899766e-06,
+        2.174904642354065e-06,
+        2.172568207181313e-06,
+        1.9270637891476997e-06,
+        1.4022649243996375e-06,
+        1.318053633475165e-06,
+        1.0928547423726868e-06,
+        8.459854221759684e-07,
+        8.300282696438901e-07,
+        8.296569966404959e-07,
+        7.656548685973696e-07,
+        6.46607182506691e-07,
+        6.434598461142641e-07
+    ],
+    "all_run_data": [
+        {
+            "D": 1,
+            "t": 3.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:01.004342",
+            "num_samples": 2618,
+            "shot_processing": {
+                "raw_unique": 2618,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 2618,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                2618,
+                2618
+            ],
+            "reduction": 99.75032806396484,
+            "H_reduced_e": 4.691904277469949,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.822589",
+            "diff": 4.6919043478493725,
+            "change_from_prev": null,
+            "circuit_cost": {
+                "depth": 221,
+                "size": 526,
+                "num_2q_ops": 321,
+                "count_ops": {
+                    "cx": 262,
+                    "u2": 78,
+                    "rz": 61,
+                    "unitary": 20,
+                    "measure": 20,
+                    "rzz": 15,
+                    "h": 14,
+                    "rxx": 11,
+                    "sxdg": 10,
+                    "u3": 9,
+                    "ryy": 8,
+                    "sx": 8,
+                    "rzx": 5,
+                    "rx": 3,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 2,
+            "t": 6.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.996948",
+            "num_samples": 4519,
+            "shot_processing": {
+                "raw_unique": 1933,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 1933,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                4519,
+                4519
+            ],
+            "reduction": 99.56903457641602,
+            "H_reduced_e": 4.691904277451342,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.442187",
+            "diff": 4.691904347830765,
+            "change_from_prev": 1.8607337892717624e-11,
+            "circuit_cost": {
+                "depth": 221,
+                "size": 526,
+                "num_2q_ops": 321,
+                "count_ops": {
+                    "cx": 262,
+                    "u2": 78,
+                    "rz": 61,
+                    "unitary": 20,
+                    "measure": 20,
+                    "rzz": 15,
+                    "h": 14,
+                    "rxx": 11,
+                    "sxdg": 10,
+                    "u3": 9,
+                    "ryy": 8,
+                    "sx": 8,
+                    "rzx": 5,
+                    "rx": 3,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 3,
+            "t": 9.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.957553",
+            "num_samples": 8130,
+            "shot_processing": {
+                "raw_unique": 4454,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 4454,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                8130,
+                8130
+            ],
+            "reduction": 99.22466278076172,
+            "H_reduced_e": 2.4543093919240495,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.045622",
+            "diff": 2.4543094623034727,
+            "change_from_prev": 2.2375948855272925,
+            "circuit_cost": {
+                "depth": 221,
+                "size": 526,
+                "num_2q_ops": 321,
+                "count_ops": {
+                    "cx": 262,
+                    "u2": 78,
+                    "rz": 61,
+                    "unitary": 20,
+                    "measure": 20,
+                    "rzz": 15,
+                    "h": 14,
+                    "rxx": 11,
+                    "sxdg": 10,
+                    "u3": 9,
+                    "ryy": 8,
+                    "sx": 8,
+                    "rzx": 5,
+                    "rx": 3,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 4,
+            "t": 12.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.785987",
+            "num_samples": 8947,
+            "shot_processing": {
+                "raw_unique": 1107,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 1107,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                8947,
+                8947
+            ],
+            "reduction": 99.14674758911133,
+            "H_reduced_e": 0.040278735450557705,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.063225",
+            "diff": 0.04027880582998091,
+            "change_from_prev": 2.414030656473492,
+            "circuit_cost": {
+                "depth": 221,
+                "size": 526,
+                "num_2q_ops": 321,
+                "count_ops": {
+                    "cx": 262,
+                    "u2": 78,
+                    "rz": 61,
+                    "unitary": 20,
+                    "measure": 20,
+                    "rzz": 15,
+                    "h": 14,
+                    "rxx": 11,
+                    "sxdg": 10,
+                    "u3": 9,
+                    "ryy": 8,
+                    "sx": 8,
+                    "rzx": 5,
+                    "rx": 3,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 5,
+            "t": 15.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:01.025750",
+            "num_samples": 10876,
+            "shot_processing": {
+                "raw_unique": 2835,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 2835,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                10876,
+                10876
+            ],
+            "reduction": 98.96278381347656,
+            "H_reduced_e": 0.04026083790402633,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.175133",
+            "diff": 0.04026090828344953,
+            "change_from_prev": 1.789754653137854e-05,
+            "circuit_cost": {
+                "depth": 221,
+                "size": 526,
+                "num_2q_ops": 321,
+                "count_ops": {
+                    "cx": 262,
+                    "u2": 78,
+                    "rz": 61,
+                    "unitary": 20,
+                    "measure": 20,
+                    "rzz": 15,
+                    "h": 14,
+                    "rxx": 11,
+                    "sxdg": 10,
+                    "u3": 9,
+                    "ryy": 8,
+                    "sx": 8,
+                    "rzx": 5,
+                    "rx": 3,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 6,
+            "t": 18.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.289185",
+            "num_samples": 14327,
+            "shot_processing": {
+                "raw_unique": 4475,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 4475,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                14327,
+                14327
+            ],
+            "reduction": 98.63367080688477,
+            "H_reduced_e": 0.037739673718831336,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.115903",
+            "diff": 0.03773974409825454,
+            "change_from_prev": 0.0025211641851949906,
+            "circuit_cost": {
+                "depth": 221,
+                "size": 526,
+                "num_2q_ops": 321,
+                "count_ops": {
+                    "cx": 262,
+                    "u2": 78,
+                    "rz": 61,
+                    "unitary": 20,
+                    "measure": 20,
+                    "rzz": 15,
+                    "h": 14,
+                    "rxx": 11,
+                    "sxdg": 10,
+                    "u3": 9,
+                    "ryy": 8,
+                    "sx": 8,
+                    "rzx": 5,
+                    "rx": 3,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 7,
+            "t": 21.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:01.070174",
+            "num_samples": 16143,
+            "shot_processing": {
+                "raw_unique": 2791,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 2791,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                16143,
+                16143
+            ],
+            "reduction": 98.46048355102539,
+            "H_reduced_e": 0.03773967369399818,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.173432",
+            "diff": 0.037739744073421386,
+            "change_from_prev": 2.4833156364589826e-11,
+            "circuit_cost": {
+                "depth": 221,
+                "size": 526,
+                "num_2q_ops": 321,
+                "count_ops": {
+                    "cx": 262,
+                    "u2": 78,
+                    "rz": 61,
+                    "unitary": 20,
+                    "measure": 20,
+                    "rzz": 15,
+                    "h": 14,
+                    "rxx": 11,
+                    "sxdg": 10,
+                    "u3": 9,
+                    "ryy": 8,
+                    "sx": 8,
+                    "rzx": 5,
+                    "rx": 3,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 8,
+            "t": 24.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:01.860095",
+            "num_samples": 17429,
+            "shot_processing": {
+                "raw_unique": 2813,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 2813,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                17429,
+                17429
+            ],
+            "reduction": 98.33784103393555,
+            "H_reduced_e": 0.022427186090275004,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:01.215053",
+            "diff": 0.022427256469698207,
+            "change_from_prev": 0.015312487603723175,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 9,
+            "t": 27.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:01.863987",
+            "num_samples": 17664,
+            "shot_processing": {
+                "raw_unique": 585,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 585,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                17664,
+                17664
+            ],
+            "reduction": 98.3154296875,
+            "H_reduced_e": 0.00032774220138345636,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:03.360536",
+            "diff": 0.0003278125808066604,
+            "change_from_prev": 0.022099443888891547,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 10,
+            "t": 30.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:01.837093",
+            "num_samples": 21213,
+            "shot_processing": {
+                "raw_unique": 5026,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 5026,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                21213,
+                21213
+            ],
+            "reduction": 97.97697067260742,
+            "H_reduced_e": 0.0002986075390380909,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.461277",
+            "diff": 0.00029867791846129493,
+            "change_from_prev": 2.9134662345365453e-05,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 11,
+            "t": 33.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:01.976922",
+            "num_samples": 25211,
+            "shot_processing": {
+                "raw_unique": 5778,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 5778,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                25211,
+                25211
+            ],
+            "reduction": 97.5956916809082,
+            "H_reduced_e": 0.00029538418579415517,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.357487",
+            "diff": 0.0002954545652173592,
+            "change_from_prev": 3.223353243935736e-06,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 12,
+            "t": 36.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:01.857480",
+            "num_samples": 29849,
+            "shot_processing": {
+                "raw_unique": 7242,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 7242,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                29849,
+                29849
+            ],
+            "reduction": 97.15337753295898,
+            "H_reduced_e": 0.0002828297061976511,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.332735",
+            "diff": 0.0002829000856208551,
+            "change_from_prev": 1.2554479596504073e-05,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 13,
+            "t": 39.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:01.886274",
+            "num_samples": 31615,
+            "shot_processing": {
+                "raw_unique": 4566,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 4566,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                31615,
+                31615
+            ],
+            "reduction": 96.98495864868164,
+            "H_reduced_e": 0.00024263188758936931,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.436126",
+            "diff": 0.00024270226701257337,
+            "change_from_prev": 4.019781860828178e-05,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 14,
+            "t": 42.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:00.744340",
+            "num_samples": 34105,
+            "shot_processing": {
+                "raw_unique": 5789,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 5789,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                34105,
+                34105
+            ],
+            "reduction": 96.74749374389648,
+            "H_reduced_e": 0.0001752020224897417,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.567573",
+            "diff": 0.00017527240191294577,
+            "change_from_prev": 6.74298650996276e-05,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 15,
+            "t": 45.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:01.923376",
+            "num_samples": 36099,
+            "shot_processing": {
+                "raw_unique": 5004,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 5004,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                36099,
+                36099
+            ],
+            "reduction": 96.55733108520508,
+            "H_reduced_e": 0.00017506155441952882,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.895263",
+            "diff": 0.00017513193384273288,
+            "change_from_prev": 1.4046807021288752e-07,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 16,
+            "t": 48.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:01.854746",
+            "num_samples": 38040,
+            "shot_processing": {
+                "raw_unique": 5574,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 5574,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                38040,
+                38040
+            ],
+            "reduction": 96.37222290039062,
+            "H_reduced_e": 0.0001621209344217878,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.573312",
+            "diff": 0.00016219131384499186,
+            "change_from_prev": 1.2940619997741022e-05,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 17,
+            "t": 51.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:01.553933",
+            "num_samples": 38210,
+            "shot_processing": {
+                "raw_unique": 1458,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 1458,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                38210,
+                38210
+            ],
+            "reduction": 96.35601043701172,
+            "H_reduced_e": 0.0001611134306374374,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.564875",
+            "diff": 0.00016118381006064147,
+            "change_from_prev": 1.0075037843503898e-06,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 18,
+            "t": 54.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:00.131238",
+            "num_samples": 38520,
+            "shot_processing": {
+                "raw_unique": 1360,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 1360,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                38520,
+                38520
+            ],
+            "reduction": 96.32644653320312,
+            "H_reduced_e": 6.353902488938305e-06,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:01.046248",
+            "diff": 6.42428191214235e-06,
+            "change_from_prev": 0.0001547595281484991,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 19,
+            "t": 57.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:00.143904",
+            "num_samples": 39250,
+            "shot_processing": {
+                "raw_unique": 3139,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 3139,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                39250,
+                39250
+            ],
+            "reduction": 96.25682830810547,
+            "H_reduced_e": 6.150452305655059e-06,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.947427",
+            "diff": 6.220831728859104e-06,
+            "change_from_prev": 2.034501832832462e-07,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 20,
+            "t": 60.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:00.114999",
+            "num_samples": 42331,
+            "shot_processing": {
+                "raw_unique": 6296,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 6296,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                42331,
+                42331
+            ],
+            "reduction": 95.9630012512207,
+            "H_reduced_e": 5.929840501665117e-06,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.660908",
+            "diff": 6.000219924869162e-06,
+            "change_from_prev": 2.2061180398994158e-07,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 21,
+            "t": 63.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:00.267762",
+            "num_samples": 42990,
+            "shot_processing": {
+                "raw_unique": 3083,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 3083,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                42990,
+                42990
+            ],
+            "reduction": 95.90015411376953,
+            "H_reduced_e": 2.5715502440248503e-06,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.757520",
+            "diff": 2.6419296672288956e-06,
+            "change_from_prev": 3.358290257640267e-06,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 22,
+            "t": 66.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:00.182948",
+            "num_samples": 45200,
+            "shot_processing": {
+                "raw_unique": 6221,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 6221,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                45200,
+                45200
+            ],
+            "reduction": 95.68939208984375,
+            "H_reduced_e": 2.175995146899766e-06,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.991912",
+            "diff": 2.246374570103811e-06,
+            "change_from_prev": 3.9555509712508446e-07,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 23,
+            "t": 69.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:00.199191",
+            "num_samples": 46247,
+            "shot_processing": {
+                "raw_unique": 4859,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 4859,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                46247,
+                46247
+            ],
+            "reduction": 95.58954238891602,
+            "H_reduced_e": 2.174904642354065e-06,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.886296",
+            "diff": 2.2452840655581105e-06,
+            "change_from_prev": 1.0905045457007053e-09,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 24,
+            "t": 72.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:00.181885",
+            "num_samples": 48879,
+            "shot_processing": {
+                "raw_unique": 7073,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 7073,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                48879,
+                48879
+            ],
+            "reduction": 95.33853530883789,
+            "H_reduced_e": 2.172568207181313e-06,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:01.178654",
+            "diff": 2.2429476303853584e-06,
+            "change_from_prev": 2.3364351727520436e-09,
+            "circuit_cost": {
+                "depth": 440,
+                "size": 1024,
+                "num_2q_ops": 640,
+                "count_ops": {
+                    "cx": 524,
+                    "u2": 164,
+                    "rz": 126,
+                    "unitary": 36,
+                    "rzz": 30,
+                    "h": 25,
+                    "rxx": 23,
+                    "measure": 20,
+                    "ryy": 17,
+                    "sx": 16,
+                    "sxdg": 15,
+                    "u3": 10,
+                    "rzx": 10,
+                    "rx": 6,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 25,
+            "t": 75.0,
+            "num_trotter_steps": 3,
+            "circuit_time": "0:00:00.436042",
+            "num_samples": 49346,
+            "shot_processing": {
+                "raw_unique": 3241,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 3241,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                49346,
+                49346
+            ],
+            "reduction": 95.29399871826172,
+            "H_reduced_e": 1.9270637891476997e-06,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.688935",
+            "diff": 1.997443212351745e-06,
+            "change_from_prev": 2.455044180336134e-07,
+            "circuit_cost": {
+                "depth": 659,
+                "size": 1523,
+                "num_2q_ops": 959,
+                "count_ops": {
+                    "cx": 786,
+                    "u2": 250,
+                    "rz": 192,
+                    "unitary": 52,
+                    "rzz": 45,
+                    "h": 36,
+                    "rxx": 35,
+                    "ryy": 26,
+                    "sx": 24,
+                    "sxdg": 20,
+                    "measure": 20,
+                    "rzx": 15,
+                    "u3": 11,
+                    "rx": 9,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 26,
+            "t": 78.0,
+            "num_trotter_steps": 3,
+            "circuit_time": "0:00:00.182402",
+            "num_samples": 49483,
+            "shot_processing": {
+                "raw_unique": 1877,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 1877,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                49483,
+                49483
+            ],
+            "reduction": 95.28093338012695,
+            "H_reduced_e": 1.4022649243996375e-06,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:01.422106",
+            "diff": 1.4726443476036828e-06,
+            "change_from_prev": 5.247988647480622e-07,
+            "circuit_cost": {
+                "depth": 659,
+                "size": 1523,
+                "num_2q_ops": 959,
+                "count_ops": {
+                    "cx": 786,
+                    "u2": 250,
+                    "rz": 192,
+                    "unitary": 52,
+                    "rzz": 45,
+                    "h": 36,
+                    "rxx": 35,
+                    "ryy": 26,
+                    "sx": 24,
+                    "sxdg": 20,
+                    "measure": 20,
+                    "rzx": 15,
+                    "u3": 11,
+                    "rx": 9,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 27,
+            "t": 81.0,
+            "num_trotter_steps": 3,
+            "circuit_time": "0:00:00.181709",
+            "num_samples": 49542,
+            "shot_processing": {
+                "raw_unique": 870,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 870,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                49542,
+                49542
+            ],
+            "reduction": 95.27530670166016,
+            "H_reduced_e": 1.318053633475165e-06,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:01.220348",
+            "diff": 1.3884330566792103e-06,
+            "change_from_prev": 8.421129092447257e-08,
+            "circuit_cost": {
+                "depth": 659,
+                "size": 1523,
+                "num_2q_ops": 959,
+                "count_ops": {
+                    "cx": 786,
+                    "u2": 250,
+                    "rz": 192,
+                    "unitary": 52,
+                    "rzz": 45,
+                    "h": 36,
+                    "rxx": 35,
+                    "ryy": 26,
+                    "sx": 24,
+                    "sxdg": 20,
+                    "measure": 20,
+                    "rzx": 15,
+                    "u3": 11,
+                    "rx": 9,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 28,
+            "t": 84.0,
+            "num_trotter_steps": 3,
+            "circuit_time": "0:00:00.693760",
+            "num_samples": 51579,
+            "shot_processing": {
+                "raw_unique": 4570,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 4570,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                51579,
+                51579
+            ],
+            "reduction": 95.0810432434082,
+            "H_reduced_e": 1.0928547423726868e-06,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.910518",
+            "diff": 1.1632341655767321e-06,
+            "change_from_prev": 2.2519889110247815e-07,
+            "circuit_cost": {
+                "depth": 659,
+                "size": 1523,
+                "num_2q_ops": 959,
+                "count_ops": {
+                    "cx": 786,
+                    "u2": 250,
+                    "rz": 192,
+                    "unitary": 52,
+                    "rzz": 45,
+                    "h": 36,
+                    "rxx": 35,
+                    "ryy": 26,
+                    "sx": 24,
+                    "sxdg": 20,
+                    "measure": 20,
+                    "rzx": 15,
+                    "u3": 11,
+                    "rx": 9,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 29,
+            "t": 87.0,
+            "num_trotter_steps": 3,
+            "circuit_time": "0:00:00.148501",
+            "num_samples": 53796,
+            "shot_processing": {
+                "raw_unique": 6639,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 6639,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                53796,
+                53796
+            ],
+            "reduction": 94.86961364746094,
+            "H_reduced_e": 8.459854221759684e-07,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:01.545320",
+            "diff": 9.163648453800137e-07,
+            "change_from_prev": 2.4686932019671833e-07,
+            "circuit_cost": {
+                "depth": 659,
+                "size": 1523,
+                "num_2q_ops": 959,
+                "count_ops": {
+                    "cx": 786,
+                    "u2": 250,
+                    "rz": 192,
+                    "unitary": 52,
+                    "rzz": 45,
+                    "h": 36,
+                    "rxx": 35,
+                    "ryy": 26,
+                    "sx": 24,
+                    "sxdg": 20,
+                    "measure": 20,
+                    "rzx": 15,
+                    "u3": 11,
+                    "rx": 9,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 30,
+            "t": 90.0,
+            "num_trotter_steps": 3,
+            "circuit_time": "0:00:00.713896",
+            "num_samples": 55845,
+            "shot_processing": {
+                "raw_unique": 7371,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 7371,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                55845,
+                55845
+            ],
+            "reduction": 94.6742057800293,
+            "H_reduced_e": 8.300282696438901e-07,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:01.132493",
+            "diff": 9.004076928479354e-07,
+            "change_from_prev": 1.5957152532078288e-08,
+            "circuit_cost": {
+                "depth": 659,
+                "size": 1523,
+                "num_2q_ops": 959,
+                "count_ops": {
+                    "cx": 786,
+                    "u2": 250,
+                    "rz": 192,
+                    "unitary": 52,
+                    "rzz": 45,
+                    "h": 36,
+                    "rxx": 35,
+                    "ryy": 26,
+                    "sx": 24,
+                    "sxdg": 20,
+                    "measure": 20,
+                    "rzx": 15,
+                    "u3": 11,
+                    "rx": 9,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 31,
+            "t": 93.0,
+            "num_trotter_steps": 3,
+            "circuit_time": "0:00:00.183201",
+            "num_samples": 56822,
+            "shot_processing": {
+                "raw_unique": 4950,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 4950,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                56822,
+                56822
+            ],
+            "reduction": 94.5810317993164,
+            "H_reduced_e": 8.296569966404959e-07,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:01.557462",
+            "diff": 9.000364198445411e-07,
+            "change_from_prev": 3.7127300339428087e-10,
+            "circuit_cost": {
+                "depth": 659,
+                "size": 1523,
+                "num_2q_ops": 959,
+                "count_ops": {
+                    "cx": 786,
+                    "u2": 250,
+                    "rz": 192,
+                    "unitary": 52,
+                    "rzz": 45,
+                    "h": 36,
+                    "rxx": 35,
+                    "ryy": 26,
+                    "sx": 24,
+                    "sxdg": 20,
+                    "measure": 20,
+                    "rzx": 15,
+                    "u3": 11,
+                    "rx": 9,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 32,
+            "t": 96.0,
+            "num_trotter_steps": 3,
+            "circuit_time": "0:00:00.180551",
+            "num_samples": 57517,
+            "shot_processing": {
+                "raw_unique": 4936,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 4936,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                57517,
+                57517
+            ],
+            "reduction": 94.51475143432617,
+            "H_reduced_e": 7.656548685973696e-07,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:01.275940",
+            "diff": 8.360342918014148e-07,
+            "change_from_prev": 6.400212804312629e-08,
+            "circuit_cost": {
+                "depth": 659,
+                "size": 1523,
+                "num_2q_ops": 959,
+                "count_ops": {
+                    "cx": 786,
+                    "u2": 250,
+                    "rz": 192,
+                    "unitary": 52,
+                    "rzz": 45,
+                    "h": 36,
+                    "rxx": 35,
+                    "ryy": 26,
+                    "sx": 24,
+                    "sxdg": 20,
+                    "measure": 20,
+                    "rzx": 15,
+                    "u3": 11,
+                    "rx": 9,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 33,
+            "t": 99.0,
+            "num_trotter_steps": 3,
+            "circuit_time": "0:00:00.187413",
+            "num_samples": 58861,
+            "shot_processing": {
+                "raw_unique": 6782,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 6782,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                58861,
+                58861
+            ],
+            "reduction": 94.38657760620117,
+            "H_reduced_e": 6.46607182506691e-07,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:01.119158",
+            "diff": 7.169866057107362e-07,
+            "change_from_prev": 1.190476860906786e-07,
+            "circuit_cost": {
+                "depth": 659,
+                "size": 1523,
+                "num_2q_ops": 959,
+                "count_ops": {
+                    "cx": 786,
+                    "u2": 250,
+                    "rz": 192,
+                    "unitary": 52,
+                    "rzz": 45,
+                    "h": 36,
+                    "rxx": 35,
+                    "ryy": 26,
+                    "sx": 24,
+                    "sxdg": 20,
+                    "measure": 20,
+                    "rzx": 15,
+                    "u3": 11,
+                    "rx": 9,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 34,
+            "t": 102.0,
+            "num_trotter_steps": 3,
+            "circuit_time": "0:00:00.211154",
+            "num_samples": 60473,
+            "shot_processing": {
+                "raw_unique": 6338,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 0,
+                "trim_rejected_shots": 0,
+                "kept_unique": 6338,
+                "kept_shots": 10000
+            },
+            "H_reduced_size": [
+                60473,
+                60473
+            ],
+            "reduction": 94.23284530639648,
+            "H_reduced_e": 6.434598461142641e-07,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:01.246744",
+            "diff": 7.138392693183094e-07,
+            "change_from_prev": 3.1473363924268667e-09,
+            "circuit_cost": {
+                "depth": 659,
+                "size": 1523,
+                "num_2q_ops": 959,
+                "count_ops": {
+                    "cx": 786,
+                    "u2": 250,
+                    "rz": 192,
+                    "unitary": 52,
+                    "rzz": 45,
+                    "h": 36,
+                    "rxx": 35,
+                    "ryy": 26,
+                    "sx": 24,
+                    "sxdg": 20,
+                    "measure": 20,
+                    "rzx": 15,
+                    "u3": 11,
+                    "rx": 9,
+                    "ry": 2,
+                    "barrier": 1
+                }
+            }
+        }
+    ],
+    "num_jobs": null,
+    "QPU_usage": null,
+    "job_info": {},
+    "sampler_options": {
+        "backend_options": {
+            "method": "automatic",
+            "noise_model": null,
+            "seed_simulator": 40411377
+        },
+        "run_options": {
+            "shots": 10000
+        }
+    }
+}

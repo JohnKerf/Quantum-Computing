@@ -1,0 +1,295 @@
+{
+    "starttime": "2026-01-14_17-12-39",
+    "endtime": "2026-01-14_17-12-39",
+    "time_taken": "0:00:00.644580",
+    "backend": "Aer",
+    "use_noise_model": 0,
+    "noise_model_options": null,
+    "optimization_level": 3,
+    "resilience_level": 2,
+    "Ansatz": {
+        "include_basis": true,
+        "include_rys": true,
+        "include_xxyys": true
+    },
+    "CONSERVE_FERMIONS": true,
+    "TRIM_STATES": false,
+    "P_KEEP": 0.995,
+    "shots": 10000,
+    "tags": [
+        "NQCC-Q4",
+        "SBQKD",
+        "shots:10000",
+        "dirichlet",
+        "linear",
+        "N=4",
+        "cutoff=2"
+    ],
+    "potential": "linear",
+    "boundary_condition": "dirichlet",
+    "cutoff": 2,
+    "N": 4,
+    "a": 1.0,
+    "c": null,
+    "num_qubits": 8,
+    "num_paulis": 13,
+    "dense_H_size": [
+        256,
+        256
+    ],
+    "eigenvalues": [
+        -0.20793429045210057,
+        -0.2079342904521005,
+        -0.20793429045210024,
+        -0.20793429045210016,
+        0.04206570954789703,
+        0.04206570954789724,
+        0.04206570954789782,
+        0.042065709547897984
+    ],
+    "basis": [
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        1
+    ],
+    "tol": 1e-08,
+    "dt": 3.0,
+    "keep_mass": 0.999,
+    "norm": "l2",
+    "min_keep": 64,
+    "trunc_info": {
+        "m": 13,
+        "n": 13,
+        "keep_frac_terms": 1.0,
+        "keep_mass": 0.999,
+        "tail_mass": 0.0,
+        "total_mass": 7.046875,
+        "norm": "l2"
+    },
+    "trotter_patience": 2,
+    "max_k": 40,
+    "final_k": 5,
+    "converged": true,
+    "all_energies": [
+        -0.09016774590250518,
+        -0.20793429045210182,
+        -0.20793429045210254,
+        -0.20793429045210224,
+        -0.2079342904521017
+    ],
+    "all_run_data": [
+        {
+            "D": 1,
+            "t": 3.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.254382",
+            "num_samples": 20,
+            "shot_processing": {
+                "raw_unique": 28,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 2595,
+                "trim_rejected_shots": 0,
+                "kept_unique": 20,
+                "kept_shots": 7405
+            },
+            "H_reduced_size": [
+                20,
+                20
+            ],
+            "reduction": 92.1875,
+            "H_reduced_e": -0.09016774590250518,
+            "used_dense": true,
+            "eigenvalue_time": "0:00:00.015409",
+            "diff": 0.1177665445495954,
+            "change_from_prev": null,
+            "circuit_cost": {
+                "depth": 16,
+                "size": 31,
+                "num_2q_ops": 14,
+                "count_ops": {
+                    "rxx": 8,
+                    "measure": 8,
+                    "ryy": 6,
+                    "rz": 4,
+                    "u1": 3,
+                    "x": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 2,
+            "t": 6.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.038217",
+            "num_samples": 24,
+            "shot_processing": {
+                "raw_unique": 23,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 3,
+                "trim_rejected_shots": 0,
+                "kept_unique": 20,
+                "kept_shots": 9997
+            },
+            "H_reduced_size": [
+                24,
+                24
+            ],
+            "reduction": 90.625,
+            "H_reduced_e": -0.20793429045210182,
+            "used_dense": true,
+            "eigenvalue_time": "0:00:00.000170",
+            "diff": 1.2490009027033011e-15,
+            "change_from_prev": 0.11776654454959665,
+            "circuit_cost": {
+                "depth": 16,
+                "size": 31,
+                "num_2q_ops": 14,
+                "count_ops": {
+                    "rxx": 8,
+                    "measure": 8,
+                    "ryy": 6,
+                    "rz": 4,
+                    "u1": 3,
+                    "x": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 3,
+            "t": 9.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.031568",
+            "num_samples": 24,
+            "shot_processing": {
+                "raw_unique": 32,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 2657,
+                "trim_rejected_shots": 0,
+                "kept_unique": 24,
+                "kept_shots": 7343
+            },
+            "H_reduced_size": [
+                24,
+                24
+            ],
+            "reduction": 90.625,
+            "H_reduced_e": -0.20793429045210254,
+            "used_dense": true,
+            "eigenvalue_time": "0:00:00.000172",
+            "diff": 1.970645868709653e-15,
+            "change_from_prev": 7.216449660063518e-16,
+            "circuit_cost": {
+                "depth": 16,
+                "size": 31,
+                "num_2q_ops": 14,
+                "count_ops": {
+                    "rxx": 8,
+                    "measure": 8,
+                    "ryy": 6,
+                    "rz": 4,
+                    "u1": 3,
+                    "x": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 4,
+            "t": 12.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.034978",
+            "num_samples": 24,
+            "shot_processing": {
+                "raw_unique": 10,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 13,
+                "trim_rejected_shots": 0,
+                "kept_unique": 9,
+                "kept_shots": 9987
+            },
+            "H_reduced_size": [
+                24,
+                24
+            ],
+            "reduction": 90.625,
+            "H_reduced_e": -0.20793429045210224,
+            "used_dense": true,
+            "eigenvalue_time": "0:00:00.000148",
+            "diff": 1.6653345369377348e-15,
+            "change_from_prev": 3.0531133177191805e-16,
+            "circuit_cost": {
+                "depth": 16,
+                "size": 31,
+                "num_2q_ops": 14,
+                "count_ops": {
+                    "rxx": 8,
+                    "measure": 8,
+                    "ryy": 6,
+                    "rz": 4,
+                    "u1": 3,
+                    "x": 2,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 5,
+            "t": 15.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:00.037873",
+            "num_samples": 24,
+            "shot_processing": {
+                "raw_unique": 30,
+                "raw_shots": 10000,
+                "postselect_rejected_shots": 3148,
+                "trim_rejected_shots": 0,
+                "kept_unique": 23,
+                "kept_shots": 6852
+            },
+            "H_reduced_size": [
+                24,
+                24
+            ],
+            "reduction": 90.625,
+            "H_reduced_e": -0.2079342904521017,
+            "used_dense": true,
+            "eigenvalue_time": "0:00:00.000164",
+            "diff": 1.1379786002407855e-15,
+            "change_from_prev": 5.273559366969494e-16,
+            "circuit_cost": {
+                "depth": 21,
+                "size": 43,
+                "num_2q_ops": 22,
+                "count_ops": {
+                    "rxx": 13,
+                    "ryy": 9,
+                    "rz": 8,
+                    "measure": 8,
+                    "u1": 3,
+                    "x": 2,
+                    "barrier": 1
+                }
+            }
+        }
+    ],
+    "num_jobs": null,
+    "QPU_usage": null,
+    "job_info": {},
+    "sampler_options": {
+        "backend_options": {
+            "method": "automatic",
+            "noise_model": null,
+            "seed_simulator": 43796424
+        },
+        "run_options": {
+            "shots": 10000
+        }
+    }
+}
