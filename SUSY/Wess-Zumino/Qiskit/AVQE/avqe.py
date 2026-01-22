@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from multiprocessing import Pool
 
 from collections import Counter, defaultdict
+import heapq
 from dataclasses import dataclass
 from typing import Tuple, Optional
 
@@ -35,6 +36,9 @@ def apply_opspec(qc, theta, op: OpSpec):
     if op.name == "RY":
         (q,) = op.qubits
         qc.ry(theta, q)
+    elif op.name == "RX":
+        (q,) = op.qubits
+        qc.rx(theta, q)
     elif op.name == "RZ":
         (q,) = op.qubits
         qc.rz(theta, q)
@@ -64,9 +68,13 @@ def make_pool(N, cutoff, phi_beta=-np.pi/2):
         b = [base + j for j in range(n_b)]
 
         pool.append(OpSpec("RY", (f,)))
+        #pool.append(OpSpec("RX", (f,)))
+        pool.append(OpSpec("RZ", (f,)))
 
         for w in b:
             pool.append(OpSpec("RY", (w,)))
+           # pool.append(OpSpec("RX", (w,)))
+            pool.append(OpSpec("RZ", (w,)))
             pool.append(OpSpec("CRY", (f, w)))
             pool.append(OpSpec("CRY", (w, f)))
 
@@ -87,10 +95,8 @@ def make_pool(N, cutoff, phi_beta=-np.pi/2):
     return pool
 
 
-
-
 def build_ansatz(num_qubits, basis_state_bits, ops):
-    thetas = ParameterVector("theta", len(ops)) 
+    thetas = ParameterVector("theta", len(ops))
     qc = QuantumCircuit(num_qubits)
 
     for q, bit in enumerate(basis_state_bits):
@@ -103,57 +109,55 @@ def build_ansatz(num_qubits, basis_state_bits, ops):
     return qc, thetas
 
 
-def finite_diff_grad(estimator, circuit, observable, x, eps=1e-4):
-   
-    x = np.asarray(x, dtype=float)
-    params = list(circuit.parameters)
-    n = len(params)
 
+def finite_diff_grad_component(estimator, circuit, observable, x, k, eps=1e-6):
+    """Finite-difference d/dx_k <H> at point x using only 2 evaluations."""
+    x = np.asarray(x, dtype=float)
+    n = len(list(circuit.parameters))
     if x.shape != (n,):
         raise ValueError(f"x must have shape ({n},), got {x.shape}.")
 
-    # 2n parameter sets in a single batch
-    X = np.repeat(x[None, :], 2 * n, axis=0)
-    for k in range(n):
-        X[2 * k, k]     += eps
-        X[2 * k + 1, k] -= eps
+    X = np.repeat(x[None, :], 2, axis=0)
+    X[0, k] += eps
+    X[1, k] -= eps
 
     pub = (circuit, [observable], X.tolist())
     res = estimator.run([pub]).result()
 
-    evs = np.asarray(res[0].data.evs, dtype=float)
-    if evs.ndim == 2:
-        evs = evs[0]
-
-    grad = (evs[0::2] - evs[1::2]) / (2.0 * eps)
-    return grad
+    evs = np.asarray(res[0].data.evs, dtype=float).squeeze()
+    if evs.ndim != 1:
+        raise ValueError(f"Unexpected evs shape after squeeze: {evs.shape}")
 
 
-def grad_for_candidate_op(
+    return float((evs[0] - evs[1]) / (2.0 * eps))
+
+
+def grad_for_candidate_op_at_pos(
     estimator,
     H_pauli,                 # SparsePauliOp
     num_qubits: int,
     basis_state: list[int],
-    selected_ops,             # list of OpSpec already in ansatz
-    selected_params,          # np.array shape (len(selected_ops),)
-    candidate_op,             # OpSpec to test (appended)
+    selected_ops,            # list[OpSpec]
+    selected_params,         # array-like shape (len(selected_ops),)
+    candidate_op,            # OpSpec to test
+    pos: int,                # insertion position in [0, len(selected_ops)]
     *,
     param0: float = 0.0,
-    fd_eps: float = 1e-4,
+    fd_eps: float = 1e-6,
 ):
-    # Build circuit for (selected + candidate)
-    ops = list(selected_ops) + [candidate_op]
+    """Gradient for inserting candidate_op at position pos, wrt the inserted parameter."""
+    L = len(selected_ops)
+    if not (0 <= pos <= L):
+        raise ValueError(f"pos must be in [0, {L}], got {pos}")
+
+    ops = list(selected_ops)
+    ops.insert(pos, candidate_op)
     qc, _ = build_ansatz(num_qubits, basis_state, ops)
 
-    # Parameter vector in the same order as qc.parameters / build_ansatz order
-    x = np.zeros(len(ops), dtype=float)
-    if len(selected_ops) > 0:
-        x[:-1] = np.asarray(selected_params, dtype=float)
-    x[-1] = float(param0)
+    sel = np.asarray(selected_params, dtype=float)
+    x = np.insert(sel, pos, float(param0)) if sel.size else np.array([float(param0)], dtype=float)
 
-    # Full gradient; we only need component for the NEW (last) parameter
-    g = finite_diff_grad(estimator, qc, H_pauli, x, eps=fd_eps)
-    return float(g[-1])
+    return finite_diff_grad_component(estimator, qc, H_pauli, x, k=pos, eps=fd_eps)
 
 
 
@@ -186,9 +190,32 @@ def is_1q(op): return len(op.qubits) == 1
 def is_2q(op): return len(op.qubits) == 2
 
 
+
+
+def update_topk(topk_heap, k, entry, seq):
+    """
+    Keep a min-heap of size <= k, keyed by entry['abs_grad'].
+    seq is a strictly increasing integer used as a tie-breaker.
+    """
+    item = (float(entry["abs_grad"]), int(seq), entry)
+    if len(topk_heap) < k:
+        heapq.heappush(topk_heap, item)
+    else:
+        if item[0] > topk_heap[0][0]:
+            heapq.heapreplace(topk_heap, item)
+
+
+
 def run_adapt_vqe(run_idx, H_pauli, run_info):
 
-    pool = make_pool(run_info['N'], run_info['cutoff'], phi_beta=-np.pi/2) 
+    num_qubits = run_info["num_qubits"]
+    basis_state = run_info["basis_state"]
+    energy_conv_tol = run_info["energy_conv_tol"]
+    energy_conv_patience = run_info["energy_conv_patience"]
+    fd_eps = run_info["fd_eps"]
+    eps_screen = run_info["eps_screen"]  # kept for compatibility; may be unused
+
+    pool = make_pool(run_info["N"], run_info["cutoff"], phi_beta=-np.pi / 2)
     pool_keys = {op_key(op) for op in pool}
 
     incident_2q = defaultdict(list)
@@ -198,61 +225,132 @@ def run_adapt_vqe(run_idx, H_pauli, run_info):
             incident_2q[w0].append(op)
             incident_2q[w1].append(op)
 
-    # track which wires have had *selected* 1q gates
     wires_with_1q = set()
 
     estimator = StatevectorEstimator()
 
-    num_qubits = run_info["num_qubits"]
-    basis_state = run_info["basis_state"]
-
     seed = (os.getpid() * int(time.time())) % (123456789 * (run_idx + 1))
+    np.random.seed(seed)
 
     run_start = datetime.now()
 
-    op_list = []
-    op_params = []
+    # Current circuit description (ORDERED)
+    op_list = []          # list[OpSpec]
+    op_ids = []           # list[int], same length as op_list
+    op_params = np.array([], dtype=float)
+
     energies = []
+    min_e = float("nan")
     success = False
 
-    eps_screen = 1e-1      # your random screening range
-    fd_eps = 1e-4 
+    grad_history = []        # per step: top-3 candidates
+    selection_history = []   # per step: selected candidate (grad + insertion pos at selection time)
+
+    patience_count = 0
+    _next_gate_id = 0
 
     for i in range(run_info["num_steps"]):
         print(f"Run {run_idx} step {i}")
-        max_ops_list = []
 
-        print(f"Run {i}: computing gradient")
-        for param0 in np.random.uniform(-eps_screen, eps_screen, size=run_info["num_grad_checks"]):
+        # -----------------------------
+        # Compute gradients + pick next operator (scan all insertion positions)
+        # -----------------------------
+        L = len(op_list)
 
-            grad_list = []
-            for cand in pool:  # pool is list[OpSpec]
-                g = grad_for_candidate_op(
+        best_abs_grad_iter = -1.0
+        insert_pos = L
+        most_common_gate = None
+
+        param0 = 0.0
+        topk = []   # heap of (abs_grad, seq, entry)
+        seq = 0
+
+        for pos in range(L + 1):
+            for cand in pool:
+                g = grad_for_candidate_op_at_pos(
                     estimator=estimator,
                     H_pauli=H_pauli,
                     num_qubits=num_qubits,
                     basis_state=basis_state,
-                    selected_ops=op_list,          # list[OpSpec]
-                    selected_params=op_params,     # np.array
+                    selected_ops=op_list,
+                    selected_params=op_params,
                     candidate_op=cand,
+                    pos=pos,
                     param0=param0,
                     fd_eps=fd_eps,
                 )
-                grad_list.append((cand, abs(g)))
 
-            max_op, max_grad = max(grad_list, key=lambda t: t[1])
-            max_ops_list.append(max_op)
+                ag = abs(float(g))
 
-        most_common_gate, count = Counter(max_ops_list).most_common(1)[0]
-        op_list.append(most_common_gate)
+                entry = {
+                    "pos": int(pos),
+                    "grad": float(g),
+                    "abs_grad": float(ag),
+                    "param0": float(param0),
+                    "op": {"name": cand.name, "qubits": list(cand.qubits), "beta": cand.beta},
+                }
+                seq += 1
+                update_topk(topk, k=3, entry=entry, seq=seq)
 
-        print(f"Run {i}: finished gradients - selected {most_common_gate.name} on {most_common_gate.qubits}")
+                if ag > best_abs_grad_iter:
+                    best_abs_grad_iter = ag
+                    most_common_gate = cand
+                    insert_pos = pos
+
+        top3 = [e for _, _, e in sorted(topk, key=lambda t: t[0], reverse=True)]
+        grad_history.append(
+            {
+                "step": int(i),
+                "L_before": int(L),
+                "pool_size": int(len(pool)),
+                "top3": top3,
+                "energy_prev": (None if len(energies) == 0 else float(energies[-1])),
+            }
+        )
+
+        if most_common_gate is None:
+            print("No candidate gate selected (pool empty?)")
+            success = False
+            break
+
+        print(
+            f"Run {run_idx} step {i}: finished gradients - selected "
+            f"{most_common_gate.name} on {most_common_gate.qubits} at pos={insert_pos} "
+            f"(abs_grad={best_abs_grad_iter:.6e})"
+        )
+
+        # Snapshot params BEFORE insertion (used if we roll back)
+        pre_op_params = np.asarray(op_params, dtype=float).copy()
+
+        # -----------------------------
+        # Insert selected operator (track unique insertion ID)
+        # -----------------------------
+        _next_gate_id += 1
+        gate_id = _next_gate_id
+
+        op_list.insert(insert_pos, most_common_gate)
+        op_ids.insert(insert_pos, gate_id)
+
+        selection_history.append(
+            {
+                "step": int(i),
+                "gate_id": int(gate_id),
+                "selected": {
+                    "name": most_common_gate.name,
+                    "qubits": list(most_common_gate.qubits),
+                    "beta": most_common_gate.beta,
+                },
+                "insert_pos": int(insert_pos),  # position AT THE TIME it was inserted
+                "selected_abs_grad": float(best_abs_grad_iter),
+                "param0": float(param0),
+            }
+        )
 
         # 1) remove the selected op from the active pool (so it can’t be immediately re-picked)
         pool_remove(pool, pool_keys, most_common_gate)
 
+        # 2) update pool activation rules (same behavior as your original code)
         if is_2q(most_common_gate):
-            # add local 1q gates on both qubits of this 2q gate
             w0, w1 = most_common_gate.qubits
 
             pool_add(pool, pool_keys, OpSpec("RY", (w0,)))
@@ -262,92 +360,114 @@ def run_adapt_vqe(run_idx, H_pauli, run_info):
             pool_add(pool, pool_keys, OpSpec("RZ", (w1,)))
 
         elif is_1q(most_common_gate):
-            # if we’ve now applied 1q gates on BOTH ends of a 2q op, re-enable that 2q op
             (w,) = most_common_gate.qubits
             wires_with_1q.add(w)
 
-            # only check 2q ops touching this wire
             for op2 in incident_2q[w]:
-                a, b = op2.qubits
-                other = b if a == w else a
-                if other in wires_with_1q:
+                w0, w1 = op2.qubits
+                if (w0 in wires_with_1q) and (w1 in wires_with_1q):
                     pool_add(pool, pool_keys, op2)
 
-        # --- optimize parameters as before ---
-        np.random.seed(seed)
-        x0 = np.append(op_params, 0.0)     
+        # -----------------------------
+        # VQE optimization on the new ansatz
+        # -----------------------------
+        x0 = np.insert(pre_op_params, insert_pos, float(param0)) if pre_op_params.size else np.array([float(param0)])
+        ansatz_qc, _ = build_ansatz(num_qubits, basis_state, op_list)
 
-        ansatz_qc, theta = build_ansatz(num_qubits, basis_state, op_list) 
-        
-        print(f"Run {i}: running VQE")
+        print(f"Run {run_idx} step {i}: running VQE")
 
         res = minimize(
             cost_function,
             x0,
             args=(ansatz_qc, H_pauli, estimator),
             method="COBYQA",
-            options=run_info["optimizer_options"]
+            options=run_info["optimizer_options"],
         )
 
-        if i != 0:
-            pre_min_e = min_e
-
-        min_e = res.fun
-        pre_op_params = op_params.copy()
-        op_params = res.x
+        min_e = float(res.fun)
+        op_params = np.asarray(res.x, dtype=float)
         energies.append(min_e)
+
+        # -----------------------------
+        # Convergence logic (fixed patience comparison + consistent rollback)
+        # -----------------------------
+        if i >= 5 and len(energies) >= 2:
+            if abs(energies[-1] - energies[-2]) < energy_conv_tol:
+                patience_count += 1
+                print(f"patience count: {patience_count}")
+                if patience_count >= energy_conv_patience:
+                    print("Energy converged (patience) — rolling back last insertion")
+
+                    # Remove last energy value (for the rolled-back step)
+                    energies.pop()
+
+                    # Remove the inserted gate by ID (safe even if later you change insertion logic)
+                    try:
+                        idx_ins = op_ids.index(gate_id)
+                    except ValueError:
+                        idx_ins = len(op_ids) - 1
+
+                    op_list.pop(idx_ins)
+                    op_ids.pop(idx_ins)
+
+                    if selection_history:
+                        selection_history.pop()
+
+                    final_params = pre_op_params
+                    success = True
+                    break
+            else:
+                patience_count = 0
+
+        if abs(float(run_info["min_eigenvalue"]) - min_e) < energy_conv_tol:
+            print("Energy close to min eigenvalue")
+            success = True
+            final_params = op_params
+            break
 
         print(res.success)
 
-        if i >=10:
-            if abs(pre_min_e - min_e) < 1e-8:
-                print("Energy converged")
-                energies.pop()
-                op_list.pop()
-                final_params = pre_op_params
-                success = True
-                break
-            if abs(run_info["min_eigenvalue"] - min_e) < 1e-8:
-                print("Energy close to min eigenvalue")
-                success = True
-                final_params = op_params
-                break
-        
     run_end = datetime.now()
     run_time = run_end - run_start
 
-    if success == False:
+    if not success:
         final_params = op_params
 
+    # Final op_list with FINAL positions (not insertion-time positions)
     final_ops = []
-    for op, param in zip(op_list, final_params):
-        final_ops.append({
-            "name": op.name,
-            "param": float(param),
-            "qubits": list(op.qubits),
-        })
-
+    for final_pos, (op, op_id, param) in enumerate(zip(op_list, op_ids, np.asarray(final_params, dtype=float))):
+        final_ops.append(
+            {
+                "gate_id": int(op_id),
+                "name": op.name,
+                "param": float(param),
+                "qubits": list(op.qubits),
+                "beta": (None if op.beta is None else float(op.beta)),
+                "pos": int(final_pos),
+            }
+        )
 
     return {
         "seed": seed,
         "energies": energies,
-        "min_energy": min_e,
+        "min_energy": (None if (min_e is None or (isinstance(min_e, float) and (min_e != min_e))) else float(min_e)),
         "op_list": final_ops,
+        "grad_history": grad_history,
+        "selection_history": selection_history,
         "success": success,
-        "num_iters": i+1,
-        "run_time": run_time
+        "num_iters": i + 1,
+        "run_time": run_time,
     }
 
 
 if __name__ == "__main__":
 
-    num_processes=10
+    num_processes=1
 
-    cutoff = 2
+    cutoff = 8
     shots = None
-
     # Parameters
-    N = 3
+    N = 4
     a = 1.0
     c = -0.8
 
@@ -356,14 +476,21 @@ if __name__ == "__main__":
     boundary_condition = 'dirichlet'
     #boundary_condition = 'periodic'
 
+    num_vqe_runs = 1
+    num_steps = 50
+
     # Optimizer
-    num_steps = 20
-    num_grad_checks = 5
-    num_vqe_runs = 10
     max_iter = 10000
     initial_tr_radius = 0.1
-    final_tr_radius = 1e-8
+    final_tr_radius = 1e-12
     scale=True
+
+    eps_screen = 1e-1  #grad_range    
+    num_grad_checks = 1
+    fd_eps = 1e-3 #grad eps
+
+    energy_conv_tol = 1e-9
+    energy_conv_patience = 5
 
     optimizer_options = {
                     'maxiter':max_iter, 
@@ -408,6 +535,7 @@ if __name__ == "__main__":
     n = 1 + nb
     
     basis_state = H_data['best_basis_state'][::-1]
+    #basis_state = [0]*len(basis_state)
 
 
     run_info = {"Potential":potential,
@@ -419,6 +547,10 @@ if __name__ == "__main__":
                 "min_eigenvalue":min_eigenvalue.real,
                 "num_steps":num_steps,
                 "num_grad_checks":num_grad_checks,
+                "eps_screen": eps_screen,    
+                "fd_eps": fd_eps,
+                "energy_conv_tol": energy_conv_tol,
+                "energy_conv_patience": energy_conv_patience,
                 "num_vqe_runs": num_vqe_runs,
                 "optimizer_options": optimizer_options,
                 "basis_state":basis_state,
@@ -449,6 +581,7 @@ if __name__ == "__main__":
     num_iters = [res["num_iters"] for res in vqe_results]
     run_times = [str(res["run_time"]) for res in vqe_results]
     total_run_time = sum([res["run_time"] for res in vqe_results], timedelta())
+    grad_history = [res["grad_history"] for res in vqe_results]
 
     vqe_end = datetime.now()
     vqe_time = vqe_end - vqe_starttime
@@ -471,11 +604,16 @@ if __name__ == "__main__":
         "num_VQE": num_vqe_runs,
         "num_steps":num_steps,
         "num_grad_checks":num_grad_checks,
+        "eps_screen": eps_screen,    
+        "fd_eps": fd_eps,
+        "energy_conv_tol": energy_conv_tol,
+        "energy_conv_patience": energy_conv_patience,
         "basis_state": basis_state,
         #"operator_pool": [str(op) for op in operator_pool],
         "all_energies": all_energies,
         "min_energies": min_energies,
         "op_list": op_lists,
+        "grad_history": grad_history,
         "num_iters": num_iters,
         "success": np.array(success, dtype=bool).tolist(),
         "run_times": run_times,
