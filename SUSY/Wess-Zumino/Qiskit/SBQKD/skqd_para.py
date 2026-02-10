@@ -50,7 +50,6 @@ def setup_logger(logfile_path, name, enabled=True):
         logger.addHandler(handler)
     return logger
 
-
 def get_backend(backend_name, use_noise_model, noise_model_options, resilience_level, seed, shots, tags):
 
     noise_model = None
@@ -106,7 +105,6 @@ def get_backend(backend_name, use_noise_model, noise_model_options, resilience_l
 
     return backend, sampler
 
-
 def create_circuit(backend, avqe_circuit, optimization_level, num_qubits, H_pauli, t, num_trotter_steps):
     
     qr = QuantumRegister(num_qubits)
@@ -129,7 +127,6 @@ def create_circuit(backend, avqe_circuit, optimization_level, num_qubits, H_paul
     
     return circuit_isa, circuit_cost_metrics(circuit_isa)
 
-
 def get_counts(sampler, qc, shots):
     
     pubs = [(qc)]
@@ -147,7 +144,6 @@ def get_counts(sampler, qc, shots):
 
     return counts, job_id, job_metrics
 
-
 def filter_counts_by_fermion_number(counts,fermion_qubits,num_fermions):
 
     kept = {}
@@ -163,24 +159,42 @@ def filter_counts_by_fermion_number(counts,fermion_qubits,num_fermions):
 
     return kept, rejected
 
+def _twoq_only_depth(qc):
+    """Depth counting only 2-qubit operations (ignoring barriers/measure)."""
+    qc2 = QuantumCircuit(qc.num_qubits, qc.num_clbits)
+    q_index = {q: i for i, q in enumerate(qc.qubits)}
+    c_index = {c: i for i, c in enumerate(qc.clbits)}
 
+    for inst in qc.data:
+        op = inst.operation
+        if op.name in {"barrier", "measure"}:
+            continue
+        if op.num_qubits == 2:
+            qargs = [qc2.qubits[q_index[q]] for q in inst.qubits]
+            cargs = [qc2.clbits[c_index[c]] for c in inst.clbits] if inst.clbits else []
+            qc2.append(op, qargs, cargs)
+
+    return qc2.depth()
 
 def circuit_cost_metrics(qc):
-
     ops = qc.count_ops()
     ops_str = {str(k): int(v) for k, v in ops.items()}
-    n2q = sum(1 for ci in qc.data if ci.operation.num_qubits == 2 and ci.operation.name not in {"barrier", "measure"})
+
+    n2q = sum(
+        1
+        for inst in qc.data
+        if inst.operation.num_qubits == 2 and inst.operation.name not in {"barrier", "measure"}
+    )
 
     return {
         "depth": qc.depth(),
         "size": qc.size(),
         "num_2q_ops": n2q,
+        "depth_2q": _twoq_only_depth(qc),
         "count_ops": ops_str,
     }
 
-
-
-def truncate_by_coeff_weight(pauli_coeffs, pauli_labels, keep_ratio=0.999, min_keep=64):
+def truncate_by_coeff_weight(pauli_coeffs, pauli_labels, keep_ratio=0.999, min_keep=0):
 
     c = np.asarray(pauli_coeffs)
     lab = np.asarray(pauli_labels)
@@ -209,10 +223,9 @@ def truncate_by_coeff_weight(pauli_coeffs, pauli_labels, keep_ratio=0.999, min_k
         "truncated": truncated,
         "total_weight": total
     }
-    return c[keep_idx], lab[keep_idx], info
+    return c[keep_idx], lab[keep_idx], keep_idx, info
 
-
-def run_skqd(run_idx, H_pauli, H_info, Ansatz_info, pauli_terms, avqe_circuit, backend_info, run_info, base_path, log_enabled):
+def run_skqd(run_idx, H_pauli, H_info, Ansatz_info, pauli_terms, avqe_circuit, backend_info, run_info, base_path, log_enabled, logger):
 
     starttime = datetime.now()
 
@@ -256,7 +269,8 @@ def run_skqd(run_idx, H_pauli, H_info, Ansatz_info, pauli_terms, avqe_circuit, b
 
     while not converged and k <= max_k:
 
-        if log_enabled: logger.info(f"Running for Krylov dimension {k}")
+        if log_enabled: logger.info(f"[Run {run_idx}] Running for Krylov dimension {k}")
+        print(f"Running for Krylov dimension {k}")
 
         t = (dt*k) / n_steps
         
@@ -275,7 +289,7 @@ def run_skqd(run_idx, H_pauli, H_info, Ansatz_info, pauli_terms, avqe_circuit, b
                 usage = job.get("usage")
                 QPU_usage += float(usage["seconds"])
 
-            if log_enabled: logger.info(f"Job ID: {job_id} - QPU usage: {QPU_usage}")
+            if log_enabled: logger.info(f"[Run {run_idx}] Job ID: {job_id} - QPU usage: {usage} - Total usage {QPU_usage}")
 
         # trim per Krylov step
         raw_counts = counts
@@ -300,7 +314,7 @@ def run_skqd(run_idx, H_pauli, H_info, Ansatz_info, pauli_terms, avqe_circuit, b
             "kept_shots": kept_shots, # Total number of shots spanning the kept_unique basis states
         }
 
-        if log_enabled: logger.info(json.dumps(shot_processing, indent=4, default=str))
+        if log_enabled: logger.info("[Run %d]\n%s",run_idx,json.dumps(shot_processing, indent=4, default=str))
 
         # Update global samples with the trimmed counts
         pre_samples = len(samples)
@@ -348,7 +362,7 @@ def run_skqd(run_idx, H_pauli, H_info, Ansatz_info, pauli_terms, avqe_circuit, b
             "circuit_cost": circuit_cost
             }
         
-        if log_enabled: logger.info(json.dumps(row, indent=4, default=str))
+        if log_enabled: logger.info("[Run %d]\n%s",run_idx,json.dumps(row, indent=4, default=str))
         
         all_data.append(row)
         all_energies.append(me)
@@ -399,34 +413,16 @@ def run_skqd(run_idx, H_pauli, H_info, Ansatz_info, pauli_terms, avqe_circuit, b
         }
 
 
-    with open(os.path.join(base_path, f"run_{run_idx}.json"), "w") as json_file:
+    #with open(os.path.join(base_path, f"run_{run_idx}.json"), "w") as json_file:
+    with open(os.path.join(base_path, f"{potential}_{cutoff}.json"), "w") as json_file:
         json.dump(final_data, json_file, indent=4, default=str)
 
-    if log_enabled: logger.info("Done")
+    if log_enabled: logger.info(f"[Run {run_idx}] Done")
     print(f"Run {run_idx} done")
 
-
-def split_diag_mix(H):
-    # H.paulis is a PauliList; string form uses 'I','X','Y','Z'
-    pauli_strs = H.paulis.to_labels()
-    coeffs = np.asarray(H.coeffs)
-
-    is_diag = np.array([set(p) <= {"I", "Z"} for p in pauli_strs], dtype=bool)
-
-    H_diag = SparsePauliOp.from_list(
-        [(pauli_strs[i], coeffs[i]) for i in np.where(is_diag)[0]],
-        num_qubits=H.num_qubits
-    ).simplify()
-
-    H_mix = SparsePauliOp.from_list(
-        [(pauli_strs[i], coeffs[i]) for i in np.where(~is_diag)[0]],
-        num_qubits=H.num_qubits
-    ).simplify()
-
-    return H_diag, H_mix
-
-
 if __name__ == "__main__":
+
+    starttime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     log_enabled = False
 
@@ -436,6 +432,7 @@ if __name__ == "__main__":
     a = 1.0
     c = -0.2
     potential = "linear"
+    #potential="quadratic"
     boundary_condition = 'dirichlet'
 
     #backend_name = 'ibm_kingston'
@@ -443,10 +440,10 @@ if __name__ == "__main__":
     backend_name = "Aer"
 
     # Noise model options
-    use_noise_model = 0
-    gate_error=True
-    readout_error=True  
-    thermal_relaxation=True
+    use_noise_model = 1
+    gate_error=False
+    readout_error=False  
+    thermal_relaxation=False
 
     noise_model_options = {
         "gate_error":gate_error,
@@ -456,14 +453,21 @@ if __name__ == "__main__":
 
     shots = 10000
     optimization_level = 3
-    resilience_level = 2 # 1 = readout , 2 = readout + gate
+    resilience_level = 0 # 1 = readout , 2 = readout + gate
 
     # trimming
     conserve_fermion = True
     keep_ratio = 0.999 
 
+    dt=0.5
+    max_k = 1
+    tol = 1e-8
 
-    for cutoff in [8]:
+    trotter_patience = 2
+    energy_patience = 3        
+    max_n_steps = 5
+
+    for cutoff in [2,4,8,16]:
 
         print(f"Running for {potential} and cutoff {cutoff}")
 
@@ -475,7 +479,8 @@ if __name__ == "__main__":
         else:
             folder = 'N'+ str(N)
 
-        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\Qiskit\SBQKD\test", boundary_condition, potential, folder, f"L{cutoff}")
+        #base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\Qiskit\SBQKD\NQCC\Open Plan", boundary_condition, potential, folder, str(starttime))
+        base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\Qiskit\SBQKD\test2", boundary_condition, potential, folder)#, str(starttime))
         os.makedirs(base_path, exist_ok=True)
         log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
 
@@ -483,6 +488,8 @@ if __name__ == "__main__":
             os.makedirs(log_path, exist_ok=True)
             log_path = os.path.join(log_path, f"vqe_run.log")
             logger = setup_logger(log_path, f"logger", enabled=log_enabled)
+        else:
+            logger = None
 
         if log_enabled: logger.info(f"Running VQE for {potential} potential and cutoff {cutoff}")
 
@@ -493,14 +500,15 @@ if __name__ == "__main__":
         pauli_coeffs = H_data["pauli_coeffs"]
         pauli_labels = H_data["pauli_labels"]
 
-        kept_coeffs, kept_labels, trunc_info = truncate_by_coeff_weight(pauli_coeffs, pauli_labels, keep_ratio=keep_ratio)
+        kept_coeffs, kept_labels, keep_idx, trunc_info = truncate_by_coeff_weight(pauli_coeffs, pauli_labels, keep_ratio=keep_ratio)
+        keep_idx = np.sort(keep_idx)
+        kept_coeffs = np.asarray(pauli_coeffs)[keep_idx]
+        kept_labels = np.asarray(pauli_labels)[keep_idx]
         if log_enabled:
             logger.info(f"Truncation: {trunc_info}")
 
         H_pauli = SparsePauliOp(PauliList(kept_labels.tolist()), kept_coeffs.tolist())
         pauli_terms = list(zip(pauli_coeffs, pauli_labels))
-
-        H_diag, H_mix = split_diag_mix(H_pauli)
 
         num_qubits = H_data['num_qubits']
         dense_H_size = H_data['H_size']
@@ -519,18 +527,9 @@ if __name__ == "__main__":
         num_fermions = sum(basis_state[q] for q in fermion_qubits)
 
         include_basis=True
-        include_rys=True
-        include_xxyys=True
+        include_rys=False
+        include_xxyys=False
         avqe_circuit = wz.build_avqe_pattern_ansatz(N=N, cutoff=cutoff, include_basis=include_basis, include_rys=include_rys, include_xxyys=include_xxyys)
-
-        
-        dt=3.0
-        max_k = 40
-        tol = 1e-8
-
-        trotter_patience = 2
-        energy_patience = 3        
-        max_n_steps = 3
 
         H_info = {"potential": potential,
                 "boundary_condition": boundary_condition,
@@ -574,13 +573,13 @@ if __name__ == "__main__":
                     }
         
     
-        with Pool(processes=num_processes) as pool:
-                pool.starmap(
-                    run_skqd,
-                    [ (i, H_mix, H_info, Ansatz_info, pauli_terms, avqe_circuit, backend_info, run_info, base_path, log_enabled) for i in range(num_processes)],
-                )
+        # with Pool(processes=num_processes) as pool:
+        #         pool.starmap(
+        #             run_skqd,
+        #             [ (i, H_mix, H_info, Ansatz_info, pauli_terms, avqe_circuit, backend_info, run_info, base_path, log_enabled) for i in range(num_processes)],
+        #         )
 
 
-        #run_skqd(0, H_pauli, pauli_terms, num_qubits, avqe_circuit, backend_info, run_info, base_path)
+        run_skqd(0, H_pauli, H_info, Ansatz_info, pauli_terms, avqe_circuit, backend_info, run_info, base_path, log_enabled, logger)
     
         
