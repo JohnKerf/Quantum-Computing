@@ -31,7 +31,9 @@ ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/3ff62345f6
 #ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/d4f95db0515b47b7ba61dba8a424f873:ed0704ac-ad7d-4366-9bcc-4217fb64abd1::" #NQCC
 
 service = QiskitRuntimeService(channel="ibm_quantum_platform", token=IBM_QUANTUM_API_KEY, instance=ibm_instance_crn)
-
+COMPILE_BACKEND_NAME = "ibm_torino"#"ibm_marrakesh"
+compile_backend = service.backend(COMPILE_BACKEND_NAME)
+compile_target = compile_backend.target
 
 def setup_logger(logfile_path, name, enabled=True):
     if not enabled:
@@ -51,7 +53,6 @@ def setup_logger(logfile_path, name, enabled=True):
         handler.setFormatter(formatter)
         logger.addHandler(handler)
     return logger
-
 
 def get_backend(backend_name, use_noise_model, noise_model_options, resilience_level, seed, shots, tags):
 
@@ -108,8 +109,7 @@ def get_backend(backend_name, use_noise_model, noise_model_options, resilience_l
 
     return backend, sampler
 
-
-def create_circuit(backend, basis_state, optimization_level, num_qubits, H_pauli, t, num_trotter_steps):
+def create_circuit(target, basis_state, optimization_level, num_qubits, H_pauli, t, num_trotter_steps, transpiler_seed):
     
     qr = QuantumRegister(num_qubits)
     qc = QuantumCircuit(qr)
@@ -122,17 +122,15 @@ def create_circuit(backend, basis_state, optimization_level, num_qubits, H_pauli
     qc.append(evol_gate, qr)
     qc.measure_all()
 
-    target = backend.target
-    pm = generate_preset_pass_manager(target=target, optimization_level=optimization_level)
+    pm = generate_preset_pass_manager(target=target, optimization_level=optimization_level, seed_transpiler=transpiler_seed)
     try:
         circuit_isa = pm.run(qc)
     except:
-        pm = generate_preset_pass_manager(target=target, optimization_level=optimization_level, translation_method="synthesis")
+        pm = generate_preset_pass_manager(target=target, optimization_level=optimization_level, translation_method="synthesis", seed_transpiler=transpiler_seed)
         circuit_isa = pm.run(qc)
 
     
     return circuit_isa, circuit_cost_metrics(circuit_isa)
-
 
 def get_counts(sampler, qc, shots):
     
@@ -151,7 +149,6 @@ def get_counts(sampler, qc, shots):
 
     return counts, job_id, job_metrics
 
-
 def filter_counts_by_fermion_number(counts,fermion_qubits,num_fermions):
 
     kept = {}
@@ -166,7 +163,6 @@ def filter_counts_by_fermion_number(counts,fermion_qubits,num_fermions):
             rejected += c
 
     return kept, rejected
-
 
 def _twoq_only_depth(qc):
     """Depth counting only 2-qubit operations (ignoring barriers/measure)."""
@@ -203,7 +199,6 @@ def circuit_cost_metrics(qc):
         "count_ops": ops_str,
     }
 
-
 def truncate_by_coeff_weight(pauli_coeffs, pauli_labels, keep_ratio=0.999, min_keep=64):
 
     c = np.asarray(pauli_coeffs)
@@ -235,7 +230,6 @@ def truncate_by_coeff_weight(pauli_coeffs, pauli_labels, keep_ratio=0.999, min_k
     }
     return c[keep_idx], lab[keep_idx], info
 
-
 def run_skqd(H_pauli, H_info, pauli_terms, basis_state, backend_info, run_info, base_path, log_enabled):
 
     starttime = datetime.now()
@@ -259,6 +253,10 @@ def run_skqd(H_pauli, H_info, pauli_terms, basis_state, backend_info, run_info, 
     seed = (os.getpid() * int(time.time())) % 123456789
 
     backend, sampler = get_backend(backend_info["backend_name"], backend_info["use_noise_model"], backend_info["noise_model_options"], backend_info["resilience_level"], seed, shots, backend_info["tags"])
+    if backend_info["use_noise_model"] == 1:
+        target = compile_target
+    else:
+        target = backend.target
     sampler_options = dataclasses.asdict(sampler.options)
 
     k=1
@@ -282,9 +280,9 @@ def run_skqd(H_pauli, H_info, pauli_terms, basis_state, backend_info, run_info, 
 
         if log_enabled: logger.info(f"Running for Krylov dimension {k}")
 
-        t = (dt*k) / n_steps
+        t = dt*k
         
-        qc, circuit_cost = create_circuit(backend, basis_state, backend_info["optimization_level"], num_qubits, H_pauli, t, n_steps)
+        qc, circuit_cost = create_circuit(target, basis_state, backend_info["optimization_level"], num_qubits, H_pauli, t, n_steps, backend_info["transpiler_seed"])
 
         t1 = datetime.now()
         counts, job_id, job_metrics = get_counts(sampler, qc, shots) #counts are returned in binary notation i.e. q0q1...qn and not standard qiskit noation
@@ -434,6 +432,7 @@ if __name__ == "__main__":
 
     log_enabled = False
 
+    transpiler_seed = 42
         
     potential = "QHO"
     cutoff = 32
@@ -462,16 +461,25 @@ if __name__ == "__main__":
     conserve_fermion = False
     keep_ratio = 1.0 
 
-    x_max=8.0
-    for potential in ['QHO', 'AHO', 'DW']:
-        for cutoff in [512, 1024]:
+    x_max=5.0
+
+    dt=0.5
+    max_k = 1
+    tol = 1e-10
+
+    trotter_patience = 2
+    energy_patience = 3        
+    max_n_steps = 3
+    
+    for potential in ['AHO', 'DW']:
+        for cutoff in [2,4,8,16,32,64,128,256, 512, 1024]:
 
             print(f"Running for {potential} and cutoff {cutoff}")
 
             tags=["SKQD", f"shots:{shots}", f"{potential}", f"cutoff={cutoff}"]
 
 
-            base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\SKQD\RealTranspile\Position", potential)
+            base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\SKQD\BasisTesting\RealTranspile\Position", potential)
             os.makedirs(base_path, exist_ok=True)
             log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
 
@@ -504,13 +512,6 @@ if __name__ == "__main__":
             num_fermions = sum(basis_state[::-1][q] for q in fermion_qubits)
 
             
-            dt=0.5
-            max_k = 10
-            tol = 1e-10
-
-            trotter_patience = 2
-            energy_patience = 3        
-            max_n_steps = 3
 
             H_info = {"potential": potential,
                     "cutoff": cutoff,
@@ -529,7 +530,8 @@ if __name__ == "__main__":
                             "resilience_level": resilience_level, 
                             "optimization_level": optimization_level,
                             "shots": shots, 
-                            "tags": tags}
+                            "tags": tags,
+                            "transpiler_seed": transpiler_seed}
             
             run_info = {"dt": dt,
                         "max_k": max_k,

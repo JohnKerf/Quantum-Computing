@@ -10,16 +10,16 @@ def dense_storage_bytes(num_qubits: int, dtype=np.complex128) -> int:
     dim = 1 << num_qubits  # 2**num_qubits
     return dim * dim * np.dtype(dtype).itemsize
 
-N = 5
+N = 2
 a = 1.0
 c = -0.8
 
-potential = "linear"
-#potential = 'quadratic'
+#potential = "linear"
+potential = 'quadratic'
 boundary_condition = 'dirichlet'
 #boundary_condition = 'periodic'
 
-cutoffs = [2,4,8]
+cutoffs = [16]
 
 for cutoff in cutoffs:
 
@@ -45,6 +45,8 @@ for cutoff in cutoffs:
     print("Converting to sparse matrix")
     t1 = datetime.now() 
     H = H_pauli.to_matrix(sparse=True)
+    #diag = H.diagonal() if hasattr(H, "diagonal") else np.diag(H)
+    # print([int(i) for i in diag.real])
     Hc = datetime.now() - t1
 
     dense_mem = dense_storage_bytes(num_qubits, dtype=np.complex128)
@@ -52,9 +54,11 @@ for cutoff in cutoffs:
 
     print("Finding eigenvalues")
     t1 = datetime.now()
-    eigenvalues, eigenvectors = eigsh(H, k=8, which="SA", return_eigenvectors=True)
+    H_dense = H.todense()
+    #eigenvalues, eigenvectors = np.linalg.eigh(H_dense)
+    eigenvalues, eigenvectors = eigsh(H, k=16, which="SA", return_eigenvectors=True)
     min_index = int(np.argmin(eigenvalues))
-    eigenvalues = np.sort(eigenvalues)
+    eigenvalues = np.sort(eigenvalues)[:8].real
     Ht = datetime.now() - t1
 
     print("Finding min eigenvector basis")
@@ -83,7 +87,7 @@ for cutoff in cutoffs:
             "H_eigenvalue_time": str(Ht),
             "eigenvalues": [x.real.tolist() for x in eigenvalues],
             "best_basis_state": basis_state0,
-            "basis_prob": probs[idx0],
+            "basis_prob": probs[idx0].item(),
             "num_paulis": len(H_pauli),
             "pauli_coeffs": np.real(H_pauli.coeffs).astype(float).tolist(),
             "pauli_labels": H_pauli.paulis.to_labels()
@@ -94,7 +98,7 @@ for cutoff in cutoffs:
     else:
         folder = 'N'+ str(N)
 
-    dir_path = os.path.join("/users/johnkerf/fastscratch/Data/WessZumino/HamiltonianDataQiskit2", 
+    dir_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\Analyses\Model Checks\HamiltonianDataTest", 
                         boundary_condition, potential, 
                         folder
                         )

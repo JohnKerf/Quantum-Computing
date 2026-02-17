@@ -464,17 +464,17 @@ if __name__ == "__main__":
 
     num_processes=1
 
-    cutoff = 8
+    cutoff = 16
     shots = None
     # Parameters
-    N = 4
+    N = 3
     a = 1.0
     c = -0.8
 
     potential = "linear"
     #potential = 'quadratic'
-    boundary_condition = 'dirichlet'
-    #boundary_condition = 'periodic'
+    #boundary_condition = 'dirichlet'
+    boundary_condition = 'periodic'
 
     num_vqe_runs = 1
     num_steps = 50
@@ -510,7 +510,7 @@ if __name__ == "__main__":
     else:
         folder = 'N'+ str(N)
 
-    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\Qiskit\AVQE\Files2", boundary_condition, potential, folder)
+    base_path = os.path.join(r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\SUSY\Wess-Zumino\Qiskit\AVQE\Files", boundary_condition, potential, folder)
     os.makedirs(base_path, exist_ok=True)
 
     print("Loading Hamiltonian")
@@ -536,6 +536,11 @@ if __name__ == "__main__":
     
     basis_state = H_data['best_basis_state'][::-1]
     #basis_state = [0]*len(basis_state)
+
+    qps = int(np.log2(cutoff)) + 1
+    basis = [0] * num_qubits
+    basis[2*qps - 1 :: 2*qps] = [1] * (N // 2)
+    basis_state = basis
 
 
     run_info = {"Potential":potential,

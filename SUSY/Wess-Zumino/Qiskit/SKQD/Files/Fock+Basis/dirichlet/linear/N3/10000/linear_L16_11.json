@@ -1,0 +1,317 @@
+{
+    "seed": 101350914,
+    "starttime": "2026-02-17_12-39-05",
+    "endtime": "2026-02-17_12-39-32",
+    "time_taken": "0:00:27.024371",
+    "H_info": {
+        "potential": "linear",
+        "boundary_condition": "dirichlet",
+        "cutoff": 16,
+        "N": 3,
+        "a": 1.0,
+        "c": null,
+        "num_qubits": 15,
+        "num_paulis": 1146,
+        "keep_ratio": 0.999,
+        "trunc_info": {
+            "m": 128,
+            "n": 1146,
+            "keep_frac_terms": 0.11169284467713787,
+            "keep_ratio": 0.999,
+            "truncated": 0.7630188941189999,
+            "total_weight": 768.499999999996
+        },
+        "dense_H_size": [
+            32768,
+            32768
+        ],
+        "eigenvalues": [
+            6.579954002926503e-15,
+            0.9999999999999871,
+            0.9999999999999912,
+            1.2247448713907592,
+            1.2247448713915714,
+            1.2247448713915876,
+            1.2247448713915876,
+            1.9999999999999543
+        ],
+        "basis": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0
+        ]
+    },
+    "backend_info": {
+        "backend_name": "Aer",
+        "use_noise_model": 1,
+        "noise_model_options": {
+            "gate_error": false,
+            "readout_error": false,
+            "thermal_relaxation": false
+        },
+        "resilience_level": 0,
+        "optimization_level": 3,
+        "shots": 10000,
+        "tags": [
+            "Open-plan",
+            "SBQKD",
+            "shots:10000",
+            "dirichlet",
+            "linear",
+            "N=3",
+            "cutoff=16"
+        ],
+        "transpiler_seed": 42
+    },
+    "Ansatz_info": {
+        "include_basis": true,
+        "include_rys": false,
+        "include_xxyys": false
+    },
+    "run_info": {
+        "dt": 1.0,
+        "max_k": 20,
+        "tol": 1e-08,
+        "conserve_fermion": true,
+        "fermion_qubits": [
+            4,
+            9,
+            14
+        ],
+        "num_fermions": 1,
+        "trotter_patience": 2,
+        "energy_patience": 3,
+        "max_n_steps": 5
+    },
+    "final_k": 5,
+    "converged": true,
+    "all_energies": [
+        4.4633657966780934e-08,
+        1.2925403079366808e-09,
+        9.680215230825319e-10,
+        5.6481568820400635e-11,
+        1.852642897569349e-11
+    ],
+    "all_run_data": [
+        {
+            "D": 1,
+            "t": 1.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.085760",
+            "shot_processing": {
+                "raw_unique_basis_states": 283,
+                "fermion_basis_rejected": 0,
+                "kept_unique_basis_states": 283,
+                "fermion_shots_rejected": 0,
+                "kept_shots": 10000
+            },
+            "new_basis_count": 283,
+            "total_basis_count": 283,
+            "H_reduced_size": [
+                283,
+                283
+            ],
+            "reduction": 99.1363525390625,
+            "H_reduced_e": 4.4633657966780934e-08,
+            "used_dense": true,
+            "eigenvalue_time": "0:00:00.043687",
+            "diff": 4.463365138682693e-08,
+            "change_from_prev": null,
+            "circuit_cost": {
+                "depth": 1070,
+                "size": 2151,
+                "num_2q_ops": 477,
+                "depth_2q": 351,
+                "count_ops": {
+                    "sx": 862,
+                    "rz": 697,
+                    "cz": 477,
+                    "x": 100,
+                    "measure": 15,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 2,
+            "t": 2.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.079485",
+            "shot_processing": {
+                "raw_unique_basis_states": 812,
+                "fermion_basis_rejected": 0,
+                "kept_unique_basis_states": 812,
+                "fermion_shots_rejected": 0,
+                "kept_shots": 10000
+            },
+            "new_basis_count": 614,
+            "total_basis_count": 897,
+            "H_reduced_size": [
+                897,
+                897
+            ],
+            "reduction": 97.2625732421875,
+            "H_reduced_e": 1.2925403079366808e-09,
+            "used_dense": true,
+            "eigenvalue_time": "0:00:00.776129",
+            "diff": 1.2925337279826779e-09,
+            "change_from_prev": 4.3341117658844254e-08,
+            "circuit_cost": {
+                "depth": 1064,
+                "size": 2139,
+                "num_2q_ops": 477,
+                "depth_2q": 351,
+                "count_ops": {
+                    "sx": 865,
+                    "rz": 683,
+                    "cz": 477,
+                    "x": 99,
+                    "measure": 15,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 3,
+            "t": 3.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.087407",
+            "shot_processing": {
+                "raw_unique_basis_states": 256,
+                "fermion_basis_rejected": 0,
+                "kept_unique_basis_states": 256,
+                "fermion_shots_rejected": 0,
+                "kept_shots": 10000
+            },
+            "new_basis_count": 119,
+            "total_basis_count": 1016,
+            "H_reduced_size": [
+                1016,
+                1016
+            ],
+            "reduction": 96.8994140625,
+            "H_reduced_e": 9.680215230825319e-10,
+            "used_dense": true,
+            "eigenvalue_time": "0:00:01.075554",
+            "diff": 9.68014943128529e-10,
+            "change_from_prev": 3.2451878485414893e-10,
+            "circuit_cost": {
+                "depth": 1072,
+                "size": 2146,
+                "num_2q_ops": 477,
+                "depth_2q": 351,
+                "count_ops": {
+                    "sx": 864,
+                    "rz": 695,
+                    "cz": 477,
+                    "x": 95,
+                    "measure": 15,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 4,
+            "t": 4.0,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.080521",
+            "shot_processing": {
+                "raw_unique_basis_states": 1015,
+                "fermion_basis_rejected": 0,
+                "kept_unique_basis_states": 1015,
+                "fermion_shots_rejected": 0,
+                "kept_shots": 10000
+            },
+            "new_basis_count": 402,
+            "total_basis_count": 1418,
+            "H_reduced_size": [
+                1418,
+                1418
+            ],
+            "reduction": 95.672607421875,
+            "H_reduced_e": 5.6481568820400635e-11,
+            "used_dense": true,
+            "eigenvalue_time": "0:00:02.400627",
+            "diff": 5.647498886639771e-11,
+            "change_from_prev": 9.115399542621313e-10,
+            "circuit_cost": {
+                "depth": 1068,
+                "size": 2156,
+                "num_2q_ops": 477,
+                "depth_2q": 351,
+                "count_ops": {
+                    "sx": 865,
+                    "rz": 704,
+                    "cz": 477,
+                    "x": 95,
+                    "measure": 15,
+                    "barrier": 1
+                }
+            }
+        },
+        {
+            "D": 5,
+            "t": 5.0,
+            "num_trotter_steps": 2,
+            "circuit_time": "0:00:00.127369",
+            "shot_processing": {
+                "raw_unique_basis_states": 1409,
+                "fermion_basis_rejected": 0,
+                "kept_unique_basis_states": 1409,
+                "fermion_shots_rejected": 0,
+                "kept_shots": 10000
+            },
+            "new_basis_count": 646,
+            "total_basis_count": 2064,
+            "H_reduced_size": [
+                2064,
+                2064
+            ],
+            "reduction": 93.701171875,
+            "H_reduced_e": 1.852642897569349e-11,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.024956",
+            "diff": 1.8519849021690564e-11,
+            "change_from_prev": 3.7955139844707144e-11,
+            "circuit_cost": {
+                "depth": 2165,
+                "size": 4305,
+                "num_2q_ops": 963,
+                "depth_2q": 710,
+                "count_ops": {
+                    "sx": 1740,
+                    "rz": 1392,
+                    "cz": 963,
+                    "x": 195,
+                    "measure": 15,
+                    "barrier": 1
+                }
+            }
+        }
+    ],
+    "num_jobs": null,
+    "QPU_usage": null,
+    "job_info": {},
+    "sampler_options": {
+        "backend_options": {
+            "method": "automatic",
+            "noise_model": "NoiseModel: Ideal",
+            "seed_simulator": 101350914
+        },
+        "run_options": {
+            "shots": 10000
+        }
+    }
+}

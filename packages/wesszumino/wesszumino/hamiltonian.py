@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import numpy as np
 from typing import Tuple
 from scipy.sparse import coo_matrix
@@ -222,11 +220,12 @@ def build_wz_hamiltonian(cutoff, N, a, c=0.0, m=1.0,
 
     # Hopping
     if boundary_condition == "periodic":
-        min_N_for_grad = 1
+        min_N_for_grad = 3
         for n in range(N):
             n_next = (n + 1) % N
             sign = -1.0 if (n == N - 1) else 1.0
             H_total = H_total + sign * embed_sparse_pauliop_on_sites(H_hop, [n, n_next], n_site, N)
+        
     else:  # dirichlet
         min_N_for_grad = 2
         #print(H_total)
@@ -261,6 +260,7 @@ def build_wz_hamiltonian(cutoff, N, a, c=0.0, m=1.0,
                 H_total = H_total + 0.5 * embed_sparse_pauliop_on_sites(H_Wp_q, [n, np1], n_site, N)
             if nm1 is not None:
                 H_total = H_total + (-0.5) * embed_sparse_pauliop_on_sites(H_Wp_q, [n, nm1], n_site, N)
+
 
     # Simplify
     H_total = H_total.simplify(atol=atol_simplify)

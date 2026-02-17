@@ -106,6 +106,11 @@ def calculate_hamiltonian_position(cutoff, potential, x_max=8.0, m=1.0, g=1.0, u
     x = -x_max + dx * np.arange(N)
     #print("x: ", x)
 
+    # This didnt work as well
+    # x = np.linspace(-x_max, x_max, N)  
+    # dx = 2.0 * x_max / (N - 1)
+    # x  = -x_max + dx * np.arange(N)
+
     q = np.diag(x)
 
     # Fourier wavenumbers: k = 2π * n / L
@@ -168,8 +173,6 @@ def apply_pauli_to_bitstring(pauli_str, bitstring):
     Qiskit convention:
       - rightmost char of pauli_str acts on qubit 0
       - rightmost bit of bitstring is qubit 0
-    Returns:
-        phase (complex), out_bitstring (str)
     """
 
     phase = 1.0 + 0.0j
@@ -207,11 +210,6 @@ def reduced_sparse_matrix_from_pauli_terms(pauli_terms, basis_states):
         e.g. [(0.5, "ZIIII"), (-1.2, "XXIYZ"), ...]
     basis_states: list of bitstrings, all same length n
         e.g. top_states from counts
-
-    Returns
-    -------
-    H_red : scipy.sparse.csr_matrix (complex)
-        Reduced Hamiltonian in the basis given by basis_states
     """
     # Clean basis states
     m = len(basis_states)

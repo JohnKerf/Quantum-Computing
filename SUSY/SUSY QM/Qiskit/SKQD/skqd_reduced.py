@@ -31,6 +31,9 @@ ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/3ff62345f6
 #ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/d4f95db0515b47b7ba61dba8a424f873:ed0704ac-ad7d-4366-9bcc-4217fb64abd1::" #NQCC
 
 service = QiskitRuntimeService(channel="ibm_quantum_platform", token=IBM_QUANTUM_API_KEY, instance=ibm_instance_crn)
+COMPILE_BACKEND_NAME = "ibm_torino"#"ibm_marrakesh"
+compile_backend = service.backend(COMPILE_BACKEND_NAME)
+compile_target = compile_backend.target
 
 def _fast_walsh_hadamard(v: np.ndarray) -> np.ndarray:
     v = np.asarray(v, dtype=np.float64).copy()
@@ -117,7 +120,7 @@ def truncate_spo_by_weight(op: SparsePauliOp, *, keep_ratio: float = 0.999, min_
     }
     return SparsePauliOp(PauliList(new_labels), new_coeffs).simplify(), info
 
-def append_split_operator_evolution(qc, qf, qb, basis_info, t, n_steps):
+def append_split_operator_evolution2(qc, qf, qb, basis_info, t, n_steps):
     dt = t / n_steps
     nb = len(qb)
 
@@ -158,6 +161,116 @@ def append_split_operator_evolution(qc, qf, qb, basis_info, t, n_steps):
 
         qc.append(evo_V,qb)
         qc.append(evo_wpp, [qf] + qb)
+
+def append_split_operator_evolution(
+    qc,
+    qf,
+    qb,
+    basis_info,
+    t,
+    n_steps,
+    *,
+    scheme: str = "strang",        # "strang" or "lie"
+    keep_ratio: float = 0.999,#0.999,
+    min_keep: int = 0,
+    atol: float = 1e-12,
+):
+    """
+    Toggleable split-operator evolution (single site) using Walsh->Z expansions.
+
+    scheme="strang" (2nd order):
+        V_half -> bf_half -> QFT T_full iQFT -> V_half -> bf_half
+
+    scheme="lie" (1st order):
+        V_full -> bf_full -> QFT T_full iQFT
+
+    Notes:
+    - We keep your exact conventions:
+        * V_bos defined from Wp2 (and optionally Wpp if you later add it)
+        * Tphase defined from k2
+        * We implement V and T as Z-string SparsePauliOps and evolve with PauliEvolutionGate
+    - `dt = t/n_steps` is the per-step time; total time is t.
+    """
+    scheme = scheme.lower()
+    if scheme not in ("strang", "lie"):
+        raise ValueError("scheme must be 'strang' or 'lie'")
+
+    if n_steps <= 0:
+        raise ValueError("n_steps must be >= 1")
+
+    dt = float(t) / float(n_steps)
+    nb = len(qb)
+
+    # --- diagonals (x-basis / k-basis)
+    k2  = np.asarray(basis_info["k2"], dtype=np.float64)
+    Wp2 = np.asarray(basis_info["Wp2_diag"], dtype=np.float64)
+    Wpp = np.asarray(basis_info["Wpp_diag"], dtype=np.float64)
+
+    # Your original scalings:
+    # V_bos = (-(dt/4)) * Wp2     (this is a "half-step" style scaling)
+    # Tphase = (-(dt/2)) * k2    (this is a full-step scaling for kinetic)
+    #
+    # We'll construct a "half" and "full" version of V_bos + bf and toggle in the loop.
+
+    # ---- Build V operator from Wp2 (Z-only), with half-step scaling baked into diag vals
+    V_bos_half_diag = (-(dt / 4.0)) * Wp2
+    H_V_half = diagonal_to_z_sparsepauliop(V_bos_half_diag, nb, atol=atol, drop_identity=True)
+    H_V_half, _ = truncate_spo_by_weight(H_V_half, keep_ratio=keep_ratio, min_keep=min_keep)
+
+    # Full-step version is exactly double the half-step diag
+    V_bos_full_diag = 2.0 * V_bos_half_diag
+    H_V_full = diagonal_to_z_sparsepauliop(V_bos_full_diag, nb, atol=atol, drop_identity=True)
+    H_V_full, _ = truncate_spo_by_weight(H_V_full, keep_ratio=keep_ratio, min_keep=min_keep)
+
+    # ---- Build T operator in k-basis (Z-only) with full-step scaling baked in
+    T_diag = (-(dt / 2.0)) * k2
+    H_T = diagonal_to_z_sparsepauliop(T_diag, nb, atol=atol, drop_identity=True)
+    H_T, _ = truncate_spo_by_weight(H_T, keep_ratio=keep_ratio, min_keep=min_keep)
+
+    # ---- Build bf operator: Z_f ⊗ Wpp (Z-only on bosons)
+    H_wpp_b = diagonal_to_z_sparsepauliop(Wpp, nb, atol=atol, drop_identity=False)
+    H_wpp_b, _ = truncate_spo_by_weight(H_wpp_b, keep_ratio=keep_ratio, min_keep=min_keep,)
+
+    labels = ["Z" + p.to_label() for p in H_wpp_b.paulis]
+    H_wpp = SparsePauliOp(labels, H_wpp_b.coeffs).simplify(atol=atol)
+
+    # Your original bf time was dt/4 (half-step style).
+    evo_bf_half = PauliEvolutionGate(H_wpp, time=(dt / 4.0), synthesis=LieTrotter(reps=1))
+    evo_bf_full = PauliEvolutionGate(H_wpp, time=(dt / 2.0), synthesis=LieTrotter(reps=1))
+
+    # ---- Build evolution gates
+    # Here we use time=1.0 because the coefficient scaling is already baked into the operator coefficients.
+    evo_V_half = PauliEvolutionGate(H_V_half, time=1.0, synthesis=LieTrotter(reps=1))
+    evo_V_full = PauliEvolutionGate(H_V_full, time=1.0, synthesis=LieTrotter(reps=1))
+
+    evo_T = PauliEvolutionGate(H_T, time=1.0, synthesis=LieTrotter(reps=1))
+
+    qft = QFTGate(nb)
+    iqft = qft.inverse()
+
+    def apply_V(kind: str):
+        if kind == "half":
+            qc.append(evo_V_half, qb)
+            qc.append(evo_bf_half, [qf] + qb)
+        elif kind == "full":
+            qc.append(evo_V_full, qb)
+            qc.append(evo_bf_full, [qf] + qb)
+        else:
+            raise ValueError("kind must be 'half' or 'full'")
+
+    # ---- Main loop
+    for _ in range(n_steps):
+        if scheme == "strang":
+            apply_V("half")
+        else:
+            apply_V("full")
+
+        qc.append(qft, qb)
+        qc.append(evo_T, qb)
+        qc.append(iqft, qb)
+
+        if scheme == "strang":
+            apply_V("half")
 
 def setup_logger(logfile_path, name, enabled=True):
     if not enabled:
@@ -233,7 +346,7 @@ def get_backend(backend_name, use_noise_model, noise_model_options, resilience_l
 
     return backend, sampler
 
-def create_circuit(basis_info, backend, basis_state, optimization_level, cutoff, t, num_trotter_steps):
+def create_circuit(basis_info, target, basis_state, optimization_level, cutoff, t, num_trotter_steps, transpiler_seed):
 
     num_qubits = 1 + int(np.log2(cutoff))
     qc = QuantumCircuit(num_qubits)
@@ -246,18 +359,18 @@ def create_circuit(basis_info, backend, basis_state, optimization_level, cutoff,
     qf = num_qubits - 1          # fermion = last qubit
     qb = list(range(num_qubits - 1))  # boson register = all earlier qubits
 
-    append_split_operator_evolution(qc, qf, qb, basis_info, t, num_trotter_steps)
+    append_split_operator_evolution(qc, qf, qb, basis_info, t, num_trotter_steps, scheme='lie')
 
     qc.measure_all()
 
     #summarize_circuit(qc, "pre-transpile")
-    pm = generate_preset_pass_manager(target=backend.target, optimization_level=optimization_level)#, routing_method="sabre", layout_method="sabre")
+    pm = generate_preset_pass_manager(target=target, optimization_level=optimization_level, seed_transpiler=transpiler_seed)#, routing_method="sabre", layout_method="sabre")
  
     try:
         circuit_isa = pm.run(qc)
     except:
         print(f"Error transpiling")
-        pm = generate_preset_pass_manager(target=backend.target, optimization_level=optimization_level, translation_method="synthesis")
+        pm = generate_preset_pass_manager(target=target, optimization_level=optimization_level, translation_method="synthesis", seed_transpiler=transpiler_seed)
         circuit_isa = pm.run(qc)
 
     #summarize_circuit(circuit_isa, "post-transpile")
@@ -387,6 +500,10 @@ def run_skqd(basis_info, H_pauli, H_info, pauli_terms, basis_state, backend_info
     seed = (os.getpid() * int(time.time())) % 123456789
 
     backend, sampler = get_backend(backend_info["backend_name"], backend_info["use_noise_model"], backend_info["noise_model_options"], backend_info["resilience_level"], seed, shots, backend_info["tags"])
+    if backend_info["use_noise_model"] == 1:
+        target = compile_target
+    else:
+        target = backend.target
     sampler_options = dataclasses.asdict(sampler.options)
 
     k=1
@@ -412,7 +529,7 @@ def run_skqd(basis_info, H_pauli, H_info, pauli_terms, basis_state, backend_info
 
         t = dt*k
         
-        qc, circuit_cost = create_circuit(basis_info, backend, basis_state, backend_info["optimization_level"], H_info["cutoff"], t, n_steps)
+        qc, circuit_cost = create_circuit(basis_info, target, basis_state, backend_info["optimization_level"], H_info["cutoff"], t, n_steps, backend_info["transpiler_seed"])
 
         t1 = datetime.now()
         counts, job_id, job_metrics = get_counts(sampler, qc, shots) #counts are returned in binary notation i.e. q0q1...qn and not standard qiskit noation
@@ -574,6 +691,7 @@ if __name__ == "__main__":
     gate_error=False
     readout_error=False  
     thermal_relaxation=False
+    transpiler_seed = 42
 
     noise_model_options = {
         "gate_error":gate_error,
@@ -591,7 +709,15 @@ if __name__ == "__main__":
 
     x_max=5.0
 
-    for potential in ['AHO']:
+    dt=0.5
+    max_k = 1
+    tol = 1e-10
+
+    trotter_patience = 2
+    energy_patience = 3        
+    max_n_steps = 3
+
+    for potential in ["QHO","AHO","DW"]:
         for cutoff in [2,4,8,16,32,64,128,256,512,1024]:
 
             print(f"Running for {potential} and cutoff {cutoff}")
@@ -599,7 +725,7 @@ if __name__ == "__main__":
             tags=["SKQD", f"shots:{shots}", f"{potential}", f"cutoff={cutoff}"]
 
 
-            base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\SKQD\BasisTesting\RealTranspile\Position+QFT+Trunc", potential)
+            base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\SKQD\BasisTesting\RealTranspile\Position+QFT+Trunc+Lie", potential)
             #base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\SKQD\BasisTesting\Aer\Position+QFT+NoDiag", potential)
             os.makedirs(base_path, exist_ok=True)
             log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
@@ -635,14 +761,6 @@ if __name__ == "__main__":
             num_fermions = sum(basis_state[::-1][q] for q in fermion_qubits)
 
             
-            dt=0.5
-            max_k = 10
-            tol = 1e-10
-
-            trotter_patience = 2
-            energy_patience = 3        
-            max_n_steps = 3
-
             H_info = {"potential": potential,
                     "cutoff": cutoff,
                     "x_max": x_max,
@@ -660,7 +778,8 @@ if __name__ == "__main__":
                             "resilience_level": resilience_level, 
                             "optimization_level": optimization_level,
                             "shots": shots, 
-                            "tags": tags}
+                            "tags": tags,
+                            "transpiler_seed": transpiler_seed}
             
             run_info = {"dt": dt,
                         "max_k": max_k,

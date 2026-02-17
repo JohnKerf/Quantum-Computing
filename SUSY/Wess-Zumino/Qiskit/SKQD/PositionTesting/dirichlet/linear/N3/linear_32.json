@@ -1,0 +1,159 @@
+{
+    "seed": 117013689,
+    "starttime": "2026-02-06_10-27-20",
+    "endtime": "2026-02-06_10-27-24",
+    "time_taken": "0:00:04.079362",
+    "H_info": {
+        "potential": "linear",
+        "boundary_condition": "dirichlet",
+        "cutoff": 32,
+        "N": 3,
+        "a": 1.0,
+        "c": null,
+        "num_qubits": 18,
+        "num_paulis": 321,
+        "keep_ratio": 1.0,
+        "trunc_info": {
+            "m": 321,
+            "n": 321,
+            "keep_frac_terms": 1.0,
+            "keep_ratio": 1.0,
+            "truncated": 0.0,
+            "total_weight": 9775.300259675214
+        },
+        "dense_H_size": [
+            262144,
+            262144
+        ],
+        "eigenvalues": [
+            -2.1193180724807767e-07,
+            0.9999997880681254,
+            1.0000028948431814,
+            1.2247446594597164,
+            1.2247446594597637,
+            1.224745356421506,
+            1.2247482690812581,
+            1.9999833772221611
+        ],
+        "basis": [
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0
+        ]
+    },
+    "backend_info": {
+        "backend_name": "Aer",
+        "use_noise_model": 1,
+        "noise_model_options": {
+            "gate_error": false,
+            "readout_error": false,
+            "thermal_relaxation": false
+        },
+        "resilience_level": 0,
+        "optimization_level": 3,
+        "shots": 10000,
+        "tags": [
+            "NQCC-Q4",
+            "SBQKD",
+            "shots:10000",
+            "dirichlet",
+            "linear",
+            "N=3",
+            "cutoff=32"
+        ]
+    },
+    "Ansatz_info": {
+        "include_basis": true,
+        "include_rys": true,
+        "include_xxyys": true
+    },
+    "run_info": {
+        "dt": 0.5,
+        "max_k": 1,
+        "tol": 1e-08,
+        "conserve_fermion": false,
+        "fermion_qubits": [
+            5,
+            11,
+            17
+        ],
+        "num_fermions": 0,
+        "trotter_patience": 2,
+        "energy_patience": 3,
+        "max_n_steps": 3
+    },
+    "final_k": 1,
+    "converged": false,
+    "all_energies": [
+        12.808483275740567
+    ],
+    "all_run_data": [
+        {
+            "D": 1,
+            "t_k": 0.5,
+            "num_trotter_steps": 1,
+            "circuit_time": "0:00:00.101210",
+            "shot_processing": {
+                "raw_unique_basis_states": 6240,
+                "fermion_basis_rejected": 0,
+                "kept_unique_basis_states": 6240,
+                "fermion_shots_rejected": 0,
+                "kept_shots": 10000
+            },
+            "new_basis_count": 6240,
+            "total_basis_count": 6240,
+            "H_reduced_size": [
+                6240,
+                6240
+            ],
+            "reduction": 97.61962890625,
+            "H_reduced_e": 12.808483275740567,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.080680",
+            "diff": 12.808483487672374,
+            "change_from_prev": null,
+            "circuit_cost": {
+                "depth": 1182,
+                "size": 4477,
+                "num_2q_ops": 1082,
+                "depth_2q": 347,
+                "count_ops": {
+                    "sx": 1633,
+                    "rz": 1572,
+                    "cz": 1082,
+                    "x": 172,
+                    "measure": 18,
+                    "barrier": 1
+                }
+            }
+        }
+    ],
+    "num_jobs": null,
+    "QPU_usage": null,
+    "job_info": {},
+    "sampler_options": {
+        "backend_options": {
+            "method": "automatic",
+            "noise_model": "NoiseModel: Ideal",
+            "seed_simulator": 117013689
+        },
+        "run_options": {
+            "shots": 10000
+        }
+    }
+}

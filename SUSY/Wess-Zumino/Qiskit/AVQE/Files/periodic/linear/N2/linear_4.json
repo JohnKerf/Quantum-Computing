@@ -1,0 +1,132 @@
+{
+    "starttime": "2026-02-02_09-28-31",
+    "endtime": "2026-02-02_09-28-32",
+    "potential": "linear",
+    "cutoff": 4,
+    "N": 2,
+    "a": 1.0,
+    "c": null,
+    "exact_eigenvalues": [
+        -2.242046396948241e-16,
+        0.9999999999999991,
+        0.9999999999999993,
+        0.9999999999999996,
+        1.0000000000000007,
+        1.0000000000000013,
+        1.9999999999999984,
+        1.9999999999999993
+    ],
+    "shots": null,
+    "Optimizer": {
+        "name": "COBYQA",
+        "optimizer_options": {
+            "maxiter": 10000,
+            "maxfev": 10000,
+            "initial_tr_radius": 0.1,
+            "final_tr_radius": 1e-12,
+            "scale": true
+        }
+    },
+    "num_VQE": 1,
+    "num_steps": 50,
+    "num_grad_checks": 1,
+    "eps_screen": 0.1,
+    "fd_eps": 0.001,
+    "energy_conv_tol": 1e-09,
+    "energy_conv_patience": 5,
+    "basis_state": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+    ],
+    "all_energies": [
+        [
+            0.0
+        ]
+    ],
+    "min_energies": [
+        0.0
+    ],
+    "op_list": [
+        [
+            {
+                "gate_id": 1,
+                "name": "RY",
+                "param": 0.0,
+                "qubits": [
+                    2
+                ],
+                "beta": null,
+                "pos": 0
+            }
+        ]
+    ],
+    "grad_history": [
+        [
+            {
+                "step": 0,
+                "L_before": 0,
+                "pool_size": 25,
+                "top3": [
+                    {
+                        "pos": 0,
+                        "grad": 0.0,
+                        "abs_grad": 0.0,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                2
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 0,
+                        "grad": 0.0,
+                        "abs_grad": 0.0,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RZ",
+                            "qubits": [
+                                2
+                            ],
+                            "beta": null
+                        }
+                    },
+                    {
+                        "pos": 0,
+                        "grad": 0.0,
+                        "abs_grad": 0.0,
+                        "param0": 0.0,
+                        "op": {
+                            "name": "RY",
+                            "qubits": [
+                                0
+                            ],
+                            "beta": null
+                        }
+                    }
+                ],
+                "energy_prev": null
+            }
+        ]
+    ],
+    "num_iters": [
+        1
+    ],
+    "success": [
+        true
+    ],
+    "run_times": [
+        "0:00:00.072166"
+    ],
+    "seeds": [
+        5543919
+    ],
+    "parallel_run_time": "0:00:00.626793",
+    "total_VQE_time": "0:00:00.072166"
+}
