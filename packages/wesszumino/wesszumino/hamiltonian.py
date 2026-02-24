@@ -164,7 +164,7 @@ def embed_sparse_pauliop_on_sites(H_block, sites,n_site,N):
 
 def build_wz_hamiltonian(cutoff, N, a, c=0.0, m=1.0, 
                          potential="linear", boundary_condition="periodic", 
-                         atol_decompose=1e-12, atol_simplify=1e-12, remove_zero_terms=True):
+                         atol_decompose=1e-12, atol_simplify=1e-12, include_grad=True, include_qq=True, include_wpq=True, include_q2=True):
     """
     Build the Wess–Zumino Hamiltonian as a Qiskit SparsePauliOp using
     only local blocks (1-site and 2-site).
@@ -235,31 +235,36 @@ def build_wz_hamiltonian(cutoff, N, a, c=0.0, m=1.0,
             #print(H_total)
 
     # Gradient + potential-gradient
-    if N >= min_N_for_grad:
-        def neighbors(idx: int):
-            if boundary_condition == "periodic":
-                return (idx - 1) % N, (idx + 1) % N
-            # dirichlet
-            nm1 = idx - 1 if idx > 0 else None
-            np1 = idx + 1 if idx < N - 1 else None
-            return nm1, np1
+    if include_grad:
+        if N >= min_N_for_grad:
+            def neighbors(idx: int):
+                if boundary_condition == "periodic":
+                    return (idx - 1) % N, (idx + 1) % N
+                # dirichlet
+                nm1 = idx - 1 if idx > 0 else None
+                np1 = idx + 1 if idx < N - 1 else None
+                return nm1, np1
 
-        for n in range(N):
-            nm1, np1 = neighbors(n)
+            for n in range(N):
+                nm1, np1 = neighbors(n)
 
-            # (a/2) g_n^2 = 1/(8a)(q_{n+1}^2 + q_{n-1}^2 - 2 q_{n+1} q_{n-1})
-            if np1 is not None:
-                H_total = H_total + (1.0 / (8.0 * a)) * embed_sparse_pauliop_on_sites(H_q2, [np1], n_site, N)
-            if nm1 is not None:
-                H_total = H_total + (1.0 / (8.0 * a)) * embed_sparse_pauliop_on_sites(H_q2, [nm1], n_site, N)
-            if (np1 is not None) and (nm1 is not None):
-                H_total = H_total + (-1.0 / (4.0 * a)) * embed_sparse_pauliop_on_sites(H_qq, [nm1, np1], n_site, N)
+                # (a/2) g_n^2 = 1/(8a)(q_{n+1}^2 + q_{n-1}^2 - 2 q_{n+1} q_{n-1})
+                if include_q2:
+                    if np1 is not None:
+                        H_total = H_total + (1.0 / (8.0 * a)) * embed_sparse_pauliop_on_sites(H_q2, [np1], n_site, N)
+                    if nm1 is not None:
+                        H_total = H_total + (1.0 / (8.0 * a)) * embed_sparse_pauliop_on_sites(H_q2, [nm1], n_site, N)
 
-            # a W'(q_n) g_n = 0.5( W'(q_n) q_{n+1} - W'(q_n) q_{n-1} )
-            if np1 is not None:
-                H_total = H_total + 0.5 * embed_sparse_pauliop_on_sites(H_Wp_q, [n, np1], n_site, N)
-            if nm1 is not None:
-                H_total = H_total + (-0.5) * embed_sparse_pauliop_on_sites(H_Wp_q, [n, nm1], n_site, N)
+                if include_qq:
+                    if (np1 is not None) and (nm1 is not None):
+                        H_total = H_total + (-1.0 / (4.0 * a)) * embed_sparse_pauliop_on_sites(H_qq, [nm1, np1], n_site, N)
+
+                # a W'(q_n) g_n = 0.5( W'(q_n) q_{n+1} - W'(q_n) q_{n-1} )
+                if include_wpq:
+                    if np1 is not None:
+                        H_total = H_total + 0.5 * embed_sparse_pauliop_on_sites(H_Wp_q, [n, np1], n_site, N)
+                    if nm1 is not None:
+                        H_total = H_total + (-0.5) * embed_sparse_pauliop_on_sites(H_Wp_q, [n, nm1], n_site, N)
 
 
     # Simplify
@@ -305,8 +310,6 @@ def apply_pauli_to_bitstring(pauli_str, bitstring):
 
     return phase, "".join(out)
 
-
-
 def reduced_sparse_matrix_from_pauli_terms(pauli_terms, basis_states):
     """
     Build reduced Hamiltonian as a sparse matrix from Pauli terms.
@@ -348,4 +351,90 @@ def reduced_sparse_matrix_from_pauli_terms(pauli_terms, basis_states):
     H_red = H_red_coo.tocsr()
 
     return H_red
+
+
+############################################################################################################################################################
+#  Create reduced sparse matrix from pauli terms and bitstrings - FAST Version
+############################################################################################################################################################
+
+def _compile_pauli_masks(pauli_str):
+    """
+    pauli_str is length n, leftmost acts on qubit n-1, rightmost on qubit 0 (Qiskit convention).
+    Returns (xmask, zmask, ny, base_i_factor).
+    """
+    xmask = 0
+    zmask = 0
+    ny = 0
+
+    # qubit 0 is rightmost char
+    # so for qubit q, look at pauli_str[-(q+1)]
+    for q, ch in enumerate(reversed(pauli_str)):
+        if ch == "I":
+            continue
+        if ch == "X":
+            xmask |= (1 << q)
+        elif ch == "Z":
+            zmask |= (1 << q)
+        elif ch == "Y":
+            xmask |= (1 << q)
+            zmask |= (1 << q)
+            ny += 1
+        else:
+            raise ValueError(f"Bad Pauli char '{ch}'")
+
+    i_factor = (1j) ** ny  # global factor from all Y’s
+    return xmask, zmask, i_factor
+
+def reduced_sparse_matrix_from_pauli_terms_fast(pauli_terms, basis_states):
+    """
+    pauli_terms: list[(coeff, pauli_str)]
+    basis_states: list[str] bitstrings, all same length.
+
+    Returns CSR sparse matrix (via COO->CSR). Duplicates are fine; CSR will sum them.
+    """
+    m = len(basis_states)
+    if m == 0:
+        return coo_matrix((0, 0), dtype=np.complex128).tocsr()
+
+    # Convert basis to ints once
+    basis_ints = [int(s, 2) for s in basis_states]
+    idx = {s_int: i for i, s_int in enumerate(basis_ints)}
+
+    rows = []
+    cols = []
+    data = []
+
+    # Localize for speed
+    idx_get = idx.get
+    basis_ints_local = basis_ints
+
+    for coeff, pstr in pauli_terms:
+        if coeff == 0:
+            continue
+
+        xmask, zmask, i_factor = _compile_pauli_masks(pstr)
+        coeff_i = coeff * i_factor
+
+        # loop over ket states
+        for j, s in enumerate(basis_ints_local):
+            out = s ^ xmask
+            i = idx_get(out)
+            if i is None:
+                continue
+
+            # (-1)^{popcount(s & zmask)}
+            sign = -1.0 if ((s & zmask).bit_count() & 1) else 1.0
+
+            val = coeff_i * sign
+            # val can be complex; keep it
+            rows.append(i)
+            cols.append(j)
+            data.append(val)
+
+    H_red = coo_matrix((np.asarray(data, dtype=np.complex128),
+                        (np.asarray(rows, dtype=np.int32), np.asarray(cols, dtype=np.int32))),
+                       shape=(m, m),
+                       dtype=np.complex128).tocsr()
+    return H_red
+
 

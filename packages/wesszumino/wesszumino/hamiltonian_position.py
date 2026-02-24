@@ -22,13 +22,8 @@ def fourier_matrix(n):
     return np.exp(-2j * np.pi * j * k / n) / np.sqrt(n)
 
 
-def create_position_operators(cutoff: int, x_max: float, m: float = 1.0) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Build q, p, and p^2 in a discrete position/grid basis on [-x_max, x_max).
-    Notes:
-      - This is the standard Fourier-grid construction (wrap-around in momentum grid).
-      - Choose x_max large enough that low-energy wavefunctions don't feel the edges.
-    """
+def create_position_operators(cutoff, x_max, m=1.0):
+  
     N = cutoff
     L = 2.0 * x_max
     dx = L / N
@@ -43,7 +38,6 @@ def create_position_operators(cutoff: int, x_max: float, m: float = 1.0) -> tupl
     F = fourier_matrix(N)
     Fdg = F.conj().T
 
-    # p = F† diag(k) F,   p^2 = F† diag(k^2) F
     p = Fdg @ np.diag(k) @ F
     p2 = Fdg @ np.diag(k2) @ F
 

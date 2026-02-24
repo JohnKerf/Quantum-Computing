@@ -1,0 +1,784 @@
+import os, json, logging, time, dataclasses
+import numpy as np
+from collections import Counter
+from datetime import datetime
+
+from qiskit import QuantumCircuit
+from qiskit_aer import AerSimulator
+from qiskit_aer.primitives import SamplerV2 as AerSampler
+from qiskit_aer.noise import NoiseModel
+from qiskit_ibm_runtime import SamplerV2 as Sampler, QiskitRuntimeService
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+from qiskit.quantum_info import SparsePauliOp, Operator, PauliList
+from scipy.sparse.linalg import eigsh
+from qiskit.circuit.library import QFTGate, DiagonalGate, PauliEvolutionGate
+from qiskit.synthesis.evolution import LieTrotter
+from qiskit.transpiler.layout import Layout
+from qiskit.circuit.library.standard_gates import PhaseGate
+from qiskit.circuit.library.standard_gates import RZZGate
+import susy_qm as sqm
+import git
+repo_path = git.Repo('.', search_parent_directories=True).working_tree_dir
+
+
+path = os.path.join( r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\open-apikey.json")
+#path = r"C:\Users\Johnk\Documents\PhD\Quantum Computing Code\Quantum-Computing\apikey.json"
+with open(path, encoding="utf-8") as f:
+    api_key = json.load(f).get("apikey")
+
+IBM_QUANTUM_API_KEY = api_key
+ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/3ff62345f67c45e48e47a7f57d2f39f5:83214c75-88ab-4e55-8a87-6502ecc7cc9b::" #Open
+#ibm_instance_crn = "crn:v1:bluemix:public:quantum-computing:us-east:a/d4f95db0515b47b7ba61dba8a424f873:ed0704ac-ad7d-4366-9bcc-4217fb64abd1::" #NQCC
+
+service = QiskitRuntimeService(channel="ibm_quantum_platform", token=IBM_QUANTUM_API_KEY, instance=ibm_instance_crn)
+COMPILE_BACKEND_NAME = "ibm_torino"#"ibm_marrakesh"
+compile_backend = service.backend(COMPILE_BACKEND_NAME)
+compile_target = compile_backend.target
+
+
+
+def _fast_walsh_hadamard(v: np.ndarray) -> np.ndarray:
+    """In-place-ish Walsh–Hadamard transform (WHT) for length 2^n real vectors."""
+    v = np.asarray(v, dtype=np.float64).copy()
+    n = v.size
+    h = 1
+    while h < n:
+        for i in range(0, n, 2 * h):
+            a = v[i:i + h].copy()
+            b = v[i + h:i + 2 * h].copy()
+            v[i:i + h] = a + b
+            v[i + h:i + 2 * h] = a - b
+        h *= 2
+    return v
+
+def diagonal_to_z_sparsepauliop(
+    diag_vals: np.ndarray,
+    nb: int,
+    *,
+    atol: float = 1e-12,
+    drop_identity: bool = False,
+) -> SparsePauliOp:
+    """
+    Expand a diagonal operator diag(diag_vals) into a Z-only SparsePauliOp using WHT.
+    diag_vals must have length 2**nb and be real.
+    """
+    diag_vals = np.asarray(diag_vals, dtype=np.float64).reshape(-1)
+    if diag_vals.size != (1 << nb):
+        raise ValueError(f"diag length {diag_vals.size} != 2**nb {1<<nb}")
+
+    coeffs = _fast_walsh_hadamard(diag_vals) / (1 << nb)
+
+    labels = []
+    out = []
+    for s, c in enumerate(coeffs):
+        if drop_identity and s == 0:
+            continue
+        if abs(c) <= atol:
+            continue
+
+        # Qiskit Pauli label convention: rightmost char is qubit-0 of the provided qubit list
+        chars = ["I"] * nb
+        for q in range(nb):
+            if (s >> q) & 1:
+                chars[nb - 1 - q] = "Z"
+        labels.append("".join(chars))
+        out.append(float(c))
+
+    if not labels:
+        return SparsePauliOp(PauliList(["I" * nb]), coeffs=[0.0])
+
+    return SparsePauliOp(PauliList(labels), coeffs=np.asarray(out, dtype=np.float64)).simplify(atol=atol)
+
+def truncate_spo_by_pauli_weight(
+    H: SparsePauliOp,
+    *,
+    max_weight: int,
+    keep_ratio: float = 1.0,
+    min_keep: int = 0,
+    weight_power: float = 2.0,
+    atol: float = 1e-12,
+) -> tuple[SparsePauliOp, dict]:
+    """
+    Option A truncation:
+      1) keep only Pauli strings with weight <= max_weight
+      2) (optional) within that set, keep the biggest coefficients by weighted Lp
+    """
+    if max_weight < 0:
+        raise ValueError("max_weight must be >= 0")
+
+    paulis = H.paulis
+    coeffs = np.asarray(H.coeffs)
+
+    nb = H.num_qubits
+    weights = np.array([nb - p.to_label().count("I") for p in paulis], dtype=int)
+
+    allowed = np.where(weights <= max_weight)[0]
+    if allowed.size == 0:
+        return SparsePauliOp(PauliList(["I" * nb]), coeffs=[0.0]), {
+            "m": 0, "n": len(coeffs), "max_weight": max_weight,
+            "note": "all terms removed by max_weight"
+        }
+
+    if keep_ratio >= 1.0 - 1e-15 and min_keep <= 0:
+        keep_idx = allowed
+    else:
+        abs_c = np.abs(coeffs[allowed])
+        order = np.argsort(abs_c)[::-1]
+        allowed_sorted = allowed[order]
+
+        w = (abs_c[order] ** weight_power)
+        cum = np.cumsum(w)
+        total = float(cum[-1]) if len(cum) else 0.0
+        target = keep_ratio * total if total else 0.0
+
+        m = int(np.searchsorted(cum, target, side="left") + 1) if len(cum) else 0
+        m = max(m, int(min_keep))
+        m = min(m, len(allowed_sorted))
+        keep_idx = allowed_sorted[:m]
+
+    keep_idx = np.sort(np.asarray(keep_idx, dtype=int))
+    H_tr = SparsePauliOp(paulis[keep_idx], coeffs[keep_idx]).simplify(atol=atol)
+
+    info = {
+        "m": len(keep_idx),
+        "n": len(coeffs),
+        "max_weight": max_weight,
+        "keep_ratio": keep_ratio,
+        "min_keep": min_keep,
+        "kept_weight_hist": dict(zip(*np.unique(weights[keep_idx], return_counts=True))),
+    }
+    return H_tr, info
+
+def append_split_operator_evolution(
+    qc,
+    qf,
+    qb,
+    basis_info,
+    t,
+    n_steps,
+    *,
+    scheme: str = "suzuki2",
+    atol: float = 1e-12,
+    # Option A knobs:
+    max_weight_1site: int = 2,
+    keep_ratio_1site: float = 1.0,
+    min_keep_1site: int = 0,
+):
+    """
+    Split-operator evolution using Option A:
+      diagonal -> Walsh Z expansion -> truncate by Pauli weight -> PauliEvolutionGate.
+    """
+    dt = float(t) / float(n_steps)
+    nb = len(qb)
+
+    scheme = scheme.lower()
+    if scheme not in ("suzuki2", "lie"):
+        raise ValueError("scheme must be 'suzuki2' or 'lie'")
+
+    # --- diagonals (length = 2**nb)
+    k2  = np.asarray(basis_info["k2"], dtype=np.float64).reshape(-1)
+    Wp2 = np.asarray(basis_info["Wp2_diag"], dtype=np.float64).reshape(-1)
+    Wpp = np.asarray(basis_info["Wpp_diag"], dtype=np.float64).reshape(-1)
+
+    if k2.size != (1 << nb) or Wp2.size != (1 << nb) or Wpp.size != (1 << nb):
+        raise ValueError("basis_info diagonals must all have length 2**nb")
+
+    # build Z-only SparsePauliOps for diagonals
+    H_Wp2_full = diagonal_to_z_sparsepauliop(Wp2, nb, atol=atol, drop_identity=True)
+    H_k2_full  = diagonal_to_z_sparsepauliop(k2,  nb, atol=atol, drop_identity=True)
+    H_Wpp_full = diagonal_to_z_sparsepauliop(Wpp, nb, atol=atol, drop_identity=False)
+
+    # Option A truncation by Pauli weight (and optional keep_ratio within allowed weights)
+    H_Wp2, _ = truncate_spo_by_pauli_weight(
+        H_Wp2_full,
+        max_weight=max_weight_1site,
+        keep_ratio=keep_ratio_1site,
+        min_keep=min_keep_1site,
+        atol=atol,
+    )
+    H_k2, _ = truncate_spo_by_pauli_weight(
+        H_k2_full,
+        max_weight=max_weight_1site,
+        keep_ratio=keep_ratio_1site,
+        min_keep=min_keep_1site,
+        atol=atol,
+    )
+    H_Wpp, _ = truncate_spo_by_pauli_weight(
+        H_Wpp_full,
+        max_weight=max_weight_1site,
+        keep_ratio=keep_ratio_1site,
+        min_keep=min_keep_1site,
+        atol=atol,
+    )
+
+    # times (match your previous DiagonalGate implementation)
+    # V_bos: phases were exp(-i * (-(dt/4)*Wp2)) == exp(+i * dt/4 * Wp2)
+    # Implement as PauliEvolutionGate(H_Wp2, time = -(dt/4)) so exp(-i * time * H) matches.
+    evo_V_half = PauliEvolutionGate(H_Wp2, time=-(dt / 4.0), synthesis=LieTrotter(reps=1))
+    evo_V_full = PauliEvolutionGate(H_Wp2, time=-(dt / 2.0), synthesis=LieTrotter(reps=1))
+
+    # kinetic: phases were exp(-i * (-(dt/2)*k2)) -> same sign logic
+    evo_T = PauliEvolutionGate(H_k2, time=-(dt / 2.0), synthesis=LieTrotter(reps=1))
+
+    # bf term: Z_f ⊗ Wpp(q)
+    # Build operator on (1+nb) qubits: [qf] + qb
+    labels = ["Z" + p.to_label() for p in H_Wpp.paulis]
+    H_ZfWpp = SparsePauliOp(labels, H_Wpp.coeffs).simplify(atol=atol)
+
+    evo_bf_half = PauliEvolutionGate(H_ZfWpp, time=(dt / 4.0), synthesis=LieTrotter(reps=1))
+    evo_bf_full = PauliEvolutionGate(H_ZfWpp, time=(dt / 2.0), synthesis=LieTrotter(reps=1))
+
+    qft = QFTGate(nb)
+    iqft = qft.inverse()
+
+    def apply_V(kind: str):
+        if kind == "half":
+            qc.append(evo_V_half, qb)
+            qc.append(evo_bf_half, [qf] + qb)
+        elif kind == "full":
+            qc.append(evo_V_full, qb)
+            qc.append(evo_bf_full, [qf] + qb)
+        else:
+            raise ValueError("kind must be 'half' or 'full'")
+
+    for _ in range(n_steps):
+        if scheme == "suzuki2":
+            apply_V("half")
+        else:
+            apply_V("full")
+
+        qc.append(qft, qb)
+        qc.append(evo_T, qb)
+        qc.append(iqft, qb)
+
+        if scheme == "suzuki2":
+            apply_V("half")
+
+def setup_logger(logfile_path, name, enabled=True):
+    if not enabled:
+        
+        logger = logging.getLogger(f"{name}_disabled")
+        logger.handlers = []               
+        logger.addHandler(logging.NullHandler())
+        logger.propagate = False
+        logger.setLevel(logging.CRITICAL)
+        return logger
+
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    if not logger.handlers:
+        handler = logging.FileHandler(logfile_path)
+        formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    return logger
+
+def get_backend(backend_name, use_noise_model, noise_model_options, resilience_level, seed, shots, tags):
+
+    noise_model = None
+
+    if backend_name == "Aer":
+        if use_noise_model:
+            real_backend = service.backend("ibm_torino")
+            noise_model = NoiseModel.from_backend(
+                real_backend,
+                gate_error=noise_model_options["gate_error"],
+                readout_error=noise_model_options["readout_error"],   
+                thermal_relaxation=noise_model_options["thermal_relaxation"],
+            )
+            backend = AerSimulator(noise_model=noise_model)
+
+            if log_enabled: logger.info(noise_model.noise_instructions)
+
+
+        else:
+            backend = AerSimulator(method="statevector")
+    else:
+        backend = service.backend(backend_name)
+
+
+    if backend_name == "Aer":
+
+        sampler = AerSampler(
+            options={
+                "backend_options": {
+                    "method": "automatic",
+                    "noise_model": noise_model if use_noise_model else None,
+                    "seed_simulator": seed
+                },
+                "run_options": {
+                    "shots": shots
+                }
+            }
+        )
+    else:
+        sampler = Sampler(mode=backend)
+        sampler.options.environment.job_tags = tags
+        sampler.options.default_shots = shots
+        if resilience_level == 1:
+            sampler.options.twirling.enable_measure = True
+            sampler.options.twirling.enable_gates = False
+        elif resilience_level == 2:
+            sampler.options.twirling.enable_measure = True
+            sampler.options.twirling.enable_gates = True
+            sampler.options.dynamical_decoupling.enable = True
+        else:
+            sampler.options.twirling.enable_measure = False
+            sampler.options.twirling.enable_gates = False
+
+    return backend, sampler
+
+def create_circuit(basis_info, target, basis_state, optimization_level, cutoff, t, num_trotter_steps, transpiler_seed):
+
+    num_qubits = 1 + int(np.log2(cutoff))
+    qc = QuantumCircuit(num_qubits)
+
+    for q, bit in enumerate(reversed(basis_state)):
+        if bit == 1:
+            qc.x(q)
+
+    qf = num_qubits - 1         
+    qb = list(range(num_qubits - 1)) 
+
+    append_split_operator_evolution(
+        qc, qf, qb, basis_info, t, num_trotter_steps,
+        scheme="suzuki2",
+        max_weight_1site=1,      # try 2 first
+        keep_ratio_1site=0.95,    # start with 1.0, then lower if needed
+        min_keep_1site=0,
+    )
+
+    qc.measure_all()
+
+    pm = generate_preset_pass_manager(target=target, optimization_level=optimization_level, seed_transpiler=transpiler_seed)#, routing_method="sabre", layout_method="sabre")
+ 
+    try:
+        circuit_isa = pm.run(qc)
+    except:
+        print(f"Error transpiling")
+        pm = generate_preset_pass_manager(target=target, optimization_level=optimization_level, translation_method="synthesis", seed_transpiler=transpiler_seed)
+        circuit_isa = pm.run(qc)
+
+    #summarize_circuit(circuit_isa, "post-transpile")
+    #print_layout_info(circuit_isa)
+    #print(circuit_isa.draw("text", fold=200))
+
+    return circuit_isa, circuit_cost_metrics(circuit_isa)
+
+def get_counts(sampler, qc, shots):
+    
+    pubs = [(qc)]
+    job = sampler.run(pubs, shots=shots)
+
+    job_id = job.job_id()
+
+    counts = job.result()[0].data.meas.get_counts()
+
+    try:
+        job_metrics = job.metrics()
+    except AttributeError:
+        #logger.info("No usage/metrics available for this estimator type.")
+        job_metrics = None
+
+    return counts, job_id, job_metrics
+
+def filter_counts_by_fermion_number(counts,fermion_qubits,num_fermions):
+
+    kept = {}
+    rejected = 0
+    for key, c in counts.items():
+        b = [int(ch) for ch in key[::-1]]
+        w = sum(b[i] for i in fermion_qubits)
+
+        if w == num_fermions:
+            kept[key] = c
+        else:
+            rejected += c
+
+    return kept, rejected
+
+def _twoq_only_depth(qc):
+    """Depth counting only 2-qubit operations (ignoring barriers/measure)."""
+    qc2 = QuantumCircuit(qc.num_qubits, qc.num_clbits)
+    q_index = {q: i for i, q in enumerate(qc.qubits)}
+    c_index = {c: i for i, c in enumerate(qc.clbits)}
+
+    for inst in qc.data:
+        op = inst.operation
+        if op.name in {"barrier", "measure"}:
+            continue
+        if op.num_qubits == 2:
+            qargs = [qc2.qubits[q_index[q]] for q in inst.qubits]
+            cargs = [qc2.clbits[c_index[c]] for c in inst.clbits] if inst.clbits else []
+            qc2.append(op, qargs, cargs)
+
+    return qc2.depth()
+
+def circuit_cost_metrics(qc):
+    ops = qc.count_ops()
+    ops_str = {str(k): int(v) for k, v in ops.items()}
+
+    n2q = sum(
+        1
+        for inst in qc.data
+        if inst.operation.num_qubits == 2 and inst.operation.name not in {"barrier", "measure"}
+    )
+
+    return {
+        "depth": qc.depth(),
+        "size": qc.size(),
+        "num_2q_ops": n2q,
+        "depth_2q": _twoq_only_depth(qc),
+        "count_ops": ops_str,
+    }
+
+def truncate_by_coeff_weight(pauli_coeffs, pauli_labels, keep_ratio=0.999, min_keep=64):
+
+    c = np.asarray(pauli_coeffs)
+    lab = np.asarray(pauli_labels)
+
+    abs_c = np.abs(c)
+    order = np.argsort(abs_c)[::-1]
+    abs_sorted = abs_c[order]
+    w = abs_sorted**2 #squared gives more aggressive truncation
+
+    cum = np.cumsum(w)
+    total = float(cum[-1])
+    target = keep_ratio * total
+
+    m = int(np.searchsorted(cum, target, side="left") + 1)
+    m = max(m, int(min_keep))
+    m = min(m, len(c))
+
+    keep_idx = order[:m]
+    truncated = float(total - cum[m-1])
+
+    info = {
+        "m": m,
+        "n": len(pauli_coeffs),
+        "keep_frac_terms": m / len(pauli_coeffs),
+        "keep_ratio": keep_ratio,
+        "truncated": truncated,
+        "total_weight": total
+    }
+    return c[keep_idx], lab[keep_idx], info
+
+def run_skqd(basis_info, H_pauli, H_info, pauli_terms, basis_state, backend_info, run_info, base_path, log_enabled):
+
+    starttime = datetime.now()
+
+    dt = run_info["dt"]
+    max_k = run_info["max_k"]
+    tol = run_info["tol"]
+    conserve_fermion = run_info["conserve_fermion"]
+    fermion_qubits = run_info["fermion_qubits"]
+    num_fermions = run_info["num_fermions"]
+    trotter_patience = run_info["trotter_patience"]
+    energy_patience = run_info["energy_patience"]
+    max_n_steps = run_info["max_n_steps"]
+                    
+    shots = backend_info["shots"]
+    backend_name = backend_info["backend_name"]
+    num_qubits = H_info["num_qubits"]
+    dense_H_size = H_info["dense_H_size"]
+    min_eigenvalue = np.min(H_info["eigenvalues"])
+
+    seed = (os.getpid() * int(time.time())) % 123456789
+
+    backend, sampler = get_backend(backend_info["backend_name"], backend_info["use_noise_model"], backend_info["noise_model_options"], backend_info["resilience_level"], seed, shots, backend_info["tags"])
+    if backend_info["use_noise_model"] == 1:
+        target = compile_target
+    else:
+        target = backend.target
+    sampler_options = dataclasses.asdict(sampler.options)
+
+    k=1
+    n_steps = 1
+
+    pre_samples = 0
+
+    patience_count = 0  
+    trotter_patience_count = 0         
+    prev_energy = None           
+    converged = False
+
+    samples = Counter()
+
+    all_data = []
+    all_counts = []
+    all_energies = []
+    job_info = {}
+
+    while not converged and k <= max_k:
+
+        if log_enabled: logger.info(f"Running for Krylov dimension {k}")
+
+        t = dt*k
+        
+        qc, circuit_cost = create_circuit(basis_info, target, basis_state, backend_info["optimization_level"], H_info["cutoff"], t, n_steps, backend_info["transpiler_seed"])
+
+        t1 = datetime.now()
+        counts, job_id, job_metrics = get_counts(sampler, qc, shots) #counts are returned in binary notation i.e. q0q1...qn and not standard qiskit noation
+        Ct = datetime.now() - t1
+
+        if backend_name != "Aer":
+            job_info[job_id] = job_metrics
+
+            jobs = job_info.values()
+            QPU_usage = 0.0
+            for job in jobs:
+                usage = job.get("usage")
+                QPU_usage += float(usage["seconds"])
+
+            if log_enabled: logger.info(f"Job ID: {job_id} - QPU usage: {QPU_usage}")
+
+        # trim per Krylov step
+        raw_counts = counts
+        raw_unique = len(raw_counts)
+
+        fermion_rejected = 0
+
+        if conserve_fermion:
+            counts, rej_w = filter_counts_by_fermion_number(counts, fermion_qubits=fermion_qubits, num_fermions=num_fermions)
+            fermion_rejected += rej_w
+        else:
+            counts = raw_counts
+
+        kept_unique = len(counts)
+        kept_shots = sum(counts.values())
+
+        shot_processing = {
+            "raw_unique_basis_states": raw_unique, # Unique shots found per krylov step
+            "fermion_basis_rejected": raw_unique - kept_unique, # Num basis states rejected due to fermion number conservation
+            "kept_unique_basis_states": kept_unique, # Num unique - fermion_rejected
+            "fermion_shots_rejected": fermion_rejected, # Num shots rejected due to fermion number conservation
+            "kept_shots": kept_shots, # Total number of shots spanning the kept_unique basis states
+        }
+
+        if log_enabled: logger.info(json.dumps(shot_processing, indent=4, default=str))
+
+        # Update global samples with the trimmed counts
+        pre_samples = len(samples)
+        samples.update(counts)
+        
+        sorted_states = sorted(samples.items(), key=lambda x: x[1], reverse=True)
+        top_states = [s for s, c in sorted_states]
+        all_counts.append(dict(sorted_states)) 
+
+        H_reduced = sqm.reduced_sparse_matrix_from_pauli_terms(pauli_terms, top_states)
+        
+        t1 = datetime.now()
+
+        if H_reduced.shape[0] < 2000:
+            H_dense = H_reduced.todense()
+            me = np.min(np.linalg.eigvals(H_dense)).real
+            used_dense = True
+        else:
+            me = eigsh(H_reduced, k=1, which="SA", return_eigenvectors=False)[0].real
+            used_dense = False
+        HRt = datetime.now() - t1
+
+        if prev_energy is None:
+            diff_prev = None
+        else:
+            diff_prev = float(np.abs(prev_energy - me))
+            
+        prev_energy = me
+
+        row = { 
+            "D": k,
+            "t":t,
+            "num_trotter_steps": n_steps,
+            "circuit_time": str(Ct),
+            "shot_processing": shot_processing,
+            "new_basis_count": len(samples) - pre_samples,
+            "total_basis_count": len(samples),
+            "H_reduced_size": H_reduced.shape,
+            "reduction": (1 - (H_reduced.shape[0] / dense_H_size[0]))*100,
+            "H_reduced_e": me,
+            "used_dense": used_dense,
+            "eigenvalue_time": str(HRt),
+            "diff": np.abs(min_eigenvalue-me),
+            "change_from_prev": None if diff_prev == np.inf else diff_prev,
+            "circuit_cost": circuit_cost
+            }
+        
+        if log_enabled: logger.info(json.dumps(row, indent=4, default=str))
+        
+        all_data.append(row)
+        all_energies.append(me)
+
+        if diff_prev is None:
+            k+=1
+            continue
+
+        if diff_prev < tol:
+            patience_count += 1
+            trotter_patience_count+=1
+        else:
+            patience_count = 0
+
+        if patience_count >= energy_patience:
+            converged = True
+            break
+        elif k == max_k:
+            break
+        else:
+            k+=1
+
+        if trotter_patience_count >= trotter_patience:
+            n_steps +=1
+            trotter_patience_count=0
+            if n_steps > max_n_steps:
+                break
+
+    endtime = datetime.now()
+
+    final_data = {
+            "seed": seed,
+            "starttime": starttime.strftime("%Y-%m-%d_%H-%M-%S"),
+            "endtime": endtime.strftime("%Y-%m-%d_%H-%M-%S"),
+            "time_taken": str(endtime-starttime),
+            "H_info": H_info,
+            "backend_info": backend_info,
+            "run_info":run_info,
+            "final_k": len(all_data),
+            "converged": converged,
+            "all_energies": all_energies,
+            "all_run_data": all_data,
+            "num_jobs": len(jobs) if backend_name != "Aer" else None,
+            "QPU_usage": QPU_usage if backend_name != "Aer" else None,
+            "job_info": job_info,
+            "sampler_options": sampler_options
+        }
+
+
+    with open(os.path.join(base_path, f"{potential}_{cutoff}.json"), "w") as json_file:
+        json.dump(final_data, json_file, indent=4, default=str)
+
+    if log_enabled: logger.info("Done")
+    print(f"done")
+
+
+if __name__ == "__main__":
+
+    log_enabled = False
+
+        
+    potential = "DW"
+    cutoff = 2
+
+    #backend_name = 'ibm_kingston'
+    #backend_name = 'ibm_torino'
+    backend_name = "Aer"
+
+    # Noise model options
+    use_noise_model = 1
+    gate_error=False
+    readout_error=False  
+    thermal_relaxation=False
+    transpiler_seed = 42
+
+    noise_model_options = {
+        "gate_error":gate_error,
+        "readout_error":readout_error,   
+        "thermal_relaxation":thermal_relaxation
+        }
+
+    shots = 100000
+    optimization_level = 3
+    resilience_level = 2 # 1 = readout , 2 = readout + gate
+
+    # trimming
+    conserve_fermion = False
+    keep_ratio = 1.0 
+
+    x_max=5.0
+
+    dt=1.0
+    max_k = 10
+    tol = 1e-10
+
+    trotter_patience = 2
+    energy_patience = 3        
+    max_n_steps = 3
+
+    for potential in ["QHO","AHO","DW"]:
+        for cutoff in [2,4,8,16,32,64]:#,128,256, 512,1024]:
+
+            print(f"Running for {potential} and cutoff {cutoff}")
+
+            tags=["SKQD", f"shots:{shots}", f"{potential}", f"cutoff={cutoff}"]
+
+
+            base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\SKQD\BasisTesting\RealTranspile\Test4", potential)
+            #base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\SKQD\BasisTesting\Aer\Position+QFT+NoDiag", potential)
+            os.makedirs(base_path, exist_ok=True)
+            log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
+
+            if log_enabled: 
+                os.makedirs(log_path, exist_ok=True)
+                log_path = os.path.join(log_path, f"vqe_run.log")
+                logger = setup_logger(log_path, f"logger", enabled=log_enabled)
+
+            if log_enabled: logger.info(f"Running for {potential} potential and cutoff {cutoff}")
+
+            num_qubits = int(1+np.log2(cutoff))
+
+            H_dense, basis_info = sqm.calculate_hamiltonian_position(cutoff, potential, x_max=x_max)
+            H_pauli = SparsePauliOp.from_operator(H_dense)
+            pauli_labels = H_pauli.paulis
+            pauli_coeffs = H_pauli.coeffs
+            pauli_terms = [(complex(c), p.to_label()) for c, p in zip(H_pauli.coeffs, H_pauli.paulis)]
+
+            num_qubits = int(1 + np.log2(cutoff))
+            dense_H_size = H_dense.shape
+            eigenvalues = np.sort(np.linalg.eigvals(H_dense))[:4]
+            min_eigenvalue = np.min(eigenvalues)
+
+            if log_enabled: logger.info(f"min_eigenvalue: {min_eigenvalue}")
+
+            if potential == "DW" and cutoff ==16:
+                basis_state = [0,0]+[0]*(num_qubits-2) 
+            else:
+                basis_state = [1,1]+[0]*(num_qubits-2)
+
+            fermion_qubits = [num_qubits-1]
+            num_fermions = sum(basis_state[::-1][q] for q in fermion_qubits)
+
+            
+            H_info = {"potential": potential,
+                    "cutoff": cutoff,
+                    "x_max": x_max,
+                    "num_qubits": num_qubits,
+                    "num_paulis": len(pauli_labels),
+                    "dense_H_size": dense_H_size,
+                    "eigenvalues": [float(e) for e in eigenvalues.real],
+                    "basis": basis_state
+                }
+            
+
+            backend_info = {"backend_name": backend_name, 
+                            "use_noise_model": use_noise_model, 
+                            "noise_model_options": noise_model_options, 
+                            "resilience_level": resilience_level, 
+                            "optimization_level": optimization_level,
+                            "shots": shots, 
+                            "tags": tags,
+                            "transpiler_seed": transpiler_seed}
+            
+            run_info = {"dt": dt,
+                        "max_k": max_k,
+                        "tol": tol,
+                        "conserve_fermion": conserve_fermion,
+                        "fermion_qubits": fermion_qubits,
+                        "num_fermions": num_fermions,
+                        "trotter_patience": trotter_patience,
+                        "energy_patience": energy_patience,
+                        "max_n_steps": max_n_steps
+                        }
+
+
+            run_skqd(basis_info, H_pauli, H_info, pauli_terms, basis_state, backend_info, run_info, base_path, log_enabled)
+    
+        

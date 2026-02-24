@@ -1,0 +1,619 @@
+{
+    "seed": 42334490,
+    "starttime": "2026-02-19_15-52-28",
+    "endtime": "2026-02-19_16-54-20",
+    "time_taken": "1:01:52.580930",
+    "H_info": {
+        "potential": "linear",
+        "boundary_condition": "dirichlet",
+        "cutoff": 16,
+        "N": 4,
+        "a": 1.0,
+        "c": null,
+        "num_qubits": 20,
+        "num_paulis": 2211,
+        "keep_ratio": 0.999,
+        "trunc_info": {
+            "m": 212,
+            "n": 2211,
+            "keep_frac_terms": 0.09588421528720036,
+            "keep_ratio": 0.999,
+            "truncated": 1.377312853455578,
+            "total_weight": 1381.999999999984
+        },
+        "dense_H_size": [
+            1048576,
+            1048576
+        ],
+        "eigenvalues": [
+            3.9321294598410086e-15,
+            1.0466572996029782,
+            1.0466572996029924,
+            1.046657299603104,
+            1.0466572996031096,
+            1.2862769908486007,
+            1.2862769908486018,
+            1.2862769908489424
+        ],
+        "basis": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+        ]
+    },
+    "backend_info": {
+        "backend_name": "ibm_torino",
+        "use_noise_model": 0,
+        "noise_model_options": {
+            "gate_error": false,
+            "readout_error": false,
+            "thermal_relaxation": false
+        },
+        "resilience_level": 0,
+        "optimization_level": 3,
+        "shots": 100000,
+        "tags": [
+            "Open-plan",
+            "SBQKD",
+            "shots:100000",
+            "dirichlet",
+            "linear",
+            "N=4",
+            "cutoff=16"
+        ],
+        "transpiler_seed": 42
+    },
+    "Ansatz_info": {
+        "include_basis": true,
+        "include_rys": true,
+        "include_xxyys": true
+    },
+    "transpile_data": [
+        {
+            "num_trotters": 1,
+            "transpile_time": "0:00:15.498906",
+            "circuit_cist": {
+                "depth": 2568,
+                "size": 8298,
+                "num_2q_ops": 1945,
+                "depth_2q": 797,
+                "count_ops": {
+                    "sx": 3296,
+                    "rz": 2822,
+                    "cz": 1945,
+                    "x": 215,
+                    "measure": 20,
+                    "barrier": 1
+                }
+            }
+        }
+    ],
+    "run_info": {
+        "dt": 1.0,
+        "max_k": 10,
+        "tol": 1e-08,
+        "conserve_fermion": true,
+        "fermion_qubits": [
+            4,
+            9,
+            14,
+            19
+        ],
+        "num_fermions": 2,
+        "trotter_patience": 2,
+        "energy_patience": 3,
+        "max_n_steps": 5
+    },
+    "final_k": 10,
+    "converged": false,
+    "all_energies": [
+        0.21789596251559382,
+        0.10703036314144862,
+        0.1057425447995796,
+        0.0016528673221429568,
+        0.0006831381571518458,
+        0.0006704530883008465,
+        0.0006631979593014807,
+        0.0006526549901559936,
+        0.0002735438633189355,
+        0.0002615902936070201
+    ],
+    "all_run_data": [
+        {
+            "D": 1,
+            "t": 1.0,
+            "num_trotter_steps": 1,
+            "step_time": "0:01:08.243140",
+            "H_reduce_time": "0:00:21.932971",
+            "circuit_time": "0:00:45.868919",
+            "shot_processing": {
+                "raw_unique_basis_states": 78547,
+                "fermion_basis_rejected": 17363,
+                "kept_unique_basis_states": 61184,
+                "fermion_shots_rejected": 17865,
+                "kept_shots": 82135
+            },
+            "new_basis_count": 61184,
+            "total_basis_count": 61184,
+            "H_reduced_size": [
+                61184,
+                61184
+            ],
+            "reduction": 94.1650390625,
+            "H_reduced_e": 0.21789596251559382,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.438457",
+            "diff": 0.21789596251558987,
+            "change_from_prev": null
+        },
+        {
+            "D": 2,
+            "t": 2.0,
+            "num_trotter_steps": 1,
+            "step_time": "0:03:05.108992",
+            "H_reduce_time": "0:00:42.397674",
+            "circuit_time": "0:02:21.712630",
+            "shot_processing": {
+                "raw_unique_basis_states": 88630,
+                "fermion_basis_rejected": 20078,
+                "kept_unique_basis_states": 68552,
+                "fermion_shots_rejected": 20588,
+                "kept_shots": 79412
+            },
+            "new_basis_count": 58001,
+            "total_basis_count": 119185,
+            "H_reduced_size": [
+                119185,
+                119185
+            ],
+            "reduction": 88.63363265991211,
+            "H_reduced_e": 0.10703036314144862,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:00.995793",
+            "diff": 0.10703036314144469,
+            "change_from_prev": 0.1108655993741452
+        },
+        {
+            "D": 3,
+            "t": 3.0,
+            "num_trotter_steps": 1,
+            "step_time": "0:05:53.972255",
+            "H_reduce_time": "0:01:16.739502",
+            "circuit_time": "0:04:35.412804",
+            "shot_processing": {
+                "raw_unique_basis_states": 85915,
+                "fermion_basis_rejected": 20021,
+                "kept_unique_basis_states": 65894,
+                "fermion_shots_rejected": 20450,
+                "kept_shots": 79550
+            },
+            "new_basis_count": 47316,
+            "total_basis_count": 166501,
+            "H_reduced_size": [
+                166501,
+                166501
+            ],
+            "reduction": 84.1212272644043,
+            "H_reduced_e": 0.1057425447995796,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:01.814943",
+            "diff": 0.10574254479957568,
+            "change_from_prev": 0.0012878183418690153
+        },
+        {
+            "D": 4,
+            "t": 4.0,
+            "num_trotter_steps": 1,
+            "step_time": "0:02:52.374521",
+            "H_reduce_time": "0:02:05.162403",
+            "circuit_time": "0:00:44.144108",
+            "shot_processing": {
+                "raw_unique_basis_states": 83423,
+                "fermion_basis_rejected": 20111,
+                "kept_unique_basis_states": 63312,
+                "fermion_shots_rejected": 20586,
+                "kept_shots": 79414
+            },
+            "new_basis_count": 40953,
+            "total_basis_count": 207454,
+            "H_reduced_size": [
+                207454,
+                207454
+            ],
+            "reduction": 80.21564483642578,
+            "H_reduced_e": 0.0016528673221429568,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:03.049164",
+            "diff": 0.0016528673221390246,
+            "change_from_prev": 0.10408967747743665
+        },
+        {
+            "D": 5,
+            "t": 5.0,
+            "num_trotter_steps": 1,
+            "step_time": "0:04:30.074203",
+            "H_reduce_time": "0:03:42.800891",
+            "circuit_time": "0:00:43.972169",
+            "shot_processing": {
+                "raw_unique_basis_states": 82584,
+                "fermion_basis_rejected": 19163,
+                "kept_unique_basis_states": 63421,
+                "fermion_shots_rejected": 19647,
+                "kept_shots": 80353
+            },
+            "new_basis_count": 25223,
+            "total_basis_count": 232677,
+            "H_reduced_size": [
+                232677,
+                232677
+            ],
+            "reduction": 77.8101921081543,
+            "H_reduced_e": 0.0006831381571518458,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:03.265564",
+            "diff": 0.0006831381571479137,
+            "change_from_prev": 0.000969729164991111
+        },
+        {
+            "D": 6,
+            "t": 6.0,
+            "num_trotter_steps": 1,
+            "step_time": "0:06:01.993355",
+            "H_reduce_time": "0:05:14.346898",
+            "circuit_time": "0:00:43.157036",
+            "shot_processing": {
+                "raw_unique_basis_states": 71488,
+                "fermion_basis_rejected": 18212,
+                "kept_unique_basis_states": 53276,
+                "fermion_shots_rejected": 18801,
+                "kept_shots": 81199
+            },
+            "new_basis_count": 13061,
+            "total_basis_count": 245738,
+            "H_reduced_size": [
+                245738,
+                245738
+            ],
+            "reduction": 76.5645980834961,
+            "H_reduced_e": 0.0006704530883008465,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:04.458281",
+            "diff": 0.0006704530882969144,
+            "change_from_prev": 1.2685068850999356e-05
+        },
+        {
+            "D": 7,
+            "t": 7.0,
+            "num_trotter_steps": 1,
+            "step_time": "0:06:51.998840",
+            "H_reduce_time": "0:06:04.116280",
+            "circuit_time": "0:00:42.922734",
+            "shot_processing": {
+                "raw_unique_basis_states": 77672,
+                "fermion_basis_rejected": 19006,
+                "kept_unique_basis_states": 58666,
+                "fermion_shots_rejected": 19518,
+                "kept_shots": 80482
+            },
+            "new_basis_count": 11081,
+            "total_basis_count": 256819,
+            "H_reduced_size": [
+                256819,
+                256819
+            ],
+            "reduction": 75.50783157348633,
+            "H_reduced_e": 0.0006631979593014807,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:04.924490",
+            "diff": 0.0006631979592975487,
+            "change_from_prev": 7.255128999365725e-06
+        },
+        {
+            "D": 8,
+            "t": 8.0,
+            "num_trotter_steps": 1,
+            "step_time": "0:08:33.129299",
+            "H_reduce_time": "0:07:46.243761",
+            "circuit_time": "0:00:42.453155",
+            "shot_processing": {
+                "raw_unique_basis_states": 88687,
+                "fermion_basis_rejected": 20155,
+                "kept_unique_basis_states": 68532,
+                "fermion_shots_rejected": 20608,
+                "kept_shots": 79392
+            },
+            "new_basis_count": 19213,
+            "total_basis_count": 276032,
+            "H_reduced_size": [
+                276032,
+                276032
+            ],
+            "reduction": 73.675537109375,
+            "H_reduced_e": 0.0006526549901559936,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:04.396934",
+            "diff": 0.0006526549901520615,
+            "change_from_prev": 1.0542969145487164e-05
+        },
+        {
+            "D": 9,
+            "t": 9.0,
+            "num_trotter_steps": 1,
+            "step_time": "0:10:30.406738",
+            "H_reduce_time": "0:08:45.796443",
+            "circuit_time": "0:01:39.975435",
+            "shot_processing": {
+                "raw_unique_basis_states": 87083,
+                "fermion_basis_rejected": 22653,
+                "kept_unique_basis_states": 64430,
+                "fermion_shots_rejected": 23263,
+                "kept_shots": 76737
+            },
+            "new_basis_count": 17448,
+            "total_basis_count": 293480,
+            "H_reduced_size": [
+                293480,
+                293480
+            ],
+            "reduction": 72.01156616210938,
+            "H_reduced_e": 0.0002735438633189355,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:04.607451",
+            "diff": 0.00027354386331500337,
+            "change_from_prev": 0.00037911112683705806
+        },
+        {
+            "D": 10,
+            "t": 10.0,
+            "num_trotter_steps": 1,
+            "step_time": "0:12:08.719531",
+            "H_reduce_time": "0:10:04.176782",
+            "circuit_time": "0:01:57.192815",
+            "shot_processing": {
+                "raw_unique_basis_states": 86928,
+                "fermion_basis_rejected": 20270,
+                "kept_unique_basis_states": 66658,
+                "fermion_shots_rejected": 20759,
+                "kept_shots": 79241
+            },
+            "new_basis_count": 16755,
+            "total_basis_count": 310235,
+            "H_reduced_size": [
+                310235,
+                310235
+            ],
+            "reduction": 70.4136848449707,
+            "H_reduced_e": 0.0002615902936070201,
+            "used_dense": false,
+            "eigenvalue_time": "0:00:07.309899",
+            "diff": 0.000261590293603088,
+            "change_from_prev": 1.1953569711915378e-05
+        }
+    ],
+    "num_jobs": 10,
+    "QPU_usage": 360.0,
+    "job_info": {
+        "d6bj3jfg4t5c7384dsp0": {
+            "timestamps": {
+                "created": "2026-02-19T15:52:45.243134Z",
+                "finished": "2026-02-19T15:53:29.608109Z",
+                "running": "2026-02-19T15:52:48.532231Z"
+            },
+            "bss": {
+                "seconds": 36
+            },
+            "usage": {
+                "quantum_seconds": 36,
+                "seconds": 36
+            },
+            "qiskit_version": "qiskit_ibm_runtime-0.41.0,qiskit-2.1.1*,qiskit_aer-0.17.1*",
+            "caller": "qiskit_ibm_runtime~sampler.py"
+        },
+        "d6bj44fg4t5c7384dtjg": {
+            "timestamps": {
+                "created": "2026-02-19T15:53:53.299676Z",
+                "finished": "2026-02-19T15:56:13.562855Z",
+                "running": "2026-02-19T15:55:31.278979Z"
+            },
+            "bss": {
+                "seconds": 36
+            },
+            "usage": {
+                "quantum_seconds": 36,
+                "seconds": 36
+            },
+            "qiskit_version": "qiskit_ibm_runtime-0.41.0,qiskit-2.1.1*,qiskit_aer-0.17.1*",
+            "caller": "qiskit_ibm_runtime~sampler.py"
+        },
+        "d6bj5iknsg9c73992je0": {
+            "timestamps": {
+                "created": "2026-02-19T15:56:58.439218Z",
+                "finished": "2026-02-19T16:01:32.543388Z",
+                "running": "2026-02-19T16:00:49.79032Z"
+            },
+            "bss": {
+                "seconds": 36
+            },
+            "usage": {
+                "quantum_seconds": 36,
+                "seconds": 36
+            },
+            "qiskit_version": "qiskit_ibm_runtime-0.41.0,qiskit-2.1.1*,qiskit_aer-0.17.1*",
+            "caller": "qiskit_ibm_runtime~sampler.py"
+        },
+        "d6bj8b4nsg9c73992mk0": {
+            "timestamps": {
+                "created": "2026-02-19T16:02:53.026027Z",
+                "finished": "2026-02-19T16:03:35.114558Z",
+                "running": "2026-02-19T16:02:54.044581Z"
+            },
+            "bss": {
+                "seconds": 36
+            },
+            "usage": {
+                "quantum_seconds": 36,
+                "seconds": 36
+            },
+            "qiskit_version": "qiskit_ibm_runtime-0.41.0,qiskit-2.1.1*,qiskit_aer-0.17.1*",
+            "caller": "qiskit_ibm_runtime~sampler.py"
+        },
+        "d6bj9m954hss73b7dvjg": {
+            "timestamps": {
+                "created": "2026-02-19T16:05:45.460604Z",
+                "finished": "2026-02-19T16:06:27.437524Z",
+                "running": "2026-02-19T16:05:46.398423Z"
+            },
+            "bss": {
+                "seconds": 36
+            },
+            "usage": {
+                "quantum_seconds": 36,
+                "seconds": 36
+            },
+            "qiskit_version": "qiskit_ibm_runtime-0.41.0,qiskit-2.1.1*,qiskit_aer-0.17.1*",
+            "caller": "qiskit_ibm_runtime~sampler.py"
+        },
+        "d6bjbpp7ce2c73fffnag": {
+            "timestamps": {
+                "created": "2026-02-19T16:10:15.288116Z",
+                "finished": "2026-02-19T16:10:56.752181Z",
+                "running": "2026-02-19T16:10:16.263281Z"
+            },
+            "bss": {
+                "seconds": 36
+            },
+            "usage": {
+                "quantum_seconds": 36,
+                "seconds": 36
+            },
+            "qiskit_version": "qiskit_ibm_runtime-0.41.0,qiskit-2.1.1*,qiskit_aer-0.17.1*",
+            "caller": "qiskit_ibm_runtime~sampler.py"
+        },
+        "d6bjek97ce2c73fffqfg": {
+            "timestamps": {
+                "created": "2026-02-19T16:16:17.399556Z",
+                "finished": "2026-02-19T16:16:58.368652Z",
+                "running": "2026-02-19T16:16:18.441876Z"
+            },
+            "bss": {
+                "seconds": 36
+            },
+            "usage": {
+                "quantum_seconds": 36,
+                "seconds": 36
+            },
+            "qiskit_version": "qiskit_ibm_runtime-0.41.0,qiskit-2.1.1*,qiskit_aer-0.17.1*",
+            "caller": "qiskit_ibm_runtime~sampler.py"
+        },
+        "d6bjhrcnsg9c739931i0": {
+            "timestamps": {
+                "created": "2026-02-19T16:23:09.117966Z",
+                "finished": "2026-02-19T16:23:49.959668Z",
+                "running": "2026-02-19T16:23:09.906469Z"
+            },
+            "bss": {
+                "seconds": 36
+            },
+            "usage": {
+                "quantum_seconds": 36,
+                "seconds": 36
+            },
+            "qiskit_version": "qiskit_ibm_runtime-0.41.0,qiskit-2.1.1*,qiskit_aer-0.17.1*",
+            "caller": "qiskit_ibm_runtime~sampler.py"
+        },
+        "d6bjlrknsg9c739935ug": {
+            "timestamps": {
+                "created": "2026-02-19T16:31:42.584928Z",
+                "finished": "2026-02-19T16:33:20.558187Z",
+                "running": "2026-02-19T16:32:16.758404Z"
+            },
+            "bss": {
+                "seconds": 36
+            },
+            "usage": {
+                "quantum_seconds": 36,
+                "seconds": 36
+            },
+            "qiskit_version": "qiskit_ibm_runtime-0.41.0,qiskit-2.1.1*,qiskit_aer-0.17.1*",
+            "caller": "qiskit_ibm_runtime~sampler.py"
+        },
+        "d6bjqpfg4t5c7384emh0": {
+            "timestamps": {
+                "created": "2026-02-19T16:42:14.021138Z",
+                "finished": "2026-02-19T16:44:07.506549Z",
+                "running": "2026-02-19T16:42:17.866539Z"
+            },
+            "bss": {
+                "seconds": 36
+            },
+            "usage": {
+                "quantum_seconds": 36,
+                "seconds": 36
+            },
+            "qiskit_version": "qiskit_ibm_runtime-0.41.0,qiskit-2.1.1*,qiskit_aer-0.17.1*",
+            "caller": "qiskit_ibm_runtime~sampler.py"
+        }
+    },
+    "sampler_options": {
+        "_VERSION": 2,
+        "max_execution_time": "Unset",
+        "environment": {
+            "log_level": "WARNING",
+            "callback": null,
+            "job_tags": [
+                "Open-plan",
+                "SBQKD",
+                "shots:100000",
+                "dirichlet",
+                "linear",
+                "N=4",
+                "cutoff=16"
+            ],
+            "private": false
+        },
+        "simulator": {
+            "noise_model": "Unset",
+            "seed_simulator": "Unset",
+            "coupling_map": "Unset",
+            "basis_gates": "Unset"
+        },
+        "default_shots": 100000,
+        "dynamical_decoupling": {
+            "enable": "Unset",
+            "sequence_type": "Unset",
+            "extra_slack_distribution": "Unset",
+            "scheduling_method": "Unset",
+            "skip_reset_qubits": "Unset"
+        },
+        "execution": {
+            "init_qubits": "Unset",
+            "rep_delay": "Unset",
+            "meas_type": "Unset"
+        },
+        "twirling": {
+            "enable_gates": false,
+            "enable_measure": false,
+            "num_randomizations": "Unset",
+            "shots_per_randomization": "Unset",
+            "strategy": "Unset"
+        },
+        "experimental": "Unset"
+    }
+}

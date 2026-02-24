@@ -442,7 +442,7 @@ if __name__ == "__main__":
     backend_name = "Aer"
 
     # Noise model options
-    use_noise_model = 1
+    use_noise_model = 0
     gate_error=False
     readout_error=False  
     thermal_relaxation=False
@@ -471,15 +471,15 @@ if __name__ == "__main__":
     energy_patience = 3        
     max_n_steps = 3
     
-    for potential in ['AHO', 'DW']:
-        for cutoff in [2,4,8,16,32,64,128,256, 512, 1024]:
+    for potential in ['QHO', 'AHO', 'DW']:
+        for cutoff in [2,4,8,16,32,64, 128,256, 512, 1024]:
 
             print(f"Running for {potential} and cutoff {cutoff}")
 
             tags=["SKQD", f"shots:{shots}", f"{potential}", f"cutoff={cutoff}"]
 
 
-            base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\SKQD\BasisTesting\RealTranspile\Position", potential)
+            base_path = os.path.join(repo_path,r"SUSY\SUSY QM\Qiskit\SKQD\BasisTesting\Aer\Position", potential)
             os.makedirs(base_path, exist_ok=True)
             log_path = os.path.join(base_path, f"logs_{str(cutoff)}")
 
@@ -516,6 +516,7 @@ if __name__ == "__main__":
             H_info = {"potential": potential,
                     "cutoff": cutoff,
                     "x_max": x_max,
+                    "x_values": basis_info['x'].tolist(),
                     "num_qubits": num_qubits,
                     "num_paulis": len(pauli_labels),
                     "dense_H_size": dense_H_size,
